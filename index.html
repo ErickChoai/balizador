@@ -82,7 +82,7 @@ p{margin:0}
 .passo.ativo b{background:var(--agua);color:var(--papel)}
 .passo.bloqueado{opacity:.4;cursor:not-allowed}
 
-main{max-width:70rem;margin:0 auto;padding:1.6rem clamp(1rem,4vw,2.5rem) 5rem}
+main{margin:0 auto}
 .sub{color:var(--suave);max-width:70ch;margin-bottom:1.6rem;font-size:1.12rem;line-height:1.55}
 
 /* ---------- tipos de competição ---------- */
@@ -560,7 +560,9 @@ body::after{
    das perguntas se perde; o ganho de espaço não paga o preço. O espaço em
    volta é ocupado pelos campos dentro de cada cartão, que se espalham na
    largura, e pelo fundo que se move. */
-main{max-width:74rem;padding-top:2rem}
+/* praticamente toda a janela: o que segura a leitura é a medida do texto
+   dentro dos cartões, não a largura da página */
+main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
 #config{display:flex;flex-direction:column;gap:1rem}
 .cartao{box-shadow:0 1px 2px rgba(15,32,39,.04)}
 .tela > .cartao,.tela > #resultadoPrograma,.tela > #resumoArquivo{margin-bottom:1.2rem}
@@ -577,7 +579,7 @@ main{max-width:74rem;padding-top:2rem}
 .bloco{margin:1.6rem 0}
 
 /* o topo fica mais presente, com a marca maior e os passos legíveis */
-.topo{padding:1.1rem clamp(1rem,4vw,2.5rem) 0;
+.topo{padding:1.1rem clamp(1rem,2.6vw,3.5rem) 0;
   backdrop-filter:saturate(1.4) blur(6px)}
 .marca{margin-bottom:1rem}
 
@@ -618,6 +620,55 @@ main{max-width:74rem;padding-top:2rem}
 /* blocos fechados da conferência */
 .itens-fechados{padding:0 0 .6rem}
 .bloco.resolvido .contador{background:var(--bom-fraca);color:var(--bom);font-weight:600}
+
+/* =====================================================================
+   Ocupar a largura
+
+   A página cresceu, e cartão largo com um campo espremido à esquerda fica
+   pior do que cartão estreito. Então o conteúdo se espalha: os campos
+   dividem a linha, as caixas de marcar viram colunas, e o texto de apoio
+   fica ao lado dos controles em vez de embaixo.
+   ===================================================================== */
+.campo{flex:1 1 14rem}
+.campo.largo{flex:2 1 22rem}
+.campos{gap:1.2rem}
+
+@media (min-width:1100px){
+  /* o cartão vira duas faixas: controles à esquerda, explicação à direita */
+  .cartao{display:block}
+  .cartao::after{content:"";display:table;clear:both}
+  .cartao > * + *{margin-top:.85rem}
+  .cartao > .nota{
+    float:right;width:min(26rem,38%);margin:0 0 .85rem 2.2rem;max-width:none;
+    padding-left:1.1rem;border-left:2px solid var(--linha);
+  }
+  .cartao > .nota + *{margin-top:0}
+  /* nas listas e tabelas o texto volta para cima, senão a grade fica torta */
+  .cartao > .lista-etapas,.cartao > .cabecalho-lista,.cartao > table,
+  .cartao > .planilha-exemplo,.cartao > .scroll-x{clear:both}
+
+  /* as caixas de marcar viram colunas em vez de uma fila comprida */
+  .cartao > .marcavel{
+    float:left;width:calc(33.333% - 1rem);margin:0 1rem .7rem 0;clear:none;
+  }
+  .cartao > .marcavel + .marcavel{margin-top:0}
+  .cartao > .sub-bloco{clear:both;margin-top:.4rem}
+
+  /* fichas e saídas espalham em vez de encolher */
+  .fichas{grid-template-columns:repeat(auto-fit,minmax(13rem,1fr))}
+  .grade-saidas{grid-template-columns:repeat(auto-fit,minmax(22rem,1fr))}
+  .linha-exemplo{gap:2rem}
+}
+
+@media (min-width:1500px){
+  .cartao > .marcavel{width:calc(25% - 1rem)}
+}
+
+/* campo sozinho na linha não precisa atravessar a tela inteira */
+@media (min-width:1100px){
+  .campos:has(> .campo:only-child) > .campo{max-width:46rem}
+  .cartao > .previa{clear:both}
+}
 
 </style>
 </head>
