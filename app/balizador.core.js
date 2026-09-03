@@ -380,6 +380,20 @@
             detalhe: `${s.linhas.length} nadadores para ${nRaias} raias`,
           });
         }
+        // Série curta demais. Numa prova com pouca gente não há o que dividir,
+        // e aí o aviso serve para o árbitro decidir se junta categorias.
+        const minimo = minimoPorSerie(nRaias);
+        if (s.linhas.length < minimo) {
+          const total = p.series.reduce((t, x) => t + x.linhas.length, 0);
+          erros.push({
+            tipo: "SÉRIE ABAIXO DO MÍNIMO", gravidade: "aviso", prova: p.numero,
+            titulo: p.titulo, serie: s.numero,
+            detalhe: total < minimo
+              ? `a prova toda tem ${total} inscrito(s), e o mínimo por série ` +
+                `em ${nRaias} raias é ${minimo}`
+              : `${s.linhas.length} nadadores, abaixo do mínimo de ${minimo}`,
+          });
+        }
         for (const l of s.linhas) {
           const k = normalizar(nomeDe(l.item)) + "|" + normalizar(equipeDe(l.item));
           if (vistos.has(k)) {
@@ -438,6 +452,10 @@
     if (typeof v === "number") return isFinite(v) && v > 0 ? v : null;
     const t = String(v).trim().replace(",", ".");
     if (!t || /^[-–—?]+$/.test(t)) return null;
+    // 99:99.99 é como os programas de natação escrevem "sem tempo". Lido ao pé
+    // da letra viraria uma marca de 100 minutos, e o atleta cairia na série
+    // errada em vez de ir para as primeiras, junto com quem não tem tempo.
+    if (/^9{1,2}:9{2}(\.9{1,2})?$/.test(t)) return null;
     const partes = t.split(":").map((x) => x.trim());
     let seg = 0;
     try {

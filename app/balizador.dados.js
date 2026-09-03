@@ -282,7 +282,9 @@
         }
         if (!nome) {
           descartadas.push({ aba: nomeAba, linha: r + 1, equipe,
-            prova: bloco.info.rotulo || bloco.info.evento,
+            prova: tituloProva(bloco.info.distancia, bloco.info.estilo,
+                                bloco.info.rotulo || bloco.info.categoria,
+                                bloco.info.naipe),
             motivo: "tem a instituição preenchida mas não tem o nome do atleta" });
           continue;
         }
