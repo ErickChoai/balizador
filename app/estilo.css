@@ -29,6 +29,9 @@
 }
 
 *{box-sizing:border-box}
+/* Uma classe com display: flex vence o atributo hidden e a caixa some sem
+   sumir. Isto fecha o buraco de uma vez para a página inteira. */
+[hidden]{display:none!important}
 body{
   margin:0;background:var(--fundo);color:var(--tinta);
   font-family:"Asap",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -138,18 +141,23 @@ input[type=number]{width:6rem}
 .previa dd{margin:0;font-weight:500}
 .nota{color:var(--suave);font-size:.95rem;max-width:72ch;line-height:1.5}
 
+/* Cabeçalho e linhas usam a mesma grade, senão o rótulo não fica em cima
+   da caixinha a que ele se refere. */
+.lista-etapas{display:flex;flex-direction:column;gap:.3rem;overflow-x:auto}
+.cabecalho-lista,.linha-etapa{
+  display:grid;gap:.5rem;align-items:center;
+  grid-template-columns:1fr 7rem 8rem 6rem 6rem 2rem;
+  min-width:42rem;
+}
 .cabecalho-lista{
-  display:flex;gap:.5rem;font-size:.68rem;text-transform:uppercase;
+  font-size:.7rem;text-transform:uppercase;
   letter-spacing:.07em;color:var(--suave);
 }
-.cabecalho-lista span:nth-child(1){flex:1}
-.cabecalho-lista span:nth-child(2),.cabecalho-lista span:nth-child(3){flex:1}
-.cabecalho-lista span:nth-child(4),.cabecalho-lista span:nth-child(5){width:5rem}
-.cabecalho-lista.grupos span:nth-child(1),.cabecalho-lista.grupos span:nth-child(2){flex:2}
-.cabecalho-lista.grupos span:nth-child(3){width:7rem}
-.cabecalho-lista.grupos span:nth-child(4){width:10rem}
-.linha-etapa{display:flex;gap:.5rem;margin-bottom:.4rem;align-items:center}
-.linha-etapa input{flex:1;min-width:0}
+.cabecalho-lista.grupos,.linha-etapa.grupo{
+  grid-template-columns:2fr 2fr 7rem 10rem 2rem;
+}
+.linha-etapa input{min-width:0;width:100%}
+.linha-etapa button{justify-self:center}
 
 .marcavel{display:flex;gap:.6rem;align-items:center;font-size:1.05rem;
   color:var(--suave);max-width:70ch;cursor:pointer}
@@ -379,3 +387,21 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
 
 /* rótulo e etiqueta "opcional" na mesma linha dentro de um campo */
 .campo > .rotulo{display:flex;align-items:center;gap:0}
+.valor-calculado{
+  font-size:.95rem;color:var(--tinta);padding:.42rem 0;
+  min-height:2.1rem;display:flex;align-items:center;
+}
+.valor-calculado:empty::before{content:"escolha as datas";color:var(--suave)}
+.grade .cel-resto{color:var(--suave);font-style:italic;text-align:center}
+.cartao.pendente{border-left:3px solid var(--grave)}
+.opcional.exigido{color:var(--grave);border-color:var(--grave)}
+
+/* ---------- competições de exemplo ---------- */
+.linha-exemplo{
+  display:flex;gap:1rem;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;padding:.7rem 0;border-bottom:1px solid var(--linha);
+}
+.linha-exemplo:last-child{border-bottom:0;padding-bottom:0}
+.linha-exemplo b{display:block;font-family:"Archivo",sans-serif;font-size:.98rem}
+.linha-exemplo span{color:var(--suave);font-size:.88rem}
+.acoes-exemplo{display:flex;gap:.4rem;flex-wrap:wrap}

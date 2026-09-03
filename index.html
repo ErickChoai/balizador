@@ -38,6 +38,9 @@
 }
 
 *{box-sizing:border-box}
+/* Uma classe com display: flex vence o atributo hidden e a caixa some sem
+   sumir. Isto fecha o buraco de uma vez para a página inteira. */
+[hidden]{display:none!important}
 body{
   margin:0;background:var(--fundo);color:var(--tinta);
   font-family:"Asap",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -147,18 +150,23 @@ input[type=number]{width:6rem}
 .previa dd{margin:0;font-weight:500}
 .nota{color:var(--suave);font-size:.95rem;max-width:72ch;line-height:1.5}
 
+/* Cabeçalho e linhas usam a mesma grade, senão o rótulo não fica em cima
+   da caixinha a que ele se refere. */
+.lista-etapas{display:flex;flex-direction:column;gap:.3rem;overflow-x:auto}
+.cabecalho-lista,.linha-etapa{
+  display:grid;gap:.5rem;align-items:center;
+  grid-template-columns:1fr 7rem 8rem 6rem 6rem 2rem;
+  min-width:42rem;
+}
 .cabecalho-lista{
-  display:flex;gap:.5rem;font-size:.68rem;text-transform:uppercase;
+  font-size:.7rem;text-transform:uppercase;
   letter-spacing:.07em;color:var(--suave);
 }
-.cabecalho-lista span:nth-child(1){flex:1}
-.cabecalho-lista span:nth-child(2),.cabecalho-lista span:nth-child(3){flex:1}
-.cabecalho-lista span:nth-child(4),.cabecalho-lista span:nth-child(5){width:5rem}
-.cabecalho-lista.grupos span:nth-child(1),.cabecalho-lista.grupos span:nth-child(2){flex:2}
-.cabecalho-lista.grupos span:nth-child(3){width:7rem}
-.cabecalho-lista.grupos span:nth-child(4){width:10rem}
-.linha-etapa{display:flex;gap:.5rem;margin-bottom:.4rem;align-items:center}
-.linha-etapa input{flex:1;min-width:0}
+.cabecalho-lista.grupos,.linha-etapa.grupo{
+  grid-template-columns:2fr 2fr 7rem 10rem 2rem;
+}
+.linha-etapa input{min-width:0;width:100%}
+.linha-etapa button{justify-self:center}
 
 .marcavel{display:flex;gap:.6rem;align-items:center;font-size:1.05rem;
   color:var(--suave);max-width:70ch;cursor:pointer}
@@ -388,6 +396,24 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
 
 /* rótulo e etiqueta "opcional" na mesma linha dentro de um campo */
 .campo > .rotulo{display:flex;align-items:center;gap:0}
+.valor-calculado{
+  font-size:.95rem;color:var(--tinta);padding:.42rem 0;
+  min-height:2.1rem;display:flex;align-items:center;
+}
+.valor-calculado:empty::before{content:"escolha as datas";color:var(--suave)}
+.grade .cel-resto{color:var(--suave);font-style:italic;text-align:center}
+.cartao.pendente{border-left:3px solid var(--grave)}
+.opcional.exigido{color:var(--grave);border-color:var(--grave)}
+
+/* ---------- competições de exemplo ---------- */
+.linha-exemplo{
+  display:flex;gap:1rem;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;padding:.7rem 0;border-bottom:1px solid var(--linha);
+}
+.linha-exemplo:last-child{border-bottom:0;padding-bottom:0}
+.linha-exemplo b{display:block;font-family:"Archivo",sans-serif;font-size:.98rem}
+.linha-exemplo span{color:var(--suave);font-size:.88rem}
+.acoes-exemplo{display:flex;gap:.4rem;flex-wrap:wrap}
 
 </style>
 </head>
@@ -466,6 +492,14 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
       <button type="button" class="link" id="semPrograma">
         não tenho o programa agora</button>
     </div>
+
+    <div class="cartao">
+      <h3>Quer ver uma competição pronta primeiro?</h3>
+      <p class="nota">Quatro competições inventadas, cada uma com o programa e
+        os inscritos casando um com o outro. Baixe as duas planilhas de uma
+        delas e passe pelo app inteiro sem precisar montar nada.</p>
+      <div id="listaExemplos"></div>
+    </div>
   </section>
 
   <!-- ============ 2. COMPETIÇÃO ============ -->
@@ -497,11 +531,21 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
           <label class="campo largo"><span class="rotulo">Onde vai ser? <span class="opcional">opcional</span></span>
             <input id="local" placeholder="Parque Aquático de Florianópolis">
           </label>
-          <label class="campo largo"><span class="rotulo">Quando? <span class="opcional">opcional</span></span>
-            <input id="dataComp" placeholder="22 e 23 de setembro de 2026">
-          </label>
         </div>
-        <p class="nota">Esses três saem no alto de toda página do balizamento.</p>
+        <div class="campos">
+          <label class="campo"><span class="rotulo">Começa em <span class="opcional">opcional</span></span>
+            <input id="dataInicio" type="date">
+          </label>
+          <label class="campo"><span class="rotulo">Termina em <span class="opcional">opcional</span></span>
+            <input id="dataFim" type="date">
+          </label>
+          <div class="campo">
+            <span class="rotulo">Vai sair assim</span>
+            <output id="previaData" class="valor-calculado"></output>
+          </div>
+        </div>
+        <p class="nota">Nome, local e data saem no alto de toda página do
+          balizamento.</p>
       </div>
 
       <div class="cartao">
@@ -518,8 +562,9 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
             </select>
           </label>
         </div>
-        <p class="nota">As provas sempre são divididas no <b>menor número de
-          séries possível</b>, sem nenhuma série abaixo de metade das raias.</p>
+        <p class="nota">As últimas séries saem sempre cheias. A sobra fica na
+          primeira série, que é onde nadam os mais lentos e quem não informou
+          tempo. Nenhuma série fica abaixo de metade das raias.</p>
         <dl class="previa">
           <div><dt>Ordem de preenchimento das raias</dt><dd id="previaRaias" class="mono"></dd></div>
           <div><dt>Mínimo por série</dt><dd id="previaMinimo" class="mono"></dd></div>
@@ -549,27 +594,11 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
               <option value="CONDICAO">Tipo de condição: TEA, DI, DA, DOWN</option>
             </select>
           </label>
-          <p class="nota" id="notaClasse"></p>
           <label class="marcavel">
             <input type="checkbox" id="mostrarCategoria">
             <span>Mostrar a categoria numa coluna do balizamento</span>
           </label>
         </div>
-      </div>
-
-      <div class="cartao">
-        <h3>Como o atleta é identificado?</h3>
-        <label class="campo largo">A instituição dele se chama
-          <select id="rotuloEquipe">
-            <option value="ESCOLA">Escola</option>
-            <option value="COLÉGIO">Colégio</option>
-            <option value="CIDADE">Cidade</option>
-            <option value="EQUIPE">Equipe</option>
-            <option value="CLUBE">Clube</option>
-          </select>
-        </label>
-        <p class="nota">É esse nome que vai no cabeçalho da coluna, na planilha
-          de inscritos e no balizamento.</p>
       </div>
 
       <div class="cartao">
@@ -598,17 +627,19 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
         </div>
       </div>
 
-      <div class="cartao">
-        <h3>A competição tem etapas? <span class="opcional">opcional</span></h3>
-        <p class="nota">Cada etapa começa em página nova no PDF e aparece no alto
-          dela. Se o programa que você enviou tinha a coluna ETAPA, isto já veio
-          preenchido.</p>
-        <div class="cabecalho-lista">
-          <span>Nome</span><span>Dia</span><span>Período</span>
-          <span>Da prova</span><span>Até</span><span></span>
+      <div class="cartao" id="cartaoEtapas">
+        <h3>A competição tem etapas? <span class="opcional" id="etiquetaEtapas">opcional</span></h3>
+        <p class="nota" id="notaEtapas"></p>
+        <div class="lista-etapas">
+          <div class="cabecalho-lista">
+            <span>Nome</span><span>Dia</span><span>Período</span>
+            <span>Da prova</span><span>Até a prova</span><span></span>
+          </div>
+          <div id="etapas"></div>
         </div>
-        <div id="etapas"></div>
-        <button type="button" class="mini claro" id="addEtapa">adicionar etapa</button>
+        <div class="acoes">
+          <button type="button" class="mini claro" id="addEtapa">adicionar etapa</button>
+        </div>
       </div>
 
       <div class="cartao">
@@ -1198,10 +1229,33 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   const MENOS_SERIES = "MENOS_SERIES";
   const INCOMPLETA_PRIMEIRO = "INCOMPLETA_PRIMEIRO";
+  const ULTIMAS_CHEIAS = "ULTIMAS_CHEIAS";
 
+  /**
+   * Tamanho de cada série, da primeira para a última.
+   *
+   * ULTIMAS_CHEIAS é a regra do app: as últimas séries saem cheias e a sobra
+   * fica na primeira. Como o balizamento por tempo põe os mais rápidos nas
+   * últimas séries, é lá que a piscina precisa estar cheia. Se a sobra deixar
+   * a primeira série abaixo do mínimo, ela puxa nadadores da segunda.
+   *
+   *   41 atletas em 8 raias  ->  4, 5, 8, 8, 8, 8
+   *   41 atletas em 6 raias  ->  5, 6, 6, 6, 6, 6, 6
+   */
   function tamanhosSeries(n, nRaias, regra, minimo) {
     if (n <= 0) return [];
     if (n <= nRaias) return [n];
+
+    if (regra == null || regra === ULTIMAS_CHEIAS) {
+      const min = minimo == null ? minimoPorSerie(nRaias) : minimo;
+      const series = Math.ceil(n / nRaias);
+      const primeira = n - (series - 1) * nRaias;
+      const cheias = Array(series - 1).fill(nRaias);
+      if (primeira >= min) return [primeira].concat(cheias);
+      // primeira série curta demais: a segunda cede o que falta
+      cheias[0] = nRaias - (min - primeira);
+      return [min].concat(cheias);
+    }
 
     if (regra === INCOMPLETA_PRIMEIRO) {
       const resto = n % nRaias;
@@ -1287,7 +1341,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const series = [];
     let k = 0;
     const tamanhos = tamanhosSeries(ordenados.length, nRaias,
-                                    opts.regra || MENOS_SERIES);
+                                    opts.regra || ULTIMAS_CHEIAS);
     tamanhos.forEach((tam, idx) => {
       let grupo = ordenados.slice(k, k + tam);
       k += tam;
@@ -1602,7 +1656,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   const api = {
-    SEM_TEMPO, MENOS_SERIES, INCOMPLETA_PRIMEIRO,
+    SEM_TEMPO, MENOS_SERIES, INCOMPLETA_PRIMEIRO, ULTIMAS_CHEIAS,
     OK, CORTE_REG, SEM_CLASSE,
     ordemRaias, minimoPorSerie, tamanhosSeries, raiasPara,
     espalharEquipes, ordemPorTempo, montarSeries,
@@ -2164,6 +2218,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   const NAIPE_POR_EXTENSO = { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" };
 
+  // o nome do exemplo segue o naipe da prova, senão ensina errado
+  const NOMES_EXEMPLO = {
+    FEM: ["MARIA EXEMPLO DA SILVA", "LARA EXEMPLO DIAS"],
+    MASC: ["JOÃO EXEMPLO SANTOS", "PEDRO EXEMPLO LIMA"],
+  };
+
   function cabecalhoDeProva(distancia, estilo, categoria, naipe) {
     return [String(distancia).toUpperCase(), estilo, categoria,
             NAIPE_POR_EXTENSO[naipe] || naipe].filter(Boolean).join(" ");
@@ -2174,22 +2234,23 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const wb = XLSX.utils.book_new();
     const funcional = tipo === "PARA";
     const comClasse = tipo === "PARA" || tipo === "ESCOLAR_PARA";
-    const rotEq = perfil.rotuloEquipe || (tipo === "PARA" ? "CIDADE" : "ESCOLA");
+    const rotEq = "EQUIPE";   // o cabeçalho da coluna é sempre EQUIPE
 
     // as provas: as do programa, se houver; senão um punhado de exemplo
     const doPrograma = (perfil.programa || []).length > 0;
     const provas = doPrograma
       ? perfil.programa.map((p) => [p.distancia, p.estilo,
-                                    p.rotulo || p.categoria, p.naipe])
+                                    p.rotulo || p.categoria, p.naipe, p.etapa])
       : (PROVAS_EXEMPLO[tipo] || PROVAS_EXEMPLO.ESCOLAR);
 
     const exemploNomes = [
-      ["MARIA EXEMPLO DA SILVA", rotEq === "CIDADE" ? "BLUMENAU" : "COLÉGIO EXEMPLO"],
-      ["JOÃO EXEMPLO SANTOS", rotEq === "CIDADE" ? "JOINVILLE" : "ESCOLA MODELO"],
+      ["MARIA EXEMPLO DA SILVA", "COLÉGIO EXEMPLO"],
+      ["JOÃO EXEMPLO SANTOS", "CLUBE AURORA"],
     ];
 
     const linhas = [];
-    provas.forEach(([dist, estilo, categoria, naipe], k) => {
+    let etapaAtual = null;
+    provas.forEach(([dist, estilo, categoria, naipe, etapa], k) => {
       const revez = /^\d+X/.test(String(dist).toUpperCase());
       const paral = comClasse &&
         (funcional || ehParalimpica(categoria, perfil));
@@ -2197,11 +2258,21 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (funcional) aux.push("SEGMENTO");
       if (paral) aux.push("CLASSE");
       aux.push("TEMPO");
-      linhas.push([cabecalhoDeProva(dist, estilo, categoria, naipe)].concat(aux));
+      const cab = [cabecalhoDeProva(dist, estilo, categoria, naipe)].concat(aux);
+      // a etapa vai numa célula solta à direita: o app a ignora, mas quem
+      // preenche vê a que sessão a prova pertence
+      if (etapa) {
+        cab.push("");
+        cab.push(etapa === etapaAtual ? "" : String(etapa).toUpperCase());
+        etapaAtual = etapa;
+      }
+      linhas.push(cab);
 
       // só as duas primeiras provas vêm com exemplo: o resto é para preencher
       if (k < 2) {
-        exemploNomes.forEach(([nome, equipe]) => {
+        const fem = naipe === "FEM" || /FEMININO/i.test(String(naipe));
+        exemploNomes.forEach(([nome, equipe], j) => {
+          if (!revez) nome = fem ? NOMES_EXEMPLO.FEM[j] : NOMES_EXEMPLO.MASC[j];
           const l = [revez ? equipe : nome, equipe];
           if (funcional) l.push("DF");
           if (paral) l.push(funcional ? "S6/SB5/SM6" : "TEA");
@@ -2213,7 +2284,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     });
 
     const ws = XLSX.utils.aoa_to_sheet(linhas);
-    ws["!cols"] = [{ wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+    ws["!cols"] = [{ wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 14 },
+                   { wch: 12 }, { wch: 3 }, { wch: 14 }];
     XLSX.utils.book_append_sheet(wb, ws, "INSCRIÇÕES");
     XLSX.utils.book_append_sheet(wb, guiaDoModelo(perfil, rotEq, funcional, comClasse),
                                  "COMO PREENCHER");
@@ -2840,6 +2912,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     lerCabecalhoProva, lerPlanilhaBlocos, lerPlanilhaLinhas, categoriaDaAba, chaveCategoria,
     lerPlanilhaLista, lerCabecalhoLista, ehAbaLista,
     lerPrograma, lerLinhaPrograma, chaveProva, conferirPlanilha, gerarModelo,
+    cabecalhoDeProva,
     lerProgramaPlanilha, linhaDoPrograma, gerarModeloPrograma,
     normalizarDistancia, normalizarEstilo, normalizarNaipe,
     montarBalizamento, inscricoesPlanas, tituloProva, eventoRegras, COLUNAS_MODELO,
@@ -3501,6 +3574,370 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   raiz.BalizadorSaida = { gerarXlsx, gerarPdfBalizamento, gerarPapeletas, colunasDe };
 })(typeof globalThis !== "undefined" ? globalThis : this);
 </script>
+<script>/* =====================================================================
+   BALIZADOR: competições de exemplo, prontas para baixar
+
+   Quatro competições inventadas, cada uma com o seu programa de provas e a
+   sua planilha de inscritos, batendo uma com a outra. Servem para ver o app
+   funcionando de ponta a ponta sem precisar montar nada.
+
+   Os nomes, escolas e cidades são inventados. Os números são gerados por um
+   sorteio de semente fixa: a mesma competição baixada duas vezes sai igual,
+   o que importa quando alguém compara dois arquivos.
+   ===================================================================== */
+(function (raiz) {
+  "use strict";
+
+  /* Sorteio determinístico (xorshift de 32 bits). Semente fixa por
+     competição, então o exemplo é sempre o mesmo. */
+  function sorteio(semente) {
+    let x = semente >>> 0 || 1;
+    return function () {
+      x ^= x << 13; x >>>= 0;
+      x ^= x >> 17;
+      x ^= x << 5; x >>>= 0;
+      return x / 4294967296;
+    };
+  }
+
+  const NOMES_F = [
+    "MARIA EDUARDA", "ANA CLARA", "JULIA", "SOFIA", "HELENA", "VALENTINA",
+    "LAURA", "ISABELA", "MANUELA", "BEATRIZ", "LARA", "CECILIA", "GIOVANNA",
+    "ALICE", "CATARINA", "ELOA", "ANTONELLA", "REBECA", "MARINA", "BIANCA",
+    "AMANDA", "CAROLINA", "LIVIA", "NICOLE", "STELLA", "YASMIN", "AGATHA",
+  ];
+  const NOMES_M = [
+    "MIGUEL", "ARTHUR", "GAEL", "THEO", "HEITOR", "RAVI", "DAVI", "BERNARDO",
+    "GABRIEL", "SAMUEL", "PEDRO", "LORENZO", "MATEUS", "BENICIO", "ISAAC",
+    "ENZO", "NICOLAS", "GUSTAVO", "MURILO", "VINICIUS", "CAIO", "FELIPE",
+    "RAFAEL", "LUCAS", "OTAVIO", "ANTONIO", "JOAQUIM",
+  ];
+  const SOBRENOMES = [
+    "SOUZA MARTINS", "OLIVEIRA LIMA", "PEREIRA DA COSTA", "SANTOS ANDRADE",
+    "RODRIGUES ALVES", "FERREIRA GOMES", "CARVALHO PINTO", "ALMEIDA ROCHA",
+    "BARBOSA NUNES", "TEIXEIRA MORAES", "CARDOSO VIEIRA", "MENDES FARIAS",
+    "AZEVEDO RAMOS", "SCHNEIDER KREMER", "BITTENCOURT LUZ", "AMARAL PRATES",
+    "FIGUEIREDO SALES", "MACHADO BRANDAO", "SIQUEIRA TAVARES", "DUARTE MELO",
+  ];
+
+  function fabricaDeNomes(rnd) {
+    const usados = new Set();
+    return function (naipe) {
+      const pilha = naipe === "FEM" ? NOMES_F : NOMES_M;
+      for (let tentativa = 0; tentativa < 200; tentativa++) {
+        const nome = pilha[Math.floor(rnd() * pilha.length)] + " " +
+                     SOBRENOMES[Math.floor(rnd() * SOBRENOMES.length)];
+        if (!usados.has(nome)) { usados.add(nome); return nome; }
+      }
+      return "ATLETA " + (usados.size + 1);
+    };
+  }
+
+  // "31.20", "1:02.35": tempo plausível para a distância e o estilo
+  function tempoPlausivel(rnd, distancia, estilo) {
+    const metros = parseInt(String(distancia).replace(/^\d+X/, "")
+                                             .replace(/M$/, ""), 10) || 50;
+    const porCem = { LIVRE: 62, COSTAS: 72, PEITO: 80, BORBOLETA: 68, MEDLEY: 76 };
+    const base = (porCem[estilo] || 70) * metros / 100;
+    const seg = base * (0.88 + rnd() * 0.45);
+    const min = Math.floor(seg / 60);
+    const resto = seg - min * 60;
+    const txt = resto.toFixed(2).padStart(5, "0");
+    return min ? min + ":" + txt : txt;
+  }
+
+  /* ---------------- as quatro competições ---------------- */
+
+  const COMPETICOES = {
+    PARA: {
+      nome: "PARAJASC 2026, NATAÇÃO",
+      arquivo: "PARADESPORTIVA",
+      descricao: "Paradesportiva, com segmento e classe funcional",
+      semente: 20260901,
+      temTempo: false,
+      colunas: ["EQUIPE", "SEGMENTO", "CLASSE"],
+      equipes: ["BLUMENAU", "JOINVILLE", "CRICIÚMA", "ITAJAÍ", "CHAPECÓ",
+                "FLORIANÓPOLIS", "LAGES", "JARAGUÁ DO SUL"],
+      // [distância, estilo, categoria, naipe, etapa]
+      programa: [
+        ["50m", "LIVRE", "DF", "FEMININO", "1ª ETAPA"],
+        ["50m", "LIVRE", "DF", "MASCULINO", "1ª ETAPA"],
+        ["50m", "LIVRE", "DA", "FEMININO", "1ª ETAPA"],
+        ["50m", "LIVRE", "DA", "MASCULINO", "1ª ETAPA"],
+        ["100m", "LIVRE", "DF", "FEMININO", "1ª ETAPA"],
+        ["100m", "LIVRE", "DF", "MASCULINO", "1ª ETAPA"],
+        ["100m", "LIVRE", "DV", "FEMININO", "1ª ETAPA"],
+        ["100m", "LIVRE", "DV", "MASCULINO", "1ª ETAPA"],
+        ["100m", "LIVRE", "DI", "FEMININO", "2ª ETAPA"],
+        ["100m", "LIVRE", "DI", "MASCULINO", "2ª ETAPA"],
+        ["50m", "COSTAS", "DF", "FEMININO", "2ª ETAPA"],
+        ["50m", "COSTAS", "DF", "MASCULINO", "2ª ETAPA"],
+        ["100m", "COSTAS", "DV", "FEMININO", "2ª ETAPA"],
+        ["100m", "COSTAS", "DV", "MASCULINO", "2ª ETAPA"],
+        ["100m", "PEITO", "DF", "FEMININO", "3ª ETAPA"],
+        ["100m", "PEITO", "DF", "MASCULINO", "3ª ETAPA"],
+        ["100m", "PEITO", "DI", "FEMININO", "3ª ETAPA"],
+        ["100m", "PEITO", "DI", "MASCULINO", "3ª ETAPA"],
+        ["50m", "BORBOLETA", "DF", "FEMININO", "3ª ETAPA"],
+        ["50m", "BORBOLETA", "DF", "MASCULINO", "3ª ETAPA"],
+        ["200m", "MEDLEY", "DF", "FEMININO", "3ª ETAPA"],
+        ["200m", "MEDLEY", "DF", "MASCULINO", "3ª ETAPA"],
+      ],
+      // as classes saem do próprio mapa de provas paralímpico, para a
+      // inscrição fazer sentido. Duas por competição saem erradas de
+      // propósito: é assim que dá para ver o app cortando quem não pode nadar.
+      classePeloRegulamento: true,
+      errosPlantados: 2,
+      porProva: [4, 11],
+    },
+
+    ESCOLAR: {
+      nome: "JEPB 2026, NATAÇÃO ESCOLAR",
+      arquivo: "ESCOLAR SEM TEMPO",
+      descricao: "Escolar por categoria, sem tempo, com revezamento",
+      semente: 19870412,
+      temTempo: false,
+      colunas: ["EQUIPE"],
+      equipes: ["COLÉGIO AURORA", "ESCOLA MODELO", "GRÊMIO PONTAL",
+                "INSTITUTO COREE", "COLÉGIO SÃO JORGE", "ESCOLA DO PARQUE",
+                "CENTRO EDUCACIONAL NORTE"],
+      programa: [
+        ["25m", "LIVRE", 'PRÉ-MIRIM "B"', "FEMININO", "1ª ETAPA"],
+        ["25m", "LIVRE", 'PRÉ-MIRIM "B"', "MASCULINO", "1ª ETAPA"],
+        ["50m", "LIVRE", "MIRIM", "FEMININO", "1ª ETAPA"],
+        ["50m", "LIVRE", "MIRIM", "MASCULINO", "1ª ETAPA"],
+        ["50m", "LIVRE", "INFANTIL", "FEMININO", "1ª ETAPA"],
+        ["50m", "LIVRE", "INFANTIL", "MASCULINO", "1ª ETAPA"],
+        ["25m", "COSTAS", 'PRÉ-MIRIM "B"', "FEMININO", "2ª ETAPA"],
+        ["25m", "COSTAS", 'PRÉ-MIRIM "B"', "MASCULINO", "2ª ETAPA"],
+        ["50m", "COSTAS", "MIRIM", "FEMININO", "2ª ETAPA"],
+        ["50m", "COSTAS", "MIRIM", "MASCULINO", "2ª ETAPA"],
+        ["50m", "PEITO", "INFANTIL", "FEMININO", "2ª ETAPA"],
+        ["50m", "PEITO", "INFANTIL", "MASCULINO", "2ª ETAPA"],
+        ["4x25m", "LIVRE", 'PRÉ-MIRIM "B"', "MISTO", "3ª ETAPA"],
+        ["4x50m", "LIVRE", "MIRIM", "MISTO", "3ª ETAPA"],
+        ["4x50m", "LIVRE", "INFANTIL", "MISTO", "3ª ETAPA"],
+      ],
+      porProva: [7, 18],
+    },
+
+    TEMPO: {
+      nome: "TROFÉU CIDADE DE CHAPECÓ 2026",
+      arquivo: "CLUBE COM TEMPO",
+      descricao: "Clube por tempo, balizamento por desempenho",
+      semente: 33445566,
+      temTempo: true,
+      colunas: ["EQUIPE", "TEMPO"],
+      equipes: ["CLUBE NÁUTICO AURORA", "GRÊMIO AQUÁTICO PONTAL",
+                "ASSOCIAÇÃO ATLÉTICA MIRANTE", "CLUBE DOZE DE AGOSTO",
+                "APANBLU", "ITAMIRIM NATAÇÃO", "LIRA TÊNIS CLUBE"],
+      programa: [
+        ["50m", "LIVRE", "INFANTIL", "FEMININO", "1ª ETAPA"],
+        ["50m", "LIVRE", "INFANTIL", "MASCULINO", "1ª ETAPA"],
+        ["50m", "LIVRE", "JUVENIL", "FEMININO", "1ª ETAPA"],
+        ["50m", "LIVRE", "JUVENIL", "MASCULINO", "1ª ETAPA"],
+        ["100m", "LIVRE", "INFANTIL", "FEMININO", "1ª ETAPA"],
+        ["100m", "LIVRE", "INFANTIL", "MASCULINO", "1ª ETAPA"],
+        ["100m", "COSTAS", "JUVENIL", "FEMININO", "2ª ETAPA"],
+        ["100m", "COSTAS", "JUVENIL", "MASCULINO", "2ª ETAPA"],
+        ["100m", "PEITO", "INFANTIL", "FEMININO", "2ª ETAPA"],
+        ["100m", "PEITO", "INFANTIL", "MASCULINO", "2ª ETAPA"],
+        ["100m", "BORBOLETA", "JUVENIL", "FEMININO", "2ª ETAPA"],
+        ["100m", "BORBOLETA", "JUVENIL", "MASCULINO", "2ª ETAPA"],
+        ["200m", "MEDLEY", "JUVENIL", "FEMININO", "3ª ETAPA"],
+        ["200m", "MEDLEY", "JUVENIL", "MASCULINO", "3ª ETAPA"],
+        ["4x50m", "LIVRE", "INFANTIL", "MISTO", "3ª ETAPA"],
+        ["4x50m", "LIVRE", "JUVENIL", "MISTO", "3ª ETAPA"],
+      ],
+      porProva: [9, 22],
+    },
+
+    ESCOLAR_PARA: {
+      nome: "JOGOS ESCOLARES 2026, NATAÇÃO E PARANATAÇÃO",
+      arquivo: "ESCOLAR COM PARADESPORTO",
+      descricao: "Escolar com categorias paralímpicas na mesma competição",
+      semente: 77001122,
+      temTempo: false,
+      colunas: ["EQUIPE", "CLASSE"],
+      equipes: ["COLÉGIO AURORA", "ESCOLA MODELO", "GRÊMIO PONTAL",
+                "INSTITUTO COREE", "APAE REGIONAL", "COLÉGIO SÃO JORGE"],
+      programa: [
+        ["25m", "LIVRE", 'PARALÍMPICO "A" + "B"', "FEMININO", "1ª ETAPA"],
+        ["25m", "LIVRE", 'PARALÍMPICO "A" + "B"', "MASCULINO", "1ª ETAPA"],
+        ["50m", "LIVRE", 'PARALÍMPICO "C"', "FEMININO", "1ª ETAPA"],
+        ["50m", "LIVRE", 'PARALÍMPICO "C"', "MASCULINO", "1ª ETAPA"],
+        ["50m", "LIVRE", "MIRIM", "FEMININO", "1ª ETAPA"],
+        ["50m", "LIVRE", "MIRIM", "MASCULINO", "1ª ETAPA"],
+        ["50m", "LIVRE", "INFANTIL", "FEMININO", "2ª ETAPA"],
+        ["50m", "LIVRE", "INFANTIL", "MASCULINO", "2ª ETAPA"],
+        ["25m", "COSTAS", 'PARALÍMPICO "A" + "B"', "FEMININO", "2ª ETAPA"],
+        ["25m", "COSTAS", 'PARALÍMPICO "A" + "B"', "MASCULINO", "2ª ETAPA"],
+        ["50m", "COSTAS", "MIRIM", "FEMININO", "2ª ETAPA"],
+        ["50m", "COSTAS", "MIRIM", "MASCULINO", "2ª ETAPA"],
+        ["4x50m", "LIVRE", "MIRIM", "MISTO", "3ª ETAPA"],
+        ["4x50m", "LIVRE", "INFANTIL", "MISTO", "3ª ETAPA"],
+      ],
+      classesPara: ["TEA", "DI", "DA", "DOWN", "DV"],
+      porProva: [6, 15],
+    },
+  };
+
+  /* ---------------- montagem das planilhas ---------------- */
+
+  function ehRevezamento(distancia) {
+    return /^\d+\s*X/i.test(String(distancia));
+  }
+
+  /* Uma classe funcional escrita como vem na inscrição de verdade: os três
+     prefixos juntos, S para livre, costas e borboleta, SB para peito, SM para
+     medley. Qual deles vale depende da prova, então em vez de adivinhar a
+     gente sorteia e pergunta ao próprio regulamento se passa.
+
+     `errada` pede o contrário: uma classe que o regulamento barra, para o
+     exemplo mostrar a conferência trabalhando. */
+  const FAIXA_DO_SEGMENTO = {
+    DF: [1, 10], DV: [11, 13], DI: [14, 14], DA: [15, 15],
+  };
+
+  function classeFuncional(rnd, segmento, distancia, estilo, errada) {
+    const B = raiz.Balizador || require("./balizador.core.js");
+    // o mapa de provas usa "50 LIVRE"; a distância aqui vem como "50m"
+    const evento = String(distancia).toUpperCase().replace(/^\d+X/, "")
+                     .replace(/M$/, "") + " " + String(estilo).toUpperCase();
+    const faixa = FAIXA_DO_SEGMENTO[segmento];
+    if (!faixa) return "";
+    const alvo = errada ? B.CORTE_REG : B.OK;
+    let ultima = "";
+    for (let tentativa = 0; tentativa < 60; tentativa++) {
+      const s = faixa[0] + Math.floor(rnd() * (faixa[1] - faixa[0] + 1));
+      const sb = Math.min(faixa[1], Math.max(faixa[0],
+        s + (rnd() < 0.5 ? -1 : 0)));
+      const sm = Math.min(faixa[1], Math.max(faixa[0],
+        s + (rnd() < 0.5 ? 0 : 1)));
+      ultima = "S" + s + "/SB" + sb + "/SM" + sm;
+      if (B.classificar(segmento, ultima, evento).status === alvo) return ultima;
+    }
+    return errada ? "" : ultima;
+  }
+
+  function planilhaDoPrograma(comp) {
+    const linhas = [["Nº", "DISTÂNCIA", "ESTILO", "CATEGORIA", "NAIPE", "ETAPA"]];
+    comp.programa.forEach((p, i) => linhas.push([i + 1, p[0], p[1], p[2], p[3], p[4]]));
+    const ws = XLSX.utils.aoa_to_sheet(linhas);
+    ws["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 13 }, { wch: 26 },
+                   { wch: 12 }, { wch: 12 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "PROGRAMA");
+    return wb;
+  }
+
+  function planilhaDeInscritos(comp) {
+    const rnd = sorteio(comp.semente);
+    const novoNome = fabricaDeNomes(rnd);
+    const escolhe = (lista) => lista[Math.floor(rnd() * lista.length)];
+    const linhas = [];
+    let plantados = 0;
+
+    for (const [dist, estilo, categoria, naipeLongo, etapa] of comp.programa) {
+      const naipe = naipeLongo === "FEMININO" ? "FEM"
+                  : naipeLongo === "MASCULINO" ? "MASC" : "MISTO";
+      const revez = ehRevezamento(dist);
+      const cabecalho = [dist.toUpperCase() + " " + estilo + " " +
+                         categoria + " " + naipeLongo].concat(comp.colunas);
+      cabecalho.push("");                 // separa o cabeçalho do lembrete
+      cabecalho.push(etapa);              // o app ignora; serve para a pessoa
+      linhas.push(cabecalho);
+
+      const [min, max] = comp.porProva;
+      const quantos = revez
+        ? Math.max(3, Math.floor(rnd() * comp.equipes.length) + 3)
+        : min + Math.floor(rnd() * (max - min + 1));
+
+      const equipesUsadas = comp.equipes.slice();
+      for (let k = 0; k < quantos; k++) {
+        if (revez) {
+          const equipe = equipesUsadas.splice(
+            Math.floor(rnd() * equipesUsadas.length), 1)[0];
+          if (!equipe) break;
+          // uma equipe em cada exemplo entra sem a lista de nadadores
+          const semLista = k === 1;
+          const nomes = semLista ? "" : [
+            novoNome("FEM"), novoNome("MASC"), novoNome("FEM"), novoNome("MASC"),
+          ].join("\n");
+          const linha = [nomes, equipe];
+          if (comp.colunas.includes("SEGMENTO")) linha.push("");
+          if (comp.colunas.includes("CLASSE")) linha.push("");
+          if (comp.colunas.includes("TEMPO")) {
+            linha.push(semLista ? "" : tempoPlausivel(rnd, dist, estilo));
+          }
+          linhas.push(linha);
+          continue;
+        }
+
+        const linha = [novoNome(naipe), escolhe(comp.equipes)];
+        if (comp.colunas.includes("SEGMENTO")) linha.push(categoria);
+        if (comp.colunas.includes("CLASSE")) {
+          if (comp.classePeloRegulamento) {
+            const querErro = plantados < (comp.errosPlantados || 0) && rnd() < 0.04;
+            let classe = querErro
+              ? classeFuncional(rnd, categoria, dist, estilo, true) : "";
+            if (classe) plantados++;
+            else classe = classeFuncional(rnd, categoria, dist, estilo, false);
+            linha.push(classe);
+          } else {
+            linha.push(/PARAL/i.test(categoria) ? escolhe(comp.classesPara) : "");
+          }
+        }
+        if (comp.colunas.includes("TEMPO")) {
+          // um em cada dez não informa tempo: o app põe esses na primeira série
+          linha.push(rnd() < 0.1 ? "" : tempoPlausivel(rnd, dist, estilo));
+        }
+        linhas.push(linha);
+      }
+      linhas.push([]);
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(linhas);
+    ws["!cols"] = [{ wch: 38 }, { wch: 30 }, { wch: 12 }, { wch: 16 },
+                   { wch: 4 }, { wch: 12 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "INSCRITOS");
+    return wb;
+  }
+
+  function listaDeExemplos() {
+    return Object.keys(COMPETICOES).map((chave) => ({
+      chave,
+      nome: COMPETICOES[chave].nome,
+      descricao: COMPETICOES[chave].descricao,
+      provas: COMPETICOES[chave].programa.length,
+    }));
+  }
+
+  function nomeDoArquivo(chave, qual) {
+    return "EXEMPLO " + COMPETICOES[chave].arquivo + " - " + qual + ".xlsx";
+  }
+
+  function perfilSugerido(chave) {
+    const c = COMPETICOES[chave];
+    return {
+      nome: c.nome,
+      temTempo: !!c.temTempo,
+      temRevezamento: c.programa.some((p) => ehRevezamento(p[0])),
+      temPara: chave === "PARA" || chave === "ESCOLAR_PARA",
+      tipoClasse: chave === "PARA" ? "FUNCIONAL" : "CONDICAO",
+      mostrarCategoria: chave === "ESCOLAR_PARA",
+    };
+  }
+
+  const api = {
+    COMPETICOES, listaDeExemplos, nomeDoArquivo, perfilSugerido,
+    planilhaDoPrograma, planilhaDeInscritos,
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = api;
+  else raiz.BalizadorExemplos = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+</script>
 <script>﻿/* =====================================================================
    BALIZADOR, interface
    ===================================================================== */
@@ -3517,7 +3954,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       descricao: "Segmentos DF, DV, DI, DA e TEA-DOWN com classe funcional " +
                  "(S/SB/SM). O app valida cada inscrição contra o mapa de provas.",
       exige: ["nome", "cidade", "segmento", "classe"],
-      rotuloEquipe: "CIDADE", usarRegrasPara: true, mostrarCategoria: false,
+      usarRegrasPara: true, mostrarCategoria: false,
       limiteInd: 5, limiteRev: null,
       categoriasPara: ["DF", "DV", "DI", "DA", "TEA"],
     },
@@ -3526,7 +3963,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       descricao: "Pré-mirim, mirim, infantil, juvenil. A categoria da aba já " +
                  "define a prova; não há classe funcional.",
       exige: ["nome", "escola", "categoria"],
-      rotuloEquipe: "ESCOLA", usarRegrasPara: false, mostrarCategoria: false,
+      usarRegrasPara: false, mostrarCategoria: false,
       limiteInd: 2, limiteRev: 2,
       categoriasPara: [],
     },
@@ -3535,7 +3972,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       descricao: "Categorias escolares e categorias paralímpicas A, B e C no " +
                  "mesmo evento, com classe funcional só nas provas paralímpicas.",
       exige: ["nome", "escola", "categoria", "classe (só nas paralímpicas)"],
-      rotuloEquipe: "ESCOLA", usarRegrasPara: false, mostrarCategoria: true,
+      usarRegrasPara: false, mostrarCategoria: true,
       limiteInd: 2, limiteRev: 2,
       categoriasPara: ["PARAL"],
     },
@@ -3544,7 +3981,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       descricao: "Sem categoria de deficiência. Havendo tempo de inscrição, " +
                  "o balizamento é por desempenho.",
       exige: ["nome", "equipe", "categoria", "tempo"],
-      rotuloEquipe: "EQUIPE", usarRegrasPara: false, mostrarCategoria: false,
+      usarRegrasPara: false, mostrarCategoria: false,
       limiteInd: 5, limiteRev: 2,
       categoriasPara: [],
     },
@@ -3561,9 +3998,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   /* ---------------- perfil ---------------- */
   function perfilPadrao() {
     return {
-      nome: "", local: "", data: "", piscina: "",
-      raias: "", regraSerie: B.MENOS_SERIES,
-      rotuloEquipe: "ESCOLA",
+      nome: "", local: "", data: "", dataInicio: "", dataFim: "", piscina: "",
+      raias: "", regraSerie: B.ULTIMAS_CHEIAS,
+      rotuloEquipe: "EQUIPE",
       temPara: false, tipoClasse: "FUNCIONAL", temTempo: false,
       temRevezamento: false, mostrarCategoria: false, categoriasPara: [],
       limiteInd: "", limiteRev: "", limiteIndPara: "",
@@ -3647,6 +4084,42 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <p class="legenda-exemplo">A <b>linha 1</b> é o cabeçalho. Daí para baixo,
           uma prova por linha, na ordem oficial. O nome da aba não importa.</p>
       </div>`;
+  }
+
+  /* --- competições de exemplo, prontas para baixar --- */
+  function baixarPlanilha(wb, nome) {
+    const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    baixar(new Blob([out], { type: "application/octet-stream" }), nome);
+  }
+
+  function renderExemplos() {
+    const E = window.BalizadorExemplos;
+    if (!E) return;
+    html("listaExemplos", E.listaDeExemplos().map((x) => `
+      <div class="linha-exemplo">
+        <div>
+          <b>${x.nome}</b>
+          <span>${x.descricao} · ${x.provas} provas</span>
+        </div>
+        <div class="acoes-exemplo">
+          <button type="button" class="mini claro" data-ex="${x.chave}"
+                  data-qual="programa">programa de provas</button>
+          <button type="button" class="mini claro" data-ex="${x.chave}"
+                  data-qual="inscritos">inscritos</button>
+        </div>
+      </div>`).join(""));
+    $$("#listaExemplos button").forEach((b) => {
+      b.onclick = () => {
+        const comp = E.COMPETICOES[b.dataset.ex];
+        const programa = b.dataset.qual === "programa";
+        baixarPlanilha(
+          programa ? E.planilhaDoPrograma(comp) : E.planilhaDeInscritos(comp),
+          E.nomeDoArquivo(b.dataset.ex, programa ? "PROGRAMA" : "INSCRITOS"));
+        aviso(programa
+          ? "Programa baixado. Arraste-o na área acima para ver o app lendo."
+          : "Inscritos baixados. Eles são para o programa desta mesma competição.");
+      };
+    });
   }
 
   function baixarModeloPrograma() {
@@ -3848,23 +4321,23 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   /* ---------------- tela 2: competição ---------------- */
   const ATALHOS = {
-    PARA: { temPara: true, tipoClasse: "FUNCIONAL", rotuloEquipe: "CIDADE",
+    PARA: { temPara: true, tipoClasse: "FUNCIONAL",
             temTempo: false, temRevezamento: false, mostrarCategoria: false,
             limiteInd: 5, limiteRev: null,
             limiteIndPara: 5, categoriasPara: ["DF", "DV", "DI", "DA", "TEA"] },
-    ESCOLAR: { temPara: false, rotuloEquipe: "ESCOLA", temTempo: false,
+    ESCOLAR: { temPara: false, temTempo: false,
                temRevezamento: true, mostrarCategoria: false,
                limiteInd: 2, limiteRev: 2,
                limiteIndPara: 3, categoriasPara: [] },
-    ESCOLAR_PARA: { temPara: true, tipoClasse: "CONDICAO", rotuloEquipe: "ESCOLA",
+    ESCOLAR_PARA: { temPara: true, tipoClasse: "CONDICAO",
                     temTempo: false, temRevezamento: true, mostrarCategoria: true,
                     limiteInd: 2, limiteRev: 2,
                     limiteIndPara: 3, categoriasPara: ["PARAL"] },
-    TEMPO: { temPara: false, rotuloEquipe: "EQUIPE", temTempo: true,
+    TEMPO: { temPara: false, temTempo: true,
              temRevezamento: true, mostrarCategoria: false,
              limiteInd: 5, limiteRev: 2,
              limiteIndPara: 5, categoriasPara: [] },
-    VAZIO: { temPara: false, rotuloEquipe: "ESCOLA", temTempo: false,
+    VAZIO: { temPara: false, temTempo: false,
              temRevezamento: false, mostrarCategoria: false,
              limiteInd: "", limiteRev: "",
              limiteIndPara: "", raias: "", categoriasPara: [] },
@@ -3889,13 +4362,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const p = estado.perfil;
     $("#nomeComp").value = p.nome;
     $("#local").value = p.local || "";
-    $("#dataComp").value = p.data || "";
+    $("#dataInicio").value = p.dataInicio || "";
+    $("#dataFim").value = p.dataFim || "";
     $("#piscina").value = p.piscina || "";
     $("#raias").value = p.raias;
     $("#limiteInd").value = p.limiteInd;
     $("#limiteRev").value = p.limiteRev == null ? "" : p.limiteRev;
     $("#limiteIndPara").value = p.limiteIndPara;
-    $("#rotuloEquipe").value = p.rotuloEquipe;
     $("#temTempo").checked = !!p.temTempo;
     $("#temRevezamento").checked = !!p.temRevezamento;
     $("#temPara").checked = !!p.temPara;
@@ -3904,20 +4377,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $("#dedupMisto").checked = p.dedupMisto;
     atualizarDependentes();
     atualizarPreviaRaias();
+    atualizarPreviaData();
     renderResumoPrograma();
     renderEtapas();
     renderGrupos();
   }
 
   function atualizarDependentes() {
+    // as perguntas do paradesporto só aparecem depois que a caixa é marcada
     const para = $("#temPara").checked;
     $("#blocoPara").hidden = !para;
     $("#linhaPara").hidden = !para;
-    $("#notaClasse").textContent = $("#tipoClasse").value === "FUNCIONAL"
-      ? "Com a classe funcional, o app confere cada inscrição contra o mapa de "
-        + "provas paralímpico e corta quem não pode nadar aquela prova."
-      : "Com o tipo de condição, o app apenas registra a classe no balizamento "
-        + "e nas papeletas. Não há mapa de provas para validar.";
     renderEspecificacao();
     validarConfig();
   }
@@ -3926,7 +4396,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   /* As colunas de apoio que esta competição pede, na ordem em que aparecem
      ao lado do nome da prova. */
   function colunasDeApoio(p) {
-    const cols = [p.rotuloEquipe || "EQUIPE"];
+    const cols = ["EQUIPE"];
     if (p.temPara && p.tipoClasse === "FUNCIONAL") cols.push("SEGMENTO");
     if (p.temPara) cols.push("CLASSE");
     if (p.temTempo) cols.push("TEMPO");
@@ -3934,13 +4404,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   /* Miniatura da planilha esperada: o nome da prova numa linha, os atletas
-     embaixo, e a próxima prova depois de uma linha em branco. */
+     embaixo, e a próxima prova depois de uma linha em branco.
+
+     Havendo programa de provas, a miniatura usa as provas de verdade da
+     competição, na ordem em que ele as numerou. É o mesmo que a pessoa vai
+     encontrar na planilha pronta para preencher, então não sobra dúvida. */
   function exemploVisual(p) {
     const funcional = p.temPara && p.tipoClasse === "FUNCIONAL";
     const cols = colunasDeApoio(p);
-    const equipes = p.rotuloEquipe === "CIDADE"
-      ? ["BLUMENAU", "JOINVILLE"] : ["COLÉGIO EXEMPLO", "ESCOLA MODELO"];
-    const cat = funcional ? "DF" : "MIRIM";
+    const equipes = ["COLÉGIO EXEMPLO", "CLUBE AURORA"];
 
     const apoio = (k) => {
       const v = [equipes[k]];
@@ -3950,19 +4422,41 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       return v;
     };
 
-    const linhas = [
-      { tipo: "prova", vals: [`50M LIVRE ${cat} MASCULINO`].concat(cols) },
-      { tipo: "atleta", vals: ["JOÃO EXEMPLO SANTOS"].concat(apoio(0)) },
-      { tipo: "atleta", vals: ["PEDRO EXEMPLO LIMA"].concat(apoio(1)) },
-      { tipo: "vazia", vals: [] },
-      { tipo: "prova", vals: [`50M LIVRE ${cat} FEMININO`].concat(cols) },
-      { tipo: "atleta", vals: ["MARIA EXEMPLO DA SILVA"].concat(apoio(0)) },
-    ];
-    if (p.temRevezamento) {
+    const doPrograma = (p.programa || []).length;
+    const cabecalhos = doPrograma
+      ? p.programa.slice(0, 3).map((x) => D.cabecalhoDeProva(
+          x.distancia, x.estilo, x.rotulo || x.categoria, x.naipe))
+      : (() => {
+          const cat = funcional ? "DF" : "MIRIM";
+          const base = [`50M LIVRE ${cat} MASCULINO`, `50M LIVRE ${cat} FEMININO`];
+          if (p.temRevezamento) base.push(`4X50M LIVRE ${cat} MISTO`);
+          return base;
+        })();
+
+    const linhas = [];
+    cabecalhos.forEach((cab, i) => {
+      if (i) linhas.push({ tipo: "vazia", vals: [] });
+      linhas.push({ tipo: "prova", vals: [cab].concat(cols) });
+      const revez = /^\s*\d+\s*X/i.test(cab);
+      if (revez) {
+        linhas.push({ tipo: "atleta",
+                      vals: ["ANA<br>BRUNO<br>CARLA<br>DIEGO"].concat(apoio(0)) });
+        linhas.push({ tipo: "atleta", vals: [""].concat(apoio(1)) });
+      } else {
+        // o nome do exemplo segue o naipe da prova, senão confunde mais do
+        // que ensina: uma Maria embaixo de uma prova masculina
+        const fem = /\bFEMININO\b/i.test(cab);
+        const nomes = fem
+          ? ["MARIA EXEMPLO DA SILVA", "LARA EXEMPLO DIAS"]
+          : ["JOÃO EXEMPLO SANTOS", "PEDRO EXEMPLO LIMA"];
+        linhas.push({ tipo: "atleta", vals: [nomes[0]].concat(apoio(0)) });
+        linhas.push({ tipo: "atleta", vals: [nomes[1]].concat(apoio(1)) });
+      }
+    });
+    if (doPrograma > 3) {
       linhas.push({ tipo: "vazia", vals: [] });
-      linhas.push({ tipo: "prova", vals: [`4X50M LIVRE ${cat} MISTO`].concat(cols) });
-      linhas.push({ tipo: "atleta", vals: ["ANA<br>BRUNO<br>CARLA<br>DIEGO"]
-        .concat(apoio(0)) });
+      linhas.push({ tipo: "resto", vals: [
+        `… e assim até a ${doPrograma}ª prova`] });
     }
 
     const nCols = 1 + cols.length;
@@ -3970,6 +4464,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const th = Array.from({ length: nCols }, (_, i) =>
       `<th><span class="col">${letra(i)}</span></th>`).join("");
     const corpo = linhas.map((l, n) => {
+      if (l.tipo === "resto") {
+        return `<tr><td class="lin">${n + 1}</td>
+          <td class="cel-resto" colspan="${nCols}">${l.vals[0]}</td></tr>`;
+      }
       const tds = Array.from({ length: nCols }, (_, i) =>
         `<td${l.tipo === "prova" ? ' class="cel-prova"' : ""}>${
           l.vals[i] == null ? "" : l.vals[i]}</td>`).join("");
@@ -3984,10 +4482,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
             <tbody>${corpo}</tbody>
           </table>
         </div>
-        <p class="legenda-exemplo">O nome da aba não importa, e você não precisa
-          criar mais de uma. As linhas destacadas são os nomes das provas.${
+        <p class="legenda-exemplo">${doPrograma
+          ? `Estas são <b>as suas provas</b>, na ordem do programa que você
+             enviou. A planilha pronta para preencher vem exatamente assim.`
+          : "O nome da aba não importa, e você não precisa criar mais de uma."}
+          As linhas destacadas são os nomes das provas.${
           p.temRevezamento
-            ? " No revezamento, os 4 nomes vão na mesma célula, um por linha."
+            ? " No revezamento, os 4 nomes vão na mesma célula, um por linha; a linha de baixo mostra uma equipe que ainda não definiu os nadadores."
             : ""}</p>
       </div>`;
   }
@@ -4014,6 +4515,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     } else {
       $("#limiteIndPara").classList.remove("pendente");
     }
+    // as etapas só são dispensáveis quando o programa já as trouxe conferidas
+    problemasDasEtapas().forEach((p) => faltando.push(p));
+    const cartaoEt = $("#cartaoEtapas");
+    if (cartaoEt) cartaoEt.classList.toggle("pendente", !!problemasDasEtapas().length);
 
     const alvo = $("#faltando");
     const botao = $("#irInscritos");
@@ -4027,6 +4532,51 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       botao.disabled = false;
     }
     return !faltando.length;
+  }
+
+  /* --- datas da competição, escolhidas no calendário ---
+     O árbitro só clica; quem escreve a frase é o app. Assim o cabeçalho do
+     PDF sai sempre no mesmo formato, sem depender de quem digitou. */
+  const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho",
+                 "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
+  // "2026-09-22" -> { dia: 22, mes: 8, ano: 2026 }, sem passar por fuso horário
+  function pedacosDaData(iso) {
+    const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    return { ano: +m[1], mes: +m[2] - 1, dia: +m[3] };
+  }
+
+  function textoDaData(inicio, fim) {
+    const a = pedacosDaData(inicio), b = pedacosDaData(fim);
+    if (!a && !b) return "";
+    if (!a || !b) {
+      const u = a || b;
+      return `${u.dia} de ${MESES[u.mes]} de ${u.ano}`;
+    }
+    if (inicio > fim) return textoDaData(fim, inicio);
+    if (a.ano === b.ano && a.mes === b.mes && a.dia === b.dia)
+      return `${a.dia} de ${MESES[a.mes]} de ${a.ano}`;
+    if (a.ano === b.ano && a.mes === b.mes) {
+      // "22 e 23" só quando são dois dias seguidos; "22 a 25" pega o meio
+      const ligacao = b.dia - a.dia === 1 ? " e " : " a ";
+      return `${a.dia}${ligacao}${b.dia} de ${MESES[a.mes]} de ${a.ano}`;
+    }
+    if (a.ano === b.ano)
+      return `${a.dia} de ${MESES[a.mes]} a ${b.dia} de ${MESES[b.mes]} de ${a.ano}`;
+    return `${a.dia} de ${MESES[a.mes]} de ${a.ano} a ` +
+           `${b.dia} de ${MESES[b.mes]} de ${b.ano}`;
+  }
+
+  function atualizarPreviaData() {
+    const texto = textoDaData($("#dataInicio").value, $("#dataFim").value);
+    const alvo = $("#previaData");
+    if (alvo) alvo.textContent = texto;
+    // uma data de fim antes do início é engano de clique, não de digitação
+    const fim = $("#dataFim");
+    const invertida = $("#dataInicio").value && fim.value &&
+                      $("#dataInicio").value > fim.value;
+    fim.classList.toggle("pendente", !!invertida);
   }
 
   /* --- o cartão do programa dentro da tela de competição --- */
@@ -4059,7 +4609,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $("#previaRaias").textContent = B.ordemRaias(n).join(" · ");
     $("#previaMinimo").textContent = B.minimoPorSerie(n);
     const exemplos = [7, 13, 20, 41].map((x) =>
-      `${x} → ${B.tamanhosSeries(x, n, B.MENOS_SERIES).join("-")}`);
+      `${x}: ${B.tamanhosSeries(x, n, B.ULTIMAS_CHEIAS).join("-")}`);
     $("#previaSeries").textContent = exemplos.join("   |   ");
   }
 
@@ -4067,15 +4617,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const p = estado.perfil;
     p.nome = $("#nomeComp").value.trim();
     p.local = $("#local").value.trim();
-    p.data = $("#dataComp").value.trim();
+    p.dataInicio = $("#dataInicio").value;
+    p.dataFim = $("#dataFim").value;
+    p.data = textoDaData(p.dataInicio, p.dataFim);
     p.piscina = $("#piscina").value;
     p.raias = parseInt($("#raias").value, 10) || 6;   // 6 só como fallback interno
-    p.regraSerie = B.MENOS_SERIES;   // sempre o menor número de séries
+    p.regraSerie = B.ULTIMAS_CHEIAS;   // últimas séries cheias, sobra na primeira
     p.limiteInd = parseInt($("#limiteInd").value, 10) || 0;
     const lr = $("#limiteRev").value.trim();
     p.limiteRev = lr === "" ? null : parseInt(lr, 10);
     p.limiteIndPara = parseInt($("#limiteIndPara").value, 10) || 3;
-    p.rotuloEquipe = $("#rotuloEquipe").value.trim().toUpperCase() || "EQUIPE";
+    p.rotuloEquipe = "EQUIPE";   // o cabeçalho é sempre EQUIPE
     p.temTempo = $("#temTempo").checked;
     p.temRevezamento = $("#temRevezamento").checked;
     p.temPara = $("#temPara").checked;
@@ -4097,32 +4649,87 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return p;
   }
 
-  /* --- etapas --- */
+  /* --- etapas ---
+     Só é opcional quando o programa de provas já trouxe as etapas prontas.
+     Sem elas, o PDF sai sem separar as sessões, e aí o árbitro precisa dizer
+     onde cada uma começa e termina. Os campos nascem em branco, com exemplo:
+     um número já preenchido é um número que ninguém confere. */
   function renderEtapas() {
     const alvo = $("#etapas");
+    if (!alvo) return;
+    const nProvas = (estado.perfil.programa || []).length;
     alvo.innerHTML = "";
     estado.perfil.etapas.forEach((e, k) => {
       const l = document.createElement("div");
       l.className = "linha-etapa";
+      const v = (x) => (x == null || x === "" ? "" : String(x));
       l.innerHTML = `
-        <input value="${e.nome}" data-c="nome" placeholder="1ª ETAPA">
-        <input value="${e.dia}" data-c="dia" placeholder="22/09">
-        <input value="${e.periodo}" data-c="periodo" placeholder="MANHÃ">
-        <input value="${e.de}" data-c="de" type="number" min="1" style="width:5rem">
-        <input value="${e.ate}" data-c="ate" type="number" min="1" style="width:5rem">
-        <button type="button" class="mini" title="remover">×</button>`;
+        <input value="${v(e.nome)}" data-c="nome" placeholder="1ª ETAPA">
+        <input value="${v(e.dia)}" data-c="dia" placeholder="22/09">
+        <input value="${v(e.periodo)}" data-c="periodo" placeholder="MANHÃ">
+        <input value="${v(e.de)}" data-c="de" type="number" min="1" placeholder="1">
+        <input value="${v(e.ate)}" data-c="ate" type="number" min="1"
+               placeholder="${nProvas || 20}">
+        <button type="button" class="mini" title="remover esta etapa">×</button>`;
       $$("input", l).forEach((i) => {
         i.oninput = () => {
-          const v = i.dataset.c === "de" || i.dataset.c === "ate"
-            ? parseInt(i.value, 10) || 1 : i.value;
-          estado.perfil.etapas[k][i.dataset.c] = v;
+          const numerica = i.dataset.c === "de" || i.dataset.c === "ate";
+          const bruto = i.value.trim();
+          estado.perfil.etapas[k][i.dataset.c] = numerica
+            ? (bruto === "" ? "" : parseInt(bruto, 10) || "")
+            : i.value;
+          validarConfig();
         };
       });
       $("button", l).onclick = () => {
-        estado.perfil.etapas.splice(k, 1); renderEtapas();
+        estado.perfil.etapas.splice(k, 1);
+        renderEtapas();
+        validarConfig();
       };
       alvo.appendChild(l);
     });
+    atualizarNotaEtapas();
+  }
+
+  // as etapas vieram do programa? então o cartão é só conferência
+  function etapasVieramDoPrograma() {
+    const prog = estado.programa;
+    return !!(prog && prog.provas &&
+              prog.provas.some((p) => String(p.etapa || "").trim()));
+  }
+
+  function atualizarNotaEtapas() {
+    const doPrograma = etapasVieramDoPrograma();
+    const et = estado.perfil.etapas || [];
+    const etiqueta = $("#etiquetaEtapas");
+    if (etiqueta) {
+      etiqueta.textContent = doPrograma ? "já preenchido" : "obrigatório";
+      etiqueta.classList.toggle("exigido", !doPrograma && !et.length);
+    }
+    html("notaEtapas", doPrograma
+      ? `As <b>${et.length} etapa(s)</b> vieram da coluna ETAPA do programa de
+         provas. Confira e ajuste se precisar.`
+      : `O programa que você enviou não trazia a coluna ETAPA, então diga aqui
+         onde cada sessão começa e termina. Cada etapa abre uma página nova no
+         PDF e aparece no alto dela. Competição de uma sessão só: uma etapa,
+         da prova 1 até a última.`);
+  }
+
+  /* Uma etapa serve se tem nome e um intervalo de provas que faz sentido. */
+  function problemasDasEtapas() {
+    const et = estado.perfil.etapas || [];
+    const nProvas = (estado.perfil.programa || []).length;
+    if (!et.length) return ["em que etapas a competição se divide"];
+    const problemas = [];
+    et.forEach((e, k) => {
+      const qual = `a ${k + 1}ª etapa`;
+      if (!String(e.nome || "").trim()) problemas.push(`o nome d${qual}`);
+      if (!e.de || !e.ate) problemas.push(`de que prova até que prova vai ${qual}`);
+      else if (e.ate < e.de) problemas.push(`o intervalo d${qual}, que termina antes de começar`);
+      else if (nProvas && e.ate > nProvas)
+        problemas.push(`o intervalo d${qual}, que passa da ${nProvas}ª prova`);
+    });
+    return problemas;
   }
 
   /* --- grupos de categorias que nadam juntas --- */
@@ -4156,7 +4763,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   /* O que cada coluna de apoio guarda. A primeira linha não é coluna: é o
      nome da prova, que abre o bloco. */
   function colunasExigidasDe(p) {
-    const eq = p.rotuloEquipe || "EQUIPE";
+    const eq = "EQUIPE";
     const funcional = p.temPara && p.tipoClasse === "FUNCIONAL";
     const linhas = [[
       "o nome da prova", "obrigatório",
@@ -4526,16 +5133,24 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (!p.classList.contains("bloqueado")) irPara(p.dataset.passo);
     }));
     $("#raias").oninput = atualizarPreviaRaias;
-    ["temPara", "tipoClasse", "temTempo", "temRevezamento", "rotuloEquipe",
-     "mostrarCategoria"].forEach((id) => {
+    ao("dataInicio", "change", atualizarPreviaData);
+    ao("dataFim", "change", atualizarPreviaData);
+    ["temPara", "tipoClasse", "temTempo", "temRevezamento", "mostrarCategoria"].forEach((id) => {
       const el = $("#" + id);
       el.addEventListener("change", atualizarDependentes);
     });
     preencherConfig();
     $("#addEtapa").onclick = () => {
-      const n = estado.perfil.etapas.length + 1;
-      estado.perfil.etapas.push({ nome: n + "ª ETAPA", dia: "", periodo: "", de: 1, ate: 99 });
+      const etapas = estado.perfil.etapas;
+      const anterior = etapas[etapas.length - 1];
+      // o intervalo nasce em branco: número preenchido é número que ninguém
+      // confere. Só a prova de partida é sugerida, seguindo a etapa anterior.
+      etapas.push({
+        nome: (etapas.length + 1) + "ª ETAPA", dia: "", periodo: "",
+        de: anterior && anterior.ate ? anterior.ate + 1 : "", ate: "",
+      });
       renderEtapas();
+      validarConfig();
     };
     $("#addGrupo").onclick = () => {
       estado.perfil.grupos.push({ rotulo: "", categorias: [], distancias: [], estilos: [] });
@@ -4551,6 +5166,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       .forEach((id) => $("#" + id).addEventListener("input", validarConfig));
     // --- tela do programa de provas ---
     html("exemploPrograma", exemploProgramaVisual());
+    renderExemplos();
     ao("btnModeloPrograma", "click", baixarModeloPrograma);
     ao("irCompeticao", "click", () => { lerConfig(); irPara("competicao"); });
     ao("semPrograma", "click", seguirSemPrograma);

@@ -14,6 +14,7 @@ const partes = {
   core: ler("balizador.core.js"),
   dados: ler("balizador.dados.js"),
   saida: ler("balizador.saida.js"),
+  exemplos: ler("balizador.exemplos.js"),
   app: ler("balizador.app.js"),
   css: ler("estilo.css"),
   corpo: ler("corpo.html"),
@@ -47,6 +48,7 @@ ${partes.corpo}
 <script>${partes.core}</script>
 <script>${partes.dados}</script>
 <script>${partes.saida}</script>
+<script>${partes.exemplos}</script>
 <script>${partes.app}</script>
 </body>
 </html>`;

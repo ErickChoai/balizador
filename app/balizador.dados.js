@@ -548,6 +548,12 @@
 
   const NAIPE_POR_EXTENSO = { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" };
 
+  // o nome do exemplo segue o naipe da prova, senão ensina errado
+  const NOMES_EXEMPLO = {
+    FEM: ["MARIA EXEMPLO DA SILVA", "LARA EXEMPLO DIAS"],
+    MASC: ["JOÃO EXEMPLO SANTOS", "PEDRO EXEMPLO LIMA"],
+  };
+
   function cabecalhoDeProva(distancia, estilo, categoria, naipe) {
     return [String(distancia).toUpperCase(), estilo, categoria,
             NAIPE_POR_EXTENSO[naipe] || naipe].filter(Boolean).join(" ");
@@ -558,22 +564,23 @@
     const wb = XLSX.utils.book_new();
     const funcional = tipo === "PARA";
     const comClasse = tipo === "PARA" || tipo === "ESCOLAR_PARA";
-    const rotEq = perfil.rotuloEquipe || (tipo === "PARA" ? "CIDADE" : "ESCOLA");
+    const rotEq = "EQUIPE";   // o cabeçalho da coluna é sempre EQUIPE
 
     // as provas: as do programa, se houver; senão um punhado de exemplo
     const doPrograma = (perfil.programa || []).length > 0;
     const provas = doPrograma
       ? perfil.programa.map((p) => [p.distancia, p.estilo,
-                                    p.rotulo || p.categoria, p.naipe])
+                                    p.rotulo || p.categoria, p.naipe, p.etapa])
       : (PROVAS_EXEMPLO[tipo] || PROVAS_EXEMPLO.ESCOLAR);
 
     const exemploNomes = [
-      ["MARIA EXEMPLO DA SILVA", rotEq === "CIDADE" ? "BLUMENAU" : "COLÉGIO EXEMPLO"],
-      ["JOÃO EXEMPLO SANTOS", rotEq === "CIDADE" ? "JOINVILLE" : "ESCOLA MODELO"],
+      ["MARIA EXEMPLO DA SILVA", "COLÉGIO EXEMPLO"],
+      ["JOÃO EXEMPLO SANTOS", "CLUBE AURORA"],
     ];
 
     const linhas = [];
-    provas.forEach(([dist, estilo, categoria, naipe], k) => {
+    let etapaAtual = null;
+    provas.forEach(([dist, estilo, categoria, naipe, etapa], k) => {
       const revez = /^\d+X/.test(String(dist).toUpperCase());
       const paral = comClasse &&
         (funcional || ehParalimpica(categoria, perfil));
@@ -581,11 +588,21 @@
       if (funcional) aux.push("SEGMENTO");
       if (paral) aux.push("CLASSE");
       aux.push("TEMPO");
-      linhas.push([cabecalhoDeProva(dist, estilo, categoria, naipe)].concat(aux));
+      const cab = [cabecalhoDeProva(dist, estilo, categoria, naipe)].concat(aux);
+      // a etapa vai numa célula solta à direita: o app a ignora, mas quem
+      // preenche vê a que sessão a prova pertence
+      if (etapa) {
+        cab.push("");
+        cab.push(etapa === etapaAtual ? "" : String(etapa).toUpperCase());
+        etapaAtual = etapa;
+      }
+      linhas.push(cab);
 
       // só as duas primeiras provas vêm com exemplo: o resto é para preencher
       if (k < 2) {
-        exemploNomes.forEach(([nome, equipe]) => {
+        const fem = naipe === "FEM" || /FEMININO/i.test(String(naipe));
+        exemploNomes.forEach(([nome, equipe], j) => {
+          if (!revez) nome = fem ? NOMES_EXEMPLO.FEM[j] : NOMES_EXEMPLO.MASC[j];
           const l = [revez ? equipe : nome, equipe];
           if (funcional) l.push("DF");
           if (paral) l.push(funcional ? "S6/SB5/SM6" : "TEA");
@@ -597,7 +614,8 @@
     });
 
     const ws = XLSX.utils.aoa_to_sheet(linhas);
-    ws["!cols"] = [{ wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+    ws["!cols"] = [{ wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 14 },
+                   { wch: 12 }, { wch: 3 }, { wch: 14 }];
     XLSX.utils.book_append_sheet(wb, ws, "INSCRIÇÕES");
     XLSX.utils.book_append_sheet(wb, guiaDoModelo(perfil, rotEq, funcional, comClasse),
                                  "COMO PREENCHER");
@@ -1224,6 +1242,7 @@
     lerCabecalhoProva, lerPlanilhaBlocos, lerPlanilhaLinhas, categoriaDaAba, chaveCategoria,
     lerPlanilhaLista, lerCabecalhoLista, ehAbaLista,
     lerPrograma, lerLinhaPrograma, chaveProva, conferirPlanilha, gerarModelo,
+    cabecalhoDeProva,
     lerProgramaPlanilha, linhaDoPrograma, gerarModeloPrograma,
     normalizarDistancia, normalizarEstilo, normalizarNaipe,
     montarBalizamento, inscricoesPlanas, tituloProva, eventoRegras, COLUNAS_MODELO,

@@ -32,10 +32,33 @@
 
   const MENOS_SERIES = "MENOS_SERIES";
   const INCOMPLETA_PRIMEIRO = "INCOMPLETA_PRIMEIRO";
+  const ULTIMAS_CHEIAS = "ULTIMAS_CHEIAS";
 
+  /**
+   * Tamanho de cada série, da primeira para a última.
+   *
+   * ULTIMAS_CHEIAS é a regra do app: as últimas séries saem cheias e a sobra
+   * fica na primeira. Como o balizamento por tempo põe os mais rápidos nas
+   * últimas séries, é lá que a piscina precisa estar cheia. Se a sobra deixar
+   * a primeira série abaixo do mínimo, ela puxa nadadores da segunda.
+   *
+   *   41 atletas em 8 raias  ->  4, 5, 8, 8, 8, 8
+   *   41 atletas em 6 raias  ->  5, 6, 6, 6, 6, 6, 6
+   */
   function tamanhosSeries(n, nRaias, regra, minimo) {
     if (n <= 0) return [];
     if (n <= nRaias) return [n];
+
+    if (regra == null || regra === ULTIMAS_CHEIAS) {
+      const min = minimo == null ? minimoPorSerie(nRaias) : minimo;
+      const series = Math.ceil(n / nRaias);
+      const primeira = n - (series - 1) * nRaias;
+      const cheias = Array(series - 1).fill(nRaias);
+      if (primeira >= min) return [primeira].concat(cheias);
+      // primeira série curta demais: a segunda cede o que falta
+      cheias[0] = nRaias - (min - primeira);
+      return [min].concat(cheias);
+    }
 
     if (regra === INCOMPLETA_PRIMEIRO) {
       const resto = n % nRaias;
@@ -121,7 +144,7 @@
     const series = [];
     let k = 0;
     const tamanhos = tamanhosSeries(ordenados.length, nRaias,
-                                    opts.regra || MENOS_SERIES);
+                                    opts.regra || ULTIMAS_CHEIAS);
     tamanhos.forEach((tam, idx) => {
       let grupo = ordenados.slice(k, k + tam);
       k += tam;
@@ -436,7 +459,7 @@
   }
 
   const api = {
-    SEM_TEMPO, MENOS_SERIES, INCOMPLETA_PRIMEIRO,
+    SEM_TEMPO, MENOS_SERIES, INCOMPLETA_PRIMEIRO, ULTIMAS_CHEIAS,
     OK, CORTE_REG, SEM_CLASSE,
     ordemRaias, minimoPorSerie, tamanhosSeries, raiasPara,
     espalharEquipes, ordemPorTempo, montarSeries,
