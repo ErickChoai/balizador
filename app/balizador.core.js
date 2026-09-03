@@ -1,5 +1,5 @@
 ﻿/* =====================================================================
-   BALIZADOR — núcleo de regras
+   BALIZADOR, núcleo de regras
    Funciona no navegador e no Node (para os testes de comparação).
    Sem dependências: só lógica de raias, séries, elegibilidade e validação.
    ===================================================================== */
@@ -266,7 +266,7 @@
       }
     }
     // Se todas as classes do segmento são elegíveis nesta prova, a falta do
-    // SB/SM não muda nada — vale para DV e para os segmentos de classe única.
+    // SB/SM não muda nada: vale para DV e para os segmentos de classe única.
     if ((num === "AUSENTE" || num === null) &&
         CLASSES_DO_SEGMENTO[seg].every((c) => permitidas.includes(c))) {
       const base = classes.S;
@@ -294,7 +294,7 @@
     }
     return {
       status: CORTE_REG, classe: prefixo + num,
-      motivo: `${prefixo}${num} não nada ${evento.replace(" ", "m ")} — só ` +
+      motivo: `${prefixo}${num} não nada ${evento.replace(" ", "m ")}: só ` +
               `${faixaTexto(permitidas, prefixo)} no ${seg}`,
       avisos,
     };

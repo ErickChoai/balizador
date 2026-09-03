@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Balizador — natação</title>
+<title>Balizador, natação</title>
 <meta name="description" content="Monta balizamento, papeletas de raia e confere erros de inscrição em competições de natação. Roda inteiramente no seu computador.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Asap:wght@400;500;600&family=Roboto+Mono:wght@400;500&display=swap">
 <style>
@@ -41,12 +41,12 @@
 body{
   margin:0;background:var(--fundo);color:var(--tinta);
   font-family:"Asap",system-ui,-apple-system,"Segoe UI",sans-serif;
-  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased;
 }
 h1,h2,h3{font-family:"Archivo",system-ui,sans-serif;margin:0;text-wrap:balance}
 h1{font-size:1.45rem;font-weight:700;letter-spacing:-.02em;line-height:1.1}
-h2{font-size:1.35rem;font-weight:600;letter-spacing:-.01em;margin-bottom:.2rem}
-h3{font-size:1rem;font-weight:600}
+h2{font-size:1.6rem;font-weight:600;letter-spacing:-.01em;margin-bottom:.2rem}
+h3{font-size:1.15rem;font-weight:600;margin-bottom:.15rem}
 p{margin:0}
 .mono{font-family:"Roboto Mono",ui-monospace,monospace;font-size:.85em}
 
@@ -80,7 +80,7 @@ p{margin:0}
 .passo.bloqueado{opacity:.4;cursor:not-allowed}
 
 main{max-width:70rem;margin:0 auto;padding:1.6rem clamp(1rem,4vw,2.5rem) 5rem}
-.sub{color:var(--suave);max-width:62ch;margin-bottom:1.2rem}
+.sub{color:var(--suave);max-width:64ch;margin-bottom:1.4rem;font-size:1.02rem;line-height:1.55}
 
 /* ---------- tipos de competição ---------- */
 .grade-tipos{
@@ -118,7 +118,7 @@ main{max-width:70rem;margin:0 auto;padding:1.6rem clamp(1rem,4vw,2.5rem) 5rem}
   margin-left:.4rem;vertical-align:middle;
 }
 .campos{display:flex;gap:.7rem;flex-wrap:wrap}
-.campo{display:flex;flex-direction:column;gap:.25rem;font-size:.82rem;color:var(--suave)}
+.campo{display:flex;flex-direction:column;gap:.3rem;font-size:.92rem;color:var(--suave)}
 .campo.largo{flex:1;min-width:16rem}
 textarea{
   font-family:"Roboto Mono",ui-monospace,monospace;font-size:.8rem;line-height:1.5;
@@ -145,7 +145,7 @@ input[type=number]{width:6rem}
 .previa div{display:flex;flex-direction:column;gap:.15rem}
 .previa dt{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--suave)}
 .previa dd{margin:0;font-weight:500}
-.nota{color:var(--suave);font-size:.85rem;max-width:70ch}
+.nota{color:var(--suave);font-size:.95rem;max-width:72ch;line-height:1.5}
 
 .cabecalho-lista{
   display:flex;gap:.5rem;font-size:.68rem;text-transform:uppercase;
@@ -160,9 +160,17 @@ input[type=number]{width:6rem}
 .linha-etapa{display:flex;gap:.5rem;margin-bottom:.4rem;align-items:center}
 .linha-etapa input{flex:1;min-width:0}
 
-.marcavel{display:flex;gap:.5rem;align-items:flex-start;font-size:.9rem;
+.marcavel{display:flex;gap:.6rem;align-items:center;font-size:1.05rem;
   color:var(--suave);max-width:70ch;cursor:pointer}
-.marcavel input{margin-top:.25rem}
+.marcavel input{width:1.15rem;height:1.15rem;accent-color:var(--agua);flex:none}
+.marcavel:hover{color:var(--tinta)}
+.marcavel span b{color:var(--tinta)}
+.cartao .marcavel + .marcavel{margin-top:-.25rem}
+
+/* a linha que abre uma prova, na miniatura da planilha de inscritos */
+.grade .cel-prova{background:var(--agua-fraca);font-weight:600;color:var(--tinta)}
+.botao.claro{background:var(--papel);color:var(--agua);
+  border:1px solid var(--agua)}
 
 /* ---------- botões ---------- */
 .acoes{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
@@ -194,8 +202,8 @@ input[type=number]{width:6rem}
   transition:border-color .12s,background .12s;
 }
 .zona:hover,.zona.sobre{border-color:var(--agua);background:var(--agua-fraca)}
-.zona strong{font-family:"Archivo",sans-serif;font-size:1.05rem}
-.zona span{color:var(--suave);font-size:.86rem}
+.zona strong{font-family:"Archivo",sans-serif;font-size:1.2rem}
+.zona span{color:var(--suave);font-size:.95rem}
 
 /* ---------- atalhos e blocos condicionais ---------- */
 .atalhos{
@@ -260,7 +268,7 @@ input.pendente,select.pendente,textarea.pendente{
 /* ---------- especificação do formato ---------- */
 .especificacao{border-left:3px solid var(--agua)}
 .regras-formato{margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.35rem}
-.regras-formato li{font-size:.88rem;max-width:78ch}
+.regras-formato li{font-size:1rem;max-width:76ch;line-height:1.5}
 .regras-formato b{font-weight:600}
 .tabela .exigida{color:var(--grave);font-weight:600}
 
@@ -271,8 +279,8 @@ input.pendente,select.pendente,textarea.pendente{
   padding:1rem 1.15rem;margin-bottom:1rem;
   display:flex;flex-direction:column;gap:.6rem;
 }
-.recusa h3{color:var(--grave)}
-.recusa p{font-size:.9rem;max-width:74ch}
+.recusa h3{color:var(--grave);font-size:1.2rem}
+.recusa p{font-size:1rem;max-width:74ch;line-height:1.5}
 .recusa.leve{background:var(--ambar-fraca);border-color:var(--ambar)}
 .recusa.leve h3{color:var(--ambar)}
 
@@ -309,6 +317,25 @@ input.pendente,select.pendente,textarea.pendente{
 .tabela tbody tr:last-child td{border-bottom:0}
 .tabela .num{font-family:"Roboto Mono",monospace;text-align:right}
 .tabela .apagado{color:var(--suave)}
+
+/* ---------- programa de provas ---------- */
+.lista-programa{
+  max-height:26rem;overflow:auto;border:1px solid var(--linha);
+  border-radius:4px;background:var(--papel);margin-top:.8rem;
+}
+.lista-programa .tabela{margin:0;border:0}
+.lista-programa thead th{position:sticky;top:0;z-index:1}
+.faixa-etapa td{
+  background:var(--papel2);font-weight:600;font-size:.78rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--suave);
+}
+.discordancia{
+  font-family:"Roboto Mono",monospace;font-size:.72rem;font-weight:600;
+  color:var(--ambar);background:var(--ambar-fraca);
+  padding:.05rem .3rem;border-radius:2px;margin-left:.3rem;
+}
+.lista-motivos{margin:.4rem 0 .8rem;padding-left:1.1rem;font-size:.9rem}
+.lista-motivos li{margin-bottom:.2rem}
 
 /* ---------- conferência ---------- */
 .bloco{margin:1.2rem 0}
@@ -359,6 +386,9 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
   .linha-etapa{flex-wrap:wrap}
 }
 
+/* rótulo e etiqueta "opcional" na mesma linha dentro de um campo */
+.campo > .rotulo{display:flex;align-items:center;gap:0}
+
 </style>
 </head>
 <body>
@@ -371,22 +401,81 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
     </div>
   </div>
   <nav class="passos">
-    <button type="button" class="passo ativo" data-passo="competicao"><b>1</b> Competição</button>
-    <button type="button" class="passo" data-passo="inscritos"><b>2</b> Inscritos</button>
-    <button type="button" class="passo bloqueado" data-passo="conferencia"><b>3</b> Conferência</button>
-    <button type="button" class="passo bloqueado" data-passo="gerar"><b>4</b> Gerar</button>
+    <button type="button" class="passo ativo" data-passo="programa"><b>1</b> Programa</button>
+    <button type="button" class="passo bloqueado" data-passo="competicao"><b>2</b> Competição</button>
+    <button type="button" class="passo bloqueado" data-passo="inscritos"><b>3</b> Inscritos</button>
+    <button type="button" class="passo bloqueado" data-passo="conferencia"><b>4</b> Conferência</button>
+    <button type="button" class="passo bloqueado" data-passo="gerar"><b>5</b> Gerar</button>
   </nav>
 </header>
 
 <main>
-  <!-- ============ 1. COMPETIÇÃO ============ -->
-  <section class="tela" data-tela="competicao">
-    <h2>Monte a sua competição</h2>
-    <p class="sub">Marque o que ela tem. Conforme você escolhe, o app já mostra
-      o formato exato de planilha que vai pedir.</p>
+  <!-- ============ 1. PROGRAMA DE PROVAS ============ -->
+  <section class="tela" data-tela="programa">
+    <h2>Comece pelo programa de provas</h2>
+    <p class="sub">É o programa que manda na <b>ordem</b> e na <b>numeração</b>
+      das provas: no balizamento, no PDF e nas papeletas. Traga-o numa planilha:
+      é mais fácil de conferir, de corrigir e de guardar para o ano que vem do
+      que uma lista digitada aqui dentro.</p>
+
+    <div class="cartao especificacao">
+      <h3>Como a planilha do programa precisa ser</h3>
+      <p class="nota">Uma linha por prova, na ordem oficial. A primeira linha é o
+        cabeçalho. Quatro colunas obrigatórias e três opcionais:</p>
+      <table class="tabela"><thead><tr><th>COLUNA</th><th>SITUAÇÃO</th>
+        <th>O QUE VAI NELA</th></tr></thead><tbody>
+        <tr><td><code>DISTÂNCIA</code></td><td class="exigida">obrigatória</td>
+          <td><code>25m</code>, <code>50m</code>, <code>100m</code>. Revezamento:
+            <code>4x25m</code>, <code>4x50m</code></td></tr>
+        <tr><td><code>ESTILO</code></td><td class="exigida">obrigatória</td>
+          <td>LIVRE, COSTAS, PEITO, BORBOLETA ou MEDLEY</td></tr>
+        <tr><td><code>CATEGORIA</code></td><td class="exigida">obrigatória</td>
+          <td>como está no regulamento: <code>MIRIM</code>,
+            <code>PRÉ-MIRIM "B"</code>, <code>PARALÍMPICO "A" + "B"</code></td></tr>
+        <tr><td><code>NAIPE</code></td><td class="exigida">obrigatória</td>
+          <td>FEMININO, MASCULINO ou MISTO</td></tr>
+        <tr><td><code>Nº</code></td><td class="apagado">opcional</td>
+          <td>só para conferir; quem numera é a ordem das linhas</td></tr>
+        <tr><td><code>ETAPA</code></td><td class="apagado">opcional</td>
+          <td>o nome da sessão; o app monta sozinho o intervalo de provas de cada
+            etapa</td></tr>
+        <tr><td><code>DIA</code> e <code>PERÍODO</code></td><td class="apagado">opcional</td>
+          <td><code>22/09</code>, <code>MANHÃ</code>; vão no cabeçalho da etapa</td></tr>
+      </tbody></table>
+      <div id="exemploPrograma"></div>
+      <p class="nota">Se você já tem o programa escrito por extenso, também serve:
+        uma coluna só, com o cabeçalho <code>PROVA</code> e uma prova por linha:
+        <code>25m LIVRE PRÉ-MIRIM "B" FEMININO</code>.</p>
+      <div class="acoes">
+        <button type="button" class="mini claro" id="btnModeloPrograma">
+          Baixar a planilha modelo do programa</button>
+      </div>
+    </div>
+
+    <div id="zonaPrograma" class="zona">
+      <strong>Arraste aqui a planilha do programa</strong>
+      <span>ou clique para escolher · .xlsx, .xlsm ou .csv</span>
+      <input type="file" id="arquivoPrograma" accept=".xlsx,.xlsm,.csv" hidden>
+    </div>
+
+    <div id="resultadoPrograma"></div>
+
+    <div class="acoes">
+      <button type="button" class="botao" id="irCompeticao" disabled>
+        Continuar para a competição</button>
+      <button type="button" class="link" id="semPrograma">
+        não tenho o programa agora</button>
+    </div>
+  </section>
+
+  <!-- ============ 2. COMPETIÇÃO ============ -->
+  <section class="tela" data-tela="competicao" hidden>
+    <h2>Como é a sua competição?</h2>
+    <p class="sub">Responda o que estiver abaixo. É a partir daqui que o app
+      decide o que vai exigir da planilha de inscritos.</p>
 
     <div class="atalhos">
-      <span>Começar a partir de:</span>
+      <span>Já começar respondido, como:</span>
       <button type="button" class="mini claro" data-atalho="PARA">Paradesportiva (ParaJASC)</button>
       <button type="button" class="mini claro" data-atalho="ESCOLAR">Escolar (JEPB)</button>
       <button type="button" class="mini claro" data-atalho="ESCOLAR_PARA">Escolar com paradesporto</button>
@@ -398,151 +487,147 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
 
     <div id="config">
       <div class="cartao">
-        <h3>Identificação</h3>
+        <h3>Qual é o nome da competição?</h3>
         <div class="campos">
-          <label class="campo largo">Nome da competição
-            <input id="nomeComp" placeholder="JEPB 2026 — NATAÇÃO">
+          <label class="campo largo">Nome
+            <input id="nomeComp" placeholder="JEPB 2026, NATAÇÃO">
           </label>
         </div>
+        <div class="campos">
+          <label class="campo largo"><span class="rotulo">Onde vai ser? <span class="opcional">opcional</span></span>
+            <input id="local" placeholder="Parque Aquático de Florianópolis">
+          </label>
+          <label class="campo largo"><span class="rotulo">Quando? <span class="opcional">opcional</span></span>
+            <input id="dataComp" placeholder="22 e 23 de setembro de 2026">
+          </label>
+        </div>
+        <p class="nota">Esses três saem no alto de toda página do balizamento.</p>
       </div>
 
       <div class="cartao">
-        <h3>O que cada atleta tem na planilha</h3>
-        <p class="nota">O nome é sempre obrigatório. O resto você escolhe aqui,
-          e é isso que o app vai exigir na hora de ler a planilha.</p>
+        <h3>Como é a piscina?</h3>
+        <div class="campos">
+          <label class="campo">Quantas raias?
+            <input id="raias" type="number" min="2" max="12" placeholder="6">
+          </label>
+          <label class="campo"><span class="rotulo">Quantos metros? <span class="opcional">opcional</span></span>
+            <select id="piscina">
+              <option value="">não informar</option>
+              <option value="25">25 metros</option>
+              <option value="50">50 metros</option>
+            </select>
+          </label>
+        </div>
+        <p class="nota">As provas sempre são divididas no <b>menor número de
+          séries possível</b>, sem nenhuma série abaixo de metade das raias.</p>
+        <dl class="previa">
+          <div><dt>Ordem de preenchimento das raias</dt><dd id="previaRaias" class="mono"></dd></div>
+          <div><dt>Mínimo por série</dt><dd id="previaMinimo" class="mono"></dd></div>
+          <div><dt>Exemplos</dt><dd id="previaSeries" class="mono"></dd></div>
+        </dl>
+      </div>
 
-        <label class="campo largo">Como chamar a instituição do atleta
-          <select id="rotuloEquipe">
-            <option value="ESCOLA">ESCOLA — competição escolar</option>
-            <option value="COLÉGIO">COLÉGIO</option>
-            <option value="CIDADE">CIDADE — competição entre municípios</option>
-            <option value="EQUIPE">EQUIPE — clube ou associação</option>
-            <option value="CLUBE">CLUBE</option>
-          </select>
-        </label>
-
+      <div class="cartao">
+        <h3>O que essa competição tem?</h3>
         <label class="marcavel">
           <input type="checkbox" id="temTempo">
-          <span><b>Tem tempo de inscrição.</b> Com tempo, o balizamento vira por
-            desempenho: os mais rápidos na última série e nas raias centrais.
-            Sem tempo, o app espalha os atletas da mesma instituição entre as séries.</span>
+          <span>Tempo de inscrição</span>
         </label>
-
         <label class="marcavel">
           <input type="checkbox" id="temRevezamento">
-          <span><b>Tem provas de revezamento.</b> Os 4 nomes vão na mesma célula,
-            um por linha, e a equipe ocupa uma raia inteira.</span>
+          <span>Provas de revezamento</span>
         </label>
-
         <label class="marcavel">
           <input type="checkbox" id="temPara">
-          <span><b>Tem atletas do paradesporto.</b> Abre as colunas de condição
-            e classe.</span>
+          <span>Atletas do paradesporto</span>
         </label>
 
         <div id="blocoPara" class="sub-bloco" hidden>
-          <label class="campo largo">Como a classe do atleta é informada
+          <label class="campo largo">Como a classe do atleta vem escrita?
             <select id="tipoClasse">
-              <option value="FUNCIONAL">Classe funcional S / SB / SM — ex.: S6/SB5/SM6</option>
-              <option value="CONDICAO">Tipo de condição — ex.: TEA, DI, DA, DOWN</option>
+              <option value="FUNCIONAL">Classe funcional: S6, SB5, SM6</option>
+              <option value="CONDICAO">Tipo de condição: TEA, DI, DA, DOWN</option>
             </select>
           </label>
           <p class="nota" id="notaClasse"></p>
           <label class="marcavel">
             <input type="checkbox" id="mostrarCategoria">
-            <span>Mostrar a categoria (A, B, C) numa coluna do balizamento —
-              útil quando categorias diferentes nadam juntas.</span>
+            <span>Mostrar a categoria numa coluna do balizamento</span>
           </label>
         </div>
       </div>
 
       <div class="cartao">
-        <h3>Piscina e séries</h3>
-        <div class="campos">
-          <label class="campo">Raias
-            <input id="raias" type="number" min="2" max="12" placeholder="6">
-          </label>
-          <label class="campo largo">Como distribuir as séries
-            <select id="regraSerie">
-              <option value="">— escolha —</option>
-              <option value="MENOS_SERIES">Menos séries possíveis, mínimo de metade das raias</option>
-              <option value="INCOMPLETA_PRIMEIRO">Série incompleta primeiro (padrão ParaJASC)</option>
-            </select>
-          </label>
-        </div>
-        <dl class="previa">
-          <div><dt>Ordem de preenchimento</dt><dd id="previaRaias" class="mono"></dd></div>
-          <div><dt>Mínimo por série</dt><dd id="previaMinimo" class="mono"></dd></div>
-          <div><dt>Exemplos</dt><dd id="previaSeries" class="mono"></dd></div>
-        </dl>
-        <p class="nota">Havendo tempo de inscrição na planilha, o balizamento passa
-          a ser por desempenho: os mais rápidos vão para a última série e ocupam as
-          raias centrais. Quem não tem tempo fica nas primeiras séries.</p>
+        <h3>Como o atleta é identificado?</h3>
+        <label class="campo largo">A instituição dele se chama
+          <select id="rotuloEquipe">
+            <option value="ESCOLA">Escola</option>
+            <option value="COLÉGIO">Colégio</option>
+            <option value="CIDADE">Cidade</option>
+            <option value="EQUIPE">Equipe</option>
+            <option value="CLUBE">Clube</option>
+          </select>
+        </label>
+        <p class="nota">É esse nome que vai no cabeçalho da coluna, na planilha
+          de inscritos e no balizamento.</p>
       </div>
 
       <div class="cartao">
-        <h3>Programa de provas</h3>
-        <p class="nota">É ele que define <b>a ordem e a numeração</b> das provas.
-          Sem programa, o app monta só as provas que têm inscritos e usa uma
-          ordem própria — o que quase nunca é a ordem oficial. Cole aqui o
-          programa, uma prova por linha; a numeração da frente é opcional.</p>
-        <p class="nota"><b>Como escrever cada linha:</b>
-          <code>distância + estilo + categoria + naipe</code>.
-          A numeração da frente é opcional — o app usa a ordem das linhas.
-          Estilos: LIVRE, COSTAS, PEITO, BORBOLETA, MEDLEY.
-          Naipe: FEMININO, MASCULINO ou MISTO.</p>
-        <textarea id="programa" rows="8" spellcheck="false"
-          placeholder="1ª – 25m LIVRE PARALÍMPICO &quot;A&quot; + &quot;B&quot; FEMININO&#10;2ª – 25m LIVRE PARALÍMPICO &quot;A&quot; + &quot;B&quot; MASCULINO&#10;3ª - 25m LIVRE PRÉ-MIRIM &quot;B&quot; FEMININO&#10;…&#10;21ª – 4x25m LIVRE PRÉ-MIRIM &quot;B&quot; FEMININO&#10;49ª - 4x25m LIVRE PRÉ-MIRIM &quot;B&quot; MISTO"></textarea>
-        <div id="resumoPrograma" class="resumo-programa"></div>
-      </div>
-
-
-      <div class="cartao">
-        <h3>Limite de provas por atleta</h3>
+        <h3>Quantas provas cada atleta pode nadar?</h3>
         <div class="campos">
           <label class="campo">Individuais
             <input id="limiteInd" type="number" min="1" max="20" placeholder="2">
           </label>
-          <label class="campo">Revezamentos
+          <label class="campo"><span class="rotulo">Revezamentos <span class="opcional">opcional</span></span>
             <input id="limiteRev" type="number" min="0" max="20" placeholder="sem limite">
           </label>
           <label class="campo" id="linhaPara">Individuais no paradesporto
             <input id="limiteIndPara" type="number" min="1" max="20" placeholder="3">
           </label>
         </div>
+        <p class="nota">Quem passar do limite sai destacado na conferência e no
+          balizamento, com o motivo escrito.</p>
       </div>
 
       <div class="cartao">
-        <h3>Etapas <span class="opcional">opcional</span></h3>
-        <p class="nota">Divide o programa em sessões. Cada etapa começa em página
-          nova no PDF e aparece no cabeçalho.</p>
+        <h3>Programa de provas</h3>
+        <div id="resumoPrograma" class="resumo-programa"></div>
+        <div class="acoes">
+          <button type="button" class="mini claro" id="btnTrocarPrograma">
+            Trocar o programa</button>
+        </div>
+      </div>
+
+      <div class="cartao">
+        <h3>A competição tem etapas? <span class="opcional">opcional</span></h3>
+        <p class="nota">Cada etapa começa em página nova no PDF e aparece no alto
+          dela. Se o programa que você enviou tinha a coluna ETAPA, isto já veio
+          preenchido.</p>
         <div class="cabecalho-lista">
           <span>Nome</span><span>Dia</span><span>Período</span>
           <span>Da prova</span><span>Até</span><span></span>
         </div>
         <div id="etapas"></div>
-        <button type="button" class="mini claro" id="addEtapa">+ etapa</button>
+        <button type="button" class="mini claro" id="addEtapa">adicionar etapa</button>
       </div>
 
       <div class="cartao">
-        <h3>Categorias que nadam juntas <span class="opcional">opcional</span></h3>
-        <p class="nota">Use quando duas categorias disputam a mesma prova — como o
-          <b>Paralímpico "A" + "B"</b> nos 25m e o <b>"B" + "C"</b> nos 50m.
-          Deixe distância e estilo em branco para valer em todas as provas.</p>
+        <h3>Alguma categoria nada junto com outra? <span class="opcional">opcional</span></h3>
+        <p class="nota">É o caso do Paralímpico "A" com o "B" nos 25m. Deixe
+          distância e estilo em branco para valer em todas as provas.</p>
         <div class="cabecalho-lista grupos">
-          <span>Nome da prova resultante</span><span>Categorias que se juntam</span>
+          <span>Nome da prova que sai disso</span><span>Categorias que se juntam</span>
           <span>Só nas distâncias</span><span>Só nos estilos</span><span></span>
         </div>
         <div id="grupos"></div>
-        <button type="button" class="mini claro" id="addGrupo">+ agrupamento</button>
+        <button type="button" class="mini claro" id="addGrupo">adicionar agrupamento</button>
       </div>
 
       <div class="cartao">
-        <h3>Leitura da planilha</h3>
+        <h3>Detalhe de leitura</h3>
         <label class="marcavel">
           <input type="checkbox" id="dedupMisto" checked>
-          Revezamentos mistos aparecem repetidos nas abas feminina e masculina —
-          contar uma vez só
+          <span>Contar uma vez só o revezamento misto que aparecer repetido</span>
         </label>
       </div>
 
@@ -558,59 +643,57 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
     </div>
   </section>
 
-  <!-- ============ 2. INSCRITOS ============ -->
+  <!-- ============ 3. INSCRITOS ============ -->
   <section class="tela" data-tela="inscritos" hidden>
 
-    <!-- 2a. o formato exigido -->
+    <!-- 3a. o formato exigido -->
     <div id="painelFormato">
-    <h2>Como a planilha precisa ser</h2>
-    <p class="sub">Antes de enviar, veja o formato. É exatamente este que o app
-      vai ler — e recusar, se vier diferente. Prefiro isso a montar um
-      balizamento errado sem você perceber.</p>
+    <h2>Como a planilha de inscritos precisa ser</h2>
+    <p class="sub">Uma planilha só. Você não precisa criar aba nenhuma.
+      A regra é uma: o nome da prova numa linha, e os atletas dela logo embaixo.</p>
 
     <div class="cartao especificacao">
-      <h3>Formato exigido <span id="tipoAtual" class="opcional"></span></h3>
+      <h3>As quatro coisas que ela precisa ter</h3>
       <ol class="regras-formato">
-        <li><b>Uma aba por categoria e naipe.</b> O nome da aba manda:
-          <code>MIRIM-FEM</code>, <code>MIRIM-MASC</code>,
-          <code>PRÉ-MIRIM "B"-FEM</code>. Sem o <code>-FEM</code> ou
-          <code>-MASC</code> a aba é recusada.</li>
-        <li><b>A primeira linha é o cabeçalho.</b> Nela vai o nome da prova e,
-          logo à direita, as colunas de apoio. Planilha sem cabeçalho é recusada.</li>
-        <li><b>Nome da prova:</b> distância e estilo — <code>50 LIVRE</code>,
-          <code>100 COSTAS</code>, <code>4x50 LIVRE</code>,
-          <code>4x50 LIVRE MISTO</code>. Estilos aceitos: LIVRE, COSTAS, PEITO,
-          BORBOLETA e MEDLEY.</li>
-        <li><b>Uma coluna em branco</b> separando um bloco de prova do próximo.</li>
-        <li><b>Revezamento:</b> os 4 nomes na mesma célula, um por linha
-          (Alt+Enter no Excel).</li>
-        <li><b>Prova sem ninguém:</b> escreva <code>SEM INSCRITOS</code> na
-          primeira linha do bloco.</li>
+        <li><b>O nome inteiro da prova numa linha.</b> Distância, estilo,
+          categoria e naipe, tudo junto: <code>50M LIVRE MIRIM MASCULINO</code>.
+          O naipe é obrigatório, é ele que diz de quem é a prova.</li>
+        <li><b>Ao lado do nome da prova, o nome das colunas de apoio.</b>
+          O app aceita elas em qualquer ordem.</li>
+        <li><b>Embaixo, um atleta por linha.</b></li>
+        <li><b>Acabou a prova, pule uma linha</b> e escreva a próxima.</li>
       </ol>
-      <div id="colunasExigidas"></div>
       <div id="exemploFormato"></div>
+      <div id="colunasExigidas"></div>
+      <p class="nota">Revezamento: os 4 nomes vão na mesma célula, um por linha
+        (Alt+Enter no Excel). Se os nadadores só forem escolhidos no dia,
+        escreva apenas a equipe: a raia fica reservada e o balizamento sai com
+        as linhas em branco para anotar na hora.</p>
+      <p class="nota">Prova sem ninguém: escreva <code>SEM INSCRITOS</code>
+        embaixo do nome dela, ou simplesmente não escreva nada.</p>
       <div class="acoes">
-        <button type="button" class="mini claro" id="btnModelo">
-          Baixar planilha modelo preenchida</button>
+        <button type="button" class="botao claro" id="btnModelo">
+          Baixar a planilha pronta para preencher</button>
       </div>
+      <p class="nota" id="notaModelo"></p>
     </div>
 
     <div class="acoes">
       <button type="button" class="botao" id="btnEntendi">
-        Entendi como a planilha precisa ser</button>
+        Entendi, quero enviar a planilha</button>
     </div>
     </div>
 
-    <!-- 2b. o envio -->
+    <!-- 3b. o envio -->
     <div id="painelEnvio" hidden>
-    <h2>Envie a planilha</h2>
-    <p class="sub">Nada é enviado para servidor nenhum: a leitura acontece no
-      seu computador.
+    <h2>Envie a planilha de inscritos</h2>
+    <p class="sub">Nada é enviado para servidor nenhum: a leitura acontece aqui
+      no seu computador.
       <button type="button" class="link" id="verFormato">ver o formato de novo</button></p>
 
     <div id="zona" class="zona">
       <strong>Arraste a planilha aqui</strong>
-      <span>ou clique para escolher · .xlsx, .xlsm ou .csv</span>
+      <span>ou clique para escolher: .xlsx, .xlsm ou .csv</span>
       <input type="file" id="arquivo" accept=".xlsx,.xlsm,.csv" hidden>
     </div>
 
@@ -622,7 +705,8 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
     </div>
   </section>
 
-  <!-- ============ 3. CONFERÊNCIA ============ -->
+
+  <!-- ============ 4. CONFERÊNCIA ============ -->
   <section class="tela" data-tela="conferencia" hidden>
     <h2>Conferência</h2>
     <p class="sub">O balizamento é gerado de qualquer forma; o que estiver aqui
@@ -633,7 +717,7 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
     </div>
   </section>
 
-  <!-- ============ 4. GERAR ============ -->
+  <!-- ============ 5. GERAR ============ -->
   <section class="tela" data-tela="gerar" hidden>
     <h2>Gerar</h2>
     <p class="sub">Os arquivos são montados no seu navegador e baixados direto
@@ -1081,7 +1165,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 //# sourceMappingURL=jspdf.umd.min.js.map
 </script>
 <script>﻿/* =====================================================================
-   BALIZADOR — núcleo de regras
+   BALIZADOR, núcleo de regras
    Funciona no navegador e no Node (para os testes de comparação).
    Sem dependências: só lógica de raias, séries, elegibilidade e validação.
    ===================================================================== */
@@ -1348,7 +1432,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       }
     }
     // Se todas as classes do segmento são elegíveis nesta prova, a falta do
-    // SB/SM não muda nada — vale para DV e para os segmentos de classe única.
+    // SB/SM não muda nada: vale para DV e para os segmentos de classe única.
     if ((num === "AUSENTE" || num === null) &&
         CLASSES_DO_SEGMENTO[seg].every((c) => permitidas.includes(c))) {
       const base = classes.S;
@@ -1376,7 +1460,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
     return {
       status: CORTE_REG, classe: prefixo + num,
-      motivo: `${prefixo}${num} não nada ${evento.replace(" ", "m ")} — só ` +
+      motivo: `${prefixo}${num} não nada ${evento.replace(" ", "m ")}: só ` +
               `${faixaTexto(permitidas, prefixo)} no ${seg}`,
       avisos,
     };
@@ -1531,7 +1615,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 })(typeof globalThis !== "undefined" ? globalThis : this);
 </script>
 <script>﻿/* =====================================================================
-   BALIZADOR — leitura de planilhas e montagem do balizamento
+   BALIZADOR, leitura de planilhas e montagem do balizamento
    Depende de balizador.core.js e da biblioteca XLSX (SheetJS).
    ===================================================================== */
 (function (raiz) {
@@ -1655,6 +1739,177 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return { inscricoes, abas };
   }
 
+  /* ---------------- leitura de uma planilha em lista ----------------
+     O formato mais fácil de montar, e por isso o que o app pede primeiro:
+     uma planilha só, sem aba nenhuma para nomear. O cabeçalho de cada prova
+     traz tudo, "50M LIVRE MASCULINO", e embaixo dele vêm os atletas.
+     Acabou uma prova, começa a próxima logo abaixo.
+
+       A                    B                 C        D
+     1 50M LIVRE MASCULINO  ESCOLA            CLASSE   TEMPO
+     2 JOÃO DA SILVA        COLÉGIO EXEMPLO   S9       31.20
+     3 PEDRO SANTOS         ESCOLA MODELO              29.85
+     4
+     5 50M LIVRE FEMININO   ESCOLA            CLASSE   TEMPO
+     6 MARIA DE SOUZA       COLÉGIO EXEMPLO            33.40
+  ------------------------------------------------------------------- */
+
+  const ROTULOS_LISTA = {
+    nome: ["NOME", "ATLETA", "NOME DO ATLETA", "NOME COMPLETO", "NADADOR",
+           "NADADORA", "NADADORES"],
+    equipe: ["EQUIPE", "ESCOLA", "COLEGIO", "CIDADE", "CLUBE", "ENTIDADE",
+             "INSTITUICAO", "MUNICIPIO", "TIME", "ASSOCIACAO"],
+    segmento: ["SEGMENTO", "CONDICAO", "DEFICIENCIA"],
+    classe: ["CLASSE", "CLASSIFICACAO", "CLASSE FUNCIONAL"],
+    tempo: ["TEMPO", "MELHOR TEMPO", "TEMPO DE INSCRICAO", "T INSCRICAO"],
+    categoria: ["CATEGORIA", "CAT"],
+    excecao: ["EXCESSAO", "EXCECAO", "OBS", "OBSERVACAO", "OBSERVACOES"],
+  };
+
+  /**
+   * Cabeçalho de um bloco da lista: distância, estilo, categoria (que pode
+   * faltar) e naipe. Sem naipe não é cabeçalho: é o naipe que separa este
+   * formato do de blocos lado a lado, onde ele vem do nome da aba.
+   */
+  function lerCabecalhoLista(texto) {
+    let t = String(texto == null ? "" : texto).trim();
+    if (!t) return null;
+    t = t.replace(/^\s*\d+\s*[ªº°]\s*[-–—:.)]*\s*/, "")
+         .replace(/^\s*\d+\s*[-–—:.)]\s*/, "");
+    const u = norm(t);
+    const m = u.match(/^(\d+\s*X\s*\d+|\d+)\s*M?(?:ETROS)?\s+(LIVRE|COSTAS?|PEITO|BORBOLETA|MEDLEY)\s+(.*)$/);
+    if (!m) return null;
+    const distancia = m[1].replace(/\s+/g, "") + "M";
+    let estilo = m[2];
+    if (estilo.indexOf("COSTA") === 0) estilo = "COSTAS";
+
+    let resto = m[3].trim();
+    let naipe = "";
+    if (/\bMISTO\b/.test(resto)) { naipe = "MISTO"; resto = resto.replace(/\bMISTO\b/, ""); }
+    else if (/\bMASCULINO\b|\bMASC\b/.test(resto)) {
+      naipe = "MASC"; resto = resto.replace(/\bMASCULINO\b|\bMASC\b/, "");
+    } else if (/\bFEMININO\b|\bFEM\b/.test(resto)) {
+      naipe = "FEM"; resto = resto.replace(/\bFEMININO\b|\bFEM\b/, "");
+    } else return null;
+
+    const categoria = resto.replace(/\s+/g, " ").trim();
+    const bruto = t.replace(/^\S+\s+\S+\s+/, "")
+                   .replace(/\s*(MISTO|MASCULINO|FEMININO|MASC|FEM)\s*$/i, "").trim();
+    return {
+      distancia, estilo, categoria, naipe, rotulo: bruto || categoria,
+      revezamento: /^\d+X/.test(distancia), misto: naipe === "MISTO",
+      evento: distancia.replace(/M$/, "") + " " + estilo,
+    };
+  }
+
+  function indicePrimeiraCelula(linha) {
+    for (let c = 0; c < (linha || []).length; c++)
+      if (linha[c] != null && String(linha[c]).trim()) return c;
+    return -1;
+  }
+
+  /* Esta aba está em lista vertical, ou em blocos lado a lado?
+     Só a lista empilha cabeçalhos de prova abaixo da primeira linha. E uma
+     lista com uma prova só é reconhecida pelo naipe: ele está no cabeçalho,
+     e não no nome da aba. */
+  function ehAbaLista(nomeAba, grade) {
+    for (let r = 1; r < grade.length; r++) {
+      const idx = indicePrimeiraCelula(grade[r]);
+      if (idx >= 0 && lerCabecalhoLista(grade[r][idx])) return true;
+    }
+    const idx0 = indicePrimeiraCelula(grade[0] || []);
+    if (idx0 < 0) return false;
+    return !!(lerCabecalhoLista(grade[0][idx0]) && !categoriaDaAba(nomeAba).naipe);
+  }
+
+  function blocoDaLista(cab, linha, idx) {
+    const aux = {};
+    for (let c = idx + 1; c < linha.length; c++) {
+      const t = norm(linha[c]);
+      if (!t) continue;
+      for (const campo of Object.keys(ROTULOS_LISTA)) {
+        if (aux[campo] != null) continue;
+        if (ROTULOS_LISTA[campo].includes(t)) { aux[campo] = c; break; }
+      }
+    }
+    // sem uma coluna NOME, os nomes ficam na própria coluna do cabeçalho
+    return { info: cab, aux, colNome: aux.nome != null ? aux.nome : idx };
+  }
+
+  function lerPlanilhaLista(wb, opts) {
+    opts = opts || {};
+    const ignorar = (opts.ignorar || []).map(norm);
+    const inscricoes = [];
+    const abas = [];
+    const descartadas = [];
+
+    for (const nomeAba of wb.SheetNames) {
+      if (ignorar.includes(norm(nomeAba))) continue;
+      const ws = wb.Sheets[nomeAba];
+      if (!ws || !ws["!ref"]) continue;
+      const grade = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: null });
+      if (!grade.length || !ehAbaLista(nomeAba, grade)) continue;
+
+      const info = { aba: nomeAba, provas: [], linhas: 0 };
+      let bloco = null;
+      for (let r = 0; r < grade.length; r++) {
+        const linha = grade[r] || [];
+        const idx = indicePrimeiraCelula(linha);
+        if (idx < 0) continue;                       // linha em branco: pula
+
+        const cab = lerCabecalhoLista(linha[idx]);
+        if (cab) {
+          bloco = blocoDaLista(cab, linha, idx);
+          info.provas.push(cab);
+          continue;
+        }
+        if (!bloco) continue;                        // ainda não começou nenhuma prova
+
+        const val = (c) => c == null ? ""
+          : String(linha[c] == null ? "" : linha[c]).trim();
+        const nome = val(bloco.colNome);
+        const equipe = val(bloco.aux.equipe);
+        if (norm(nome) === "SEM INSCRITOS") continue;
+        if (!nome && !equipe) continue;
+
+        const base = {
+          aba: nomeAba, linha: r + 1, equipe,
+          classe: val(bloco.aux.classe), segmento: val(bloco.aux.segmento),
+          excecao: val(bloco.aux.excecao),
+          tempo: bloco.aux.tempo != null ? B.lerTempo(linha[bloco.aux.tempo]) : null,
+          categoria: val(bloco.aux.categoria) || bloco.info.categoria,
+          naipe: bloco.info.naipe,
+          // o cabeçalho já disse categoria e naipe: não caia no nome da aba
+          categoriaDefinida: true,
+          distancia: bloco.info.distancia, estilo: bloco.info.estilo,
+          misto: bloco.info.misto, revezamento: bloco.info.revezamento,
+        };
+
+        if (bloco.info.revezamento) {
+          const atletas = nome.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+          inscricoes.push(Object.assign({}, base, {
+            nome: equipe || atletas[0] || nome,
+            atletas,
+            // revezamento inscrito só com a equipe: os nadadores saem no dia
+            semLista: atletas.length === 0,
+          }));
+          info.linhas++;
+          continue;
+        }
+        if (!nome) {
+          descartadas.push({ aba: nomeAba, linha: r + 1, equipe,
+            prova: bloco.info.rotulo || bloco.info.evento,
+            motivo: "tem a instituição preenchida mas não tem o nome do atleta" });
+          continue;
+        }
+        inscricoes.push(Object.assign({}, base, { nome, atletas: null }));
+        info.linhas++;
+      }
+      if (info.provas.length) abas.push(info);
+    }
+    return { inscricoes, abas, descartadas };
+  }
+
   /* ---------------- modelo canônico (uma linha por inscrição) ------- */
   const COLUNAS_MODELO = {
     nome: ["NOME", "ATLETA", "NOME DO ATLETA"],
@@ -1737,7 +1992,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     equipe: "a coluna da instituição (CIDADE, ESCOLA, COLÉGIO ou EQUIPE)",
     classe: "a coluna CLASSE, com a classificação funcional (S6, SB5, SM6)",
     tempo: "a coluna TEMPO",
-    segmento: "o SEGMENTO (DF, DV, DI, DA, TEA-DOWN) — na coluna SEGMENTO " +
+    segmento: "o SEGMENTO (DF, DV, DI, DA, TEA-DOWN): na coluna SEGMENTO " +
               "ou no nome da aba, como DF-FEM",
   };
   const SEGMENTOS = ["DF", "DV", "DI", "DA", "TEA"];
@@ -1746,6 +2001,52 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function segmentoNaAba(nomeAba) {
     const u = norm(nomeAba);
     return SEGMENTOS.some((s) => u.startsWith(s + "-") || u === s);
+  }
+
+  // no formato de lista o segmento pode estar na categoria do cabeçalho:
+  // "50M LIVRE DF MASCULINO"
+  function segmentoNaCategoria(categoria) {
+    const u = norm(categoria);
+    return SEGMENTOS.some((s) => u === s || u.startsWith(s + " ") || u.startsWith(s + "-"));
+  }
+
+  /* Confere uma aba escrita em lista vertical: cada bloco precisa das colunas
+     auxiliares que o tipo de competição exige. */
+  function conferirAbaLista(nomeAba, grade, perfil, tipo) {
+    const faltando = new Set();
+    let provas = 0;
+    for (let r = 0; r < grade.length; r++) {
+      const linha = grade[r] || [];
+      const idx = indicePrimeiraCelula(linha);
+      if (idx < 0) continue;
+      const cab = lerCabecalhoLista(linha[idx]);
+      if (!cab) continue;
+      provas++;
+      const bloco = blocoDaLista(cab, linha, idx);
+      for (const campo of (CAMPOS_EXIGIDOS[tipo] || [])) {
+        if (campo === "classe" && tipo === "ESCOLAR_PARA" &&
+            !ehParalimpica(cab.categoria, perfil)) continue;
+        if (campo === "segmento" && segmentoNaCategoria(cab.categoria)) continue;
+        if (bloco.aux[campo] == null) faltando.add(campo);
+      }
+      if (tipo === "ESCOLAR_PARA" && ehParalimpica(cab.categoria, perfil) &&
+          bloco.aux.classe == null) faltando.add("classe");
+    }
+    if (!provas) {
+      return { ruim: {
+        aba: nomeAba,
+        motivo: "não achei nenhum cabeçalho de prova nesta aba",
+        achado: (grade[0] || []).filter((c) => c).map(String).slice(0, 6),
+      } };
+    }
+    if (faltando.size) {
+      return { ruim: {
+        aba: nomeAba,
+        motivo: "falta " + [...faltando].map((c) => ROTULO_CAMPO[c]).join(" e "),
+        achado: (grade[0] || []).filter((c) => c).map(String).slice(0, 8),
+      } };
+    }
+    return { boa: { aba: nomeAba, categoria: "", naipe: "", provas, formato: "lista" } };
   }
 
   function conferirPlanilha(wb, perfil) {
@@ -1765,6 +2066,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         (l || []).some((c) => c != null && String(c).trim()));
       if (!cab.some((c) => c) && !temConteudo) continue;   // aba vazia: ignora
 
+      if (ehAbaLista(nomeAba, grade)) {
+        const r = conferirAbaLista(nomeAba, grade, perfil, tipo);
+        if (r.boa) abasBoas.push(r.boa); else abasRuins.push(r.ruim);
+        continue;
+      }
+
       const blocos = cab.map((c, i) => ({ i, info: lerCabecalhoProva(c) }))
                         .filter((b) => b.info);
       if (!blocos.length) {
@@ -1772,7 +2079,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           aba: nomeAba,
           motivo: cab.some((c) => c)
             ? "a primeira linha não tem nenhum nome de prova reconhecível"
-            : "a primeira linha está vazia — sem cabeçalho não dá para saber o que é cada coluna",
+            : "a primeira linha está vazia: sem cabeçalho não dá para saber o que é cada coluna",
           achado: cab.filter((c) => c).slice(0, 6),
         });
         continue;
@@ -1815,7 +2122,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         if (!naipe) {
           abasRuins.push({
             aba: nomeAba,
-            motivo: 'o nome da aba não diz o naipe — use algo como "MIRIM-FEM" ou "MIRIM-MASC"',
+            motivo: 'o nome da aba não diz o naipe: use algo como "MIRIM-FEM" ou "MIRIM-MASC"',
             achado: [],
           });
         } else {
@@ -1835,98 +2142,120 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     };
   }
 
-  /* ---------------- planilha modelo ---------------- */
+  /* ---------------- planilha modelo dos inscritos ----------------
+     Sai no formato de lista: uma planilha só, uma prova embaixo da outra.
+     Havendo programa de provas, o modelo já vem com as provas da competição
+     na ordem certa; o trabalho que sobra é digitar os nomes.
+  ---------------------------------------------------------------- */
+  const PROVAS_EXEMPLO = {
+    PARA: [["50M", "LIVRE", "DF", "FEM"], ["50M", "LIVRE", "DF", "MASC"],
+           ["100M", "LIVRE", "DV", "FEM"], ["100M", "PEITO", "DI", "MASC"]],
+    ESCOLAR: [["25M", "LIVRE", 'PRÉ-MIRIM "B"', "FEM"],
+              ["25M", "LIVRE", 'PRÉ-MIRIM "B"', "MASC"],
+              ["50M", "COSTAS", "MIRIM", "FEM"],
+              ["4X50M", "LIVRE", "MIRIM", "MISTO"]],
+    ESCOLAR_PARA: [["50M", "LIVRE", "MIRIM", "FEM"],
+                   ["50M", "LIVRE", "MIRIM", "MASC"],
+                   ["25M", "LIVRE", 'PARALÍMPICO "A"', "FEM"],
+                   ["4X50M", "LIVRE", "MIRIM", "MISTO"]],
+    TEMPO: [["50M", "LIVRE", "INFANTIL", "FEM"], ["50M", "LIVRE", "INFANTIL", "MASC"],
+            ["100M", "LIVRE", "JUVENIL", "FEM"], ["4X50M", "LIVRE", "JUVENIL", "MISTO"]],
+  };
+
+  const NAIPE_POR_EXTENSO = { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" };
+
+  function cabecalhoDeProva(distancia, estilo, categoria, naipe) {
+    return [String(distancia).toUpperCase(), estilo, categoria,
+            NAIPE_POR_EXTENSO[naipe] || naipe].filter(Boolean).join(" ");
+  }
+
   function gerarModelo(perfil) {
     const tipo = perfil.tipo || "ESCOLAR";
     const wb = XLSX.utils.book_new();
+    const funcional = tipo === "PARA";
     const comClasse = tipo === "PARA" || tipo === "ESCOLAR_PARA";
-    const rotEq = perfil.rotuloEquipe ||
-                  (tipo === "PARA" ? "CIDADE" : "ESCOLA");
+    const rotEq = perfil.rotuloEquipe || (tipo === "PARA" ? "CIDADE" : "ESCOLA");
 
-    const abas = {
-      PARA: [["DF-FEM", ["50 LIVRE", "100 LIVRE", "100 COSTAS", "100 PEITO"]],
-             ["DF-MASC", ["50 LIVRE", "100 LIVRE", "100 COSTAS", "100 PEITO"]],
-             ["DV-FEM", ["50 LIVRE", "100 LIVRE", "100 COSTAS"]],
-             ["DI-MASC", ["100 LIVRE", "100 COSTAS", "100 PEITO"]]],
-      ESCOLAR: [['PRÉ-MIRIM "B"-FEM', ["25 LIVRE", "25 COSTAS", "25 PEITO", "4x25 LIVRE"]],
-                ['PRÉ-MIRIM "B"-MASC', ["25 LIVRE", "25 COSTAS", "25 PEITO", "4x25 LIVRE"]],
-                ["MIRIM-FEM", ["50 LIVRE", "50 COSTAS", "50 PEITO", "4x50 LIVRE"]],
-                ["MIRIM-MASC", ["50 LIVRE", "50 COSTAS", "50 PEITO", "4x50 LIVRE"]]],
-      ESCOLAR_PARA: [["MIRIM-FEM", ["50 LIVRE", "50 COSTAS"]],
-                     ["MIRIM-MASC", ["50 LIVRE", "50 COSTAS"]],
-                     ['PARAL "A"-FEM', ["25 LIVRE", "25 COSTAS"]],
-                     ['PARAL "A"-MASC', ["25 LIVRE", "25 COSTAS"]]],
-      TEMPO: [["INFANTIL-FEM", ["50 LIVRE", "100 LIVRE", "100 COSTAS"]],
-              ["INFANTIL-MASC", ["50 LIVRE", "100 LIVRE", "100 COSTAS"]],
-              ["JUVENIL-FEM", ["50 LIVRE", "100 LIVRE"]],
-              ["JUVENIL-MASC", ["50 LIVRE", "100 LIVRE"]]],
-    }[tipo];
+    // as provas: as do programa, se houver; senão um punhado de exemplo
+    const doPrograma = (perfil.programa || []).length > 0;
+    const provas = doPrograma
+      ? perfil.programa.map((p) => [p.distancia, p.estilo,
+                                    p.rotulo || p.categoria, p.naipe])
+      : (PROVAS_EXEMPLO[tipo] || PROVAS_EXEMPLO.ESCOLAR);
 
-    const exemplo = {
-      PARA: [["MARIA EXEMPLO DA SILVA", "BLUMENAU", "DF", "S6/SB5/SM6", ""],
-             ["JOAO EXEMPLO SANTOS", "JOINVILLE", "DF", "S9/SB8/SM9", ""]],
-      ESCOLAR: [["MARIA EXEMPLO DA SILVA", "COLEGIO EXEMPLO", ""],
-                ["JOAO EXEMPLO SANTOS", "ESCOLA MODELO", ""]],
-      ESCOLAR_PARA: [["MARIA EXEMPLO DA SILVA", "COLEGIO EXEMPLO", "", ""],
-                     ["JOAO EXEMPLO SANTOS", "ESCOLA MODELO", "", ""]],
-      TEMPO: [["MARIA EXEMPLO DA SILVA", "CLUBE EXEMPLO", "31.20"],
-              ["JOAO EXEMPLO SANTOS", "EQUIPE MODELO", "29.85"]],
-    }[tipo];
+    const exemploNomes = [
+      ["MARIA EXEMPLO DA SILVA", rotEq === "CIDADE" ? "BLUMENAU" : "COLÉGIO EXEMPLO"],
+      ["JOÃO EXEMPLO SANTOS", rotEq === "CIDADE" ? "JOINVILLE" : "ESCOLA MODELO"],
+    ];
 
-    for (const [nomeAba, provas] of abas) {
-      const paralimpica = tipo === "PARA" ||
-        (tipo === "ESCOLAR_PARA" && /PARAL/.test(norm(nomeAba)));
-      const aux = tipo === "PARA"
-        ? [rotEq, "SEGMENTO", "CLASSE", "TEMPO"]
-        : paralimpica ? [rotEq, "CLASSE", "TEMPO"] : [rotEq, "TEMPO"];
-      const larg = aux.length + 1;
+    const linhas = [];
+    provas.forEach(([dist, estilo, categoria, naipe], k) => {
+      const revez = /^\d+X/.test(String(dist).toUpperCase());
+      const paral = comClasse &&
+        (funcional || ehParalimpica(categoria, perfil));
+      const aux = [rotEq];
+      if (funcional) aux.push("SEGMENTO");
+      if (paral) aux.push("CLASSE");
+      aux.push("TEMPO");
+      linhas.push([cabecalhoDeProva(dist, estilo, categoria, naipe)].concat(aux));
 
-      const linhas = [[]];
-      let col = 1;
-      for (const prova of provas) {
-        linhas[0][col] = prova;
-        aux.forEach((a, k) => (linhas[0][col + 1 + k] = a));
-        col += larg + 1;
+      // só as duas primeiras provas vêm com exemplo: o resto é para preencher
+      if (k < 2) {
+        exemploNomes.forEach(([nome, equipe]) => {
+          const l = [revez ? equipe : nome, equipe];
+          if (funcional) l.push("DF");
+          if (paral) l.push(funcional ? "S6/SB5/SM6" : "TEA");
+          l.push(perfil.temTempo ? "31.20" : "");
+          linhas.push(revez ? [equipe, equipe].concat(l.slice(2)) : l);
+        });
       }
-      linhas[0][0] = "N°";
-      // duas linhas de exemplo no primeiro bloco
-      exemplo.forEach((ex, r) => {
-        const l = [];
-        l[0] = r + 1;
-        const vals = paralimpica || tipo === "PARA"
-          ? ex : [ex[0], ex[1], ex[ex.length - 1]];
-        vals.forEach((v, k) => (l[1 + k] = v));
-        linhas.push(l);
-      });
-      const ws = XLSX.utils.aoa_to_sheet(linhas);
-      ws["!cols"] = [{ wch: 5 }].concat(
-        Array(col).fill({ wch: 26 }));
-      XLSX.utils.book_append_sheet(wb, ws, nomeAba);
-    }
+      linhas.push([]);
+    });
 
-    // aba de instruções
+    const ws = XLSX.utils.aoa_to_sheet(linhas);
+    ws["!cols"] = [{ wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 14 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws, "INSCRIÇÕES");
+    XLSX.utils.book_append_sheet(wb, guiaDoModelo(perfil, rotEq, funcional, comClasse),
+                                 "COMO PREENCHER");
+    return wb;
+  }
+
+  function guiaDoModelo(perfil, rotEq, funcional, comClasse) {
     const guia = [
-      ["COMO PREENCHER"],
+      ["COMO PREENCHER A PLANILHA DE INSCRITOS"],
       [],
-      ["1", "Uma aba por categoria e naipe. O nome da aba manda: MIRIM-FEM, MIRIM-MASC."],
-      ["2", "A primeira linha traz o nome da prova e, à direita dele, as colunas auxiliares."],
-      ["3", "Nome da prova: distância + estilo. Ex.: 50 LIVRE, 100 COSTAS, 4x50 LIVRE, 4x50 LIVRE MISTO."],
-      ["4", "Estilos aceitos: LIVRE, COSTAS, PEITO, BORBOLETA, MEDLEY."],
-      ["5", "Colunas auxiliares obrigatórias: " +
-            (CAMPOS_EXIGIDOS[tipo] || []).map((c) => ROTULO_CAMPO[c]).join(" e ") + "."],
-      ["6", "Deixe uma coluna em branco entre um bloco de prova e o próximo."],
-      ["7", "Revezamento: escreva os 4 nomes na mesma célula, um por linha (Alt+Enter)."],
-      ["8", "Prova sem ninguém: escreva SEM INSCRITOS na primeira linha do bloco."],
+      ["", "Uma planilha só. Não precisa criar aba nenhuma."],
+      [],
+      ["1", "Cada prova começa numa linha de cabeçalho, com o nome inteiro da"],
+      ["", "prova: distância, estilo, categoria e naipe."],
+      ["", "Ex.: 50M LIVRE MIRIM FEMININO"],
+      [],
+      ["2", "Ao lado do cabeçalho vão os nomes das colunas de apoio: " +
+            [rotEq].concat(funcional ? ["SEGMENTO"] : [])
+                   .concat(comClasse ? ["CLASSE"] : []).concat(["TEMPO"]).join(", ") + "."],
+      [],
+      ["3", "Embaixo do cabeçalho, um atleta por linha. Acabou a prova, deixe"],
+      ["", "uma linha em branco e comece a próxima."],
+      [],
+      ["4", "Revezamento: os 4 nomes na mesma célula, um por linha (Alt+Enter)."],
+      ["", "Se os nadadores só forem escolhidos no dia, escreva apenas a equipe:"],
+      ["", "a raia fica reservada e o balizamento sai com linhas em branco."],
+      [],
+      ["5", "Prova sem ninguém: escreva SEM INSCRITOS embaixo do cabeçalho,"],
+      ["", "ou simplesmente não escreva nada."],
       [],
       ["NAO FACA"],
-      ["", "Não deixe a primeira linha sem cabeçalho — o app recusa a planilha."],
-      ["", "Não misture categorias diferentes na mesma aba."],
-      ["", "Não junte nome e escola na mesma célula."],
+      ["", "Não junte o nome do atleta e a instituição na mesma célula."],
+      ["", "Não deixe o cabeçalho da prova sem o naipe: é ele que diz se a"],
+      ["", "prova é feminina, masculina ou mista."],
+      [],
+      ["TAMBEM SERVE"],
+      ["", "A planilha de anos anteriores, com uma aba por categoria e as"],
+      ["", "provas lado a lado, continua sendo lida do mesmo jeito."],
     ];
-    const wsG = XLSX.utils.aoa_to_sheet(guia);
-    wsG["!cols"] = [{ wch: 5 }, { wch: 105 }];
-    XLSX.utils.book_append_sheet(wb, wsG, "COMO PREENCHER");
-    return wb;
+    const ws = XLSX.utils.aoa_to_sheet(guia);
+    ws["!cols"] = [{ wch: 6 }, { wch: 96 }];
+    return ws;
   }
 
   /* ---------------- programa de provas ----------------
@@ -1934,12 +2263,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
      Cada linha vira uma prova numerada, mesmo sem ninguém inscrito.
   ------------------------------------------------------ */
 
-  // "1ª – 25m LIVRE PARALÍMPICO \"A\" + \"B\" FEMININO"
+  // "1ª - 25m LIVRE PARALÍMPICO \"A\" + \"B\" FEMININO"
   // "9ª - 50m LIVRE MIRIM FEMININO"      "4x25m LIVRE PRÉ-MIRIM \"B\" MISTO"
   function lerLinhaPrograma(linha) {
     let t = String(linha || "").trim();
     if (!t) return null;
-    t = t.replace(/^\s*\d+\s*[ªº°]?\s*[-–—:.)]*\s*/, "");   // tira "12ª -"
+    // tira a numeração da frente ("12ª -", "12 -", "12."), mas só quando ela
+    // vem marcada. Sem exigir a marca, o "25" de "25m LIVRE" seria confundido
+    // com a numeração e a distância sumiria da prova.
+    t = t.replace(/^\s*\d+\s*[ªº°]\s*[-–—:.)]*\s*/, "")
+         .replace(/^\s*\d+\s*[-–—:.)]\s*/, "");
     const u = norm(t);
     const m = u.match(/^(4X\s*\d+|\d+)\s*M?(?:ETROS)?\s+(LIVRE|COSTAS?|PEITO|BORBOLETA|MEDLEY)\s+(.*)$/);
     if (!m) return null;
@@ -1979,6 +2312,356 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return [distancia, estilo, chaveCategoria(categoria), naipe].join("|");
   }
 
+  /* ---------------- programa de provas numa planilha ----------------
+     Digitar o programa à mão é onde mais se erra, e o erro é caro: se uma
+     prova some, todas as seguintes ficam com o número trocado. Por isso ele
+     vem de planilha, e por isso uma linha que o app não entenda barra o
+     programa inteiro em vez de sumir calada.
+
+     Duas formas de escrever, porque as duas aparecem na vida real:
+
+       colunas  Nº | DISTÂNCIA | ESTILO | CATEGORIA | NAIPE | ETAPA
+       texto    uma coluna só, com a linha inteira do programa:
+                25m LIVRE PRÉ-MIRIM "B" FEMININO
+  ------------------------------------------------------------------- */
+
+  const CABECALHOS_PROGRAMA = [
+    ["numero",    ["N", "N°", "Nº", "NUM", "NUMERO", "ORDEM", "PROVA N",
+                   "PROVA N°", "PROVA Nº"]],
+    ["distancia", ["DISTANCIA", "DIST", "METRAGEM", "METROS", "PROVA (M)"]],
+    ["estilo",    ["ESTILO", "NADO"]],
+    ["categoria", ["CATEGORIA", "CAT", "CATEGORIAS"]],
+    ["naipe",     ["NAIPE", "SEXO", "GENERO", "MASC/FEM", "FEM/MASC"]],
+    ["etapa",     ["ETAPA", "SESSAO", "BLOCO"]],
+    ["dia",       ["DIA", "DATA"]],
+    ["periodo",   ["PERIODO", "TURNO"]],
+    ["prova",     ["PROVA", "PROVAS", "EVENTO", "NOME DA PROVA", "DESCRICAO"]],
+  ];
+
+  const ABAS_NAO_PROGRAMA = ["COMO PREENCHER", "LEGENDA", "LEGENDAS",
+                             "INSTRUCOES", "INSTRUCAO", "MODELO"];
+
+  // "25", "25m", "25 M", "50 metros", "4x25", "4 X 25M"  ->  "25M" / "4X25M"
+  function normalizarDistancia(texto) {
+    const u = norm(texto).replace(/\s+/g, "");
+    const m = u.match(/^(?:(\d+)X)?(\d+)M?(?:ETROS?)?$/);
+    return m ? (m[1] ? m[1] + "X" : "") + m[2] + "M" : "";
+  }
+
+  // A célula inteira tem de ser um estilo conhecido. Aceitar só o começo faria
+  // "CRAWL BORBOLETA?" virar LIVRE calado: exatamente o erro que não pode passar.
+  const ESCRITAS_ESTILO = {
+    LIVRE: ["LIVRE", "CRAWL", "FREE", "L"],
+    COSTAS: ["COSTAS", "COSTA", "DORSO", "C"],
+    PEITO: ["PEITO", "BRUCO", "CLASSICO", "P"],
+    BORBOLETA: ["BORBOLETA", "BORB", "GOLFINHO", "FLY", "B"],
+    MEDLEY: ["MEDLEY", "MEDLEY INDIVIDUAL", "4 ESTILOS", "ESTILOS", "M"],
+  };
+
+  function normalizarEstilo(texto) {
+    const u = norm(texto).replace(/^NADO\s+/, "").replace(/[.]+$/, "");
+    for (const estilo of Object.keys(ESCRITAS_ESTILO))
+      if (ESCRITAS_ESTILO[estilo].includes(u)) return estilo;
+    return "";
+  }
+
+  const ESCRITAS_NAIPE = {
+    MISTO: ["MISTO", "MISTA", "MISTOS", "MIX", "X"],
+    MASC: ["MASCULINO", "MASCULINA", "MASC", "M", "H", "HOMENS", "HOMEM"],
+    FEM: ["FEMININO", "FEMININA", "FEM", "F", "MULHERES", "MULHER"],
+  };
+
+  function normalizarNaipe(texto) {
+    const u = norm(texto).replace(/[.]+$/, "");
+    for (const naipe of Object.keys(ESCRITAS_NAIPE))
+      if (ESCRITAS_NAIPE[naipe].includes(u)) return naipe;
+    return "";
+  }
+
+  function linhaVaziaPrograma(linha) {
+    return !(linha || []).some((c) => String(c == null ? "" : c).trim());
+  }
+
+  // acha a linha de cabeçalho: a que casar com mais nomes de coluna conhecidos
+  function acharCabecalhoPrograma(grade) {
+    let melhor = { linha: -1, mapa: {}, acertos: 0 };
+    const ate = Math.min(grade.length, 15);
+    for (let r = 0; r < ate; r++) {
+      const mapa = {};
+      let acertos = 0;
+      (grade[r] || []).forEach((cel, c) => {
+        const u = norm(cel).replace(/[.:]+$/, "");
+        if (!u) return;
+        for (const par of CABECALHOS_PROGRAMA) {
+          if (mapa[par[0]] != null) continue;
+          if (par[1].some((n) => norm(n) === u)) { mapa[par[0]] = c; acertos++; return; }
+        }
+      });
+      if (acertos > melhor.acertos) melhor = { linha: r, mapa, acertos };
+    }
+    return melhor.acertos ? melhor : null;
+  }
+
+  // sem cabeçalho: vale a coluna em que mais células parecem uma prova
+  function colunaDeTexto(grade) {
+    const pontos = [];
+    for (const linha of grade) {
+      (linha || []).forEach((cel, c) => {
+        if (lerLinhaPrograma(cel)) pontos[c] = (pontos[c] || 0) + 1;
+      });
+    }
+    let escolhida = 0, maior = 0;
+    pontos.forEach((v, c) => { if ((v || 0) > maior) { maior = v || 0; escolhida = c; } });
+    return maior ? escolhida : -1;
+  }
+
+  // por que esta linha de texto não virou prova
+  function motivoTexto(texto) {
+    const t = String(texto).replace(/^\s*\d+\s*[ªº°]?\s*[-–—:.)]*\s*/, "");
+    const u = norm(t);
+    if (!/^(\d+\s*X\s*)?\d+\s*M?(ETROS?)?\s/.test(u))
+      return "a linha não começa com a distância. Escreva assim: " +
+             '25m LIVRE PRÉ-MIRIM "B" FEMININO';
+    if (!/\b(LIVRE|COSTAS?|PEITO|BORBOLETA|MEDLEY)\b/.test(u))
+      return "não achei o estilo: LIVRE, COSTAS, PEITO, BORBOLETA ou MEDLEY";
+    if (!/\b(MISTO|MASCULINO|MASC|FEMININO|FEM)\b/.test(u))
+      return "falta o naipe no fim: FEMININO, MASCULINO ou MISTO";
+    return "não sobrou nada para a categoria entre o estilo e o naipe";
+  }
+
+  function problemaCampo(nome, valor, aceito) {
+    return valor
+      ? "não entendi " + nome + ' "' + valor + '": use ' + aceito
+      : "falta " + nome + ": use " + aceito;
+  }
+
+  function numeroDeclarado(valor) {
+    const m = String(valor == null ? "" : valor).match(/\d+/);
+    return m ? parseInt(m[0], 10) : null;
+  }
+
+  function lerProgramaColunas(grade, inicio, mapa, porColunas, saida) {
+    for (let r = inicio; r < grade.length; r++) {
+      const linha = grade[r] || [];
+      if (linhaVaziaPrograma(linha)) continue;
+      const cel = (campo) => mapa[campo] == null ? ""
+        : String(linha[mapa[campo]] == null ? "" : linha[mapa[campo]]).trim();
+
+      let distancia = "", estilo = "";
+      if (porColunas) {
+        distancia = normalizarDistancia(cel("distancia"));
+        estilo = normalizarEstilo(cel("estilo"));
+      } else {
+        const c = lerCabecalhoProva(cel("prova"));
+        if (c) { distancia = c.distancia; estilo = c.estilo; }
+      }
+      const categoria = cel("categoria").replace(/\s+/g, " ").trim();
+      const naipe = normalizarNaipe(cel("naipe"));
+
+      const visto = [cel("numero"),
+        porColunas ? (cel("distancia") + " " + cel("estilo")).trim() : cel("prova"),
+        categoria, cel("naipe")].filter(Boolean).join("  ·  ");
+
+      const faltas = [];
+      if (!distancia) faltas.push(problemaCampo("a distância",
+        porColunas ? cel("distancia") : cel("prova"), "25m, 50m, 100m ou 4x50m"));
+      if (!estilo) faltas.push(problemaCampo("o estilo",
+        porColunas ? cel("estilo") : cel("prova"),
+        "LIVRE, COSTAS, PEITO, BORBOLETA ou MEDLEY"));
+      if (!categoria) faltas.push('falta a categoria; ex.: MIRIM, PRÉ-MIRIM "B"');
+      if (!naipe) faltas.push(problemaCampo("o naipe", cel("naipe"),
+        "FEMININO, MASCULINO ou MISTO"));
+
+      // linha em que nada foi entendido quase nunca é uma prova: é um recado,
+      // um total, um resto de outra planilha. Dizer isso é mais útil que listar
+      // os quatro campos que faltam.
+      if (faltas.length === 4) {
+        saida.linhas.push({ linha: r + 1, texto: visto, ok: false,
+          motivo: "esta linha não parece uma prova; se for um recado, um total " +
+                  "ou uma sobra, apague-a da planilha" });
+        continue;
+      }
+      if (faltas.length) {
+        saida.linhas.push({ linha: r + 1, texto: visto, ok: false,
+                            motivo: faltas.join("; ") });
+        continue;
+      }
+      saida.linhas.push({ linha: r + 1, texto: visto, ok: true, prova: {
+        distancia, estilo, categoria, naipe, rotulo: categoria,
+        numero: numeroDeclarado(cel("numero")),
+        etapa: cel("etapa"), dia: cel("dia"), periodo: cel("periodo"),
+      } });
+    }
+  }
+
+  function lerProgramaTexto(grade, inicio, col, mapa, saida) {
+    for (let r = inicio; r < grade.length; r++) {
+      const linha = grade[r] || [];
+      if (linhaVaziaPrograma(linha)) continue;
+      const cel = (campo) => mapa[campo] == null ? ""
+        : String(linha[mapa[campo]] == null ? "" : linha[mapa[campo]]).trim();
+      const texto = String(linha[col] == null ? "" : linha[col]).trim();
+      if (!texto) {
+        saida.linhas.push({ linha: r + 1, ok: false,
+          texto: linha.filter(Boolean).join("  ·  "),
+          motivo: "a coluna da prova está em branco nesta linha" });
+        continue;
+      }
+      const p = lerLinhaPrograma(texto);
+      if (!p) {
+        saida.linhas.push({ linha: r + 1, texto, ok: false, motivo: motivoTexto(texto) });
+        continue;
+      }
+      const numCol = numeroDeclarado(cel("numero"));
+      const numTexto = (texto.match(/^\s*(\d+)\s*[ªº°]/) || [])[1];
+      p.numero = numCol != null ? numCol : numTexto ? parseInt(numTexto, 10) : null;
+      p.etapa = cel("etapa"); p.dia = cel("dia"); p.periodo = cel("periodo");
+      saida.linhas.push({ linha: r + 1, texto, ok: true, prova: p });
+    }
+  }
+
+  function lerGradePrograma(grade) {
+    const saida = { formato: "", provas: [], linhas: [], problemas: [] };
+    if (!grade || !grade.length) {
+      saida.problemas.push("Esta aba está vazia.");
+      return saida;
+    }
+    const cab = acharCabecalhoPrograma(grade);
+    const mapa = cab ? cab.mapa : {};
+    const porColunas = mapa.distancia != null && mapa.estilo != null;
+    const porProvaCurta = !porColunas && mapa.prova != null &&
+                          mapa.categoria != null && mapa.naipe != null;
+
+    if (porColunas || porProvaCurta) {
+      if (mapa.categoria == null)
+        saida.problemas.push("Não achei a coluna CATEGORIA no cabeçalho.");
+      if (mapa.naipe == null)
+        saida.problemas.push("Não achei a coluna NAIPE no cabeçalho.");
+      saida.formato = "colunas";
+      lerProgramaColunas(grade, cab.linha + 1, mapa, porColunas, saida);
+    } else {
+      const col = mapa.prova != null ? mapa.prova : colunaDeTexto(grade);
+      if (col < 0) {
+        saida.problemas.push(
+          "Não achei nem as colunas DISTÂNCIA / ESTILO / CATEGORIA / NAIPE, " +
+          "nem uma coluna com as provas escritas por extenso.");
+        return saida;
+      }
+      saida.formato = "texto";
+      lerProgramaTexto(grade, cab ? cab.linha + 1 : 0, col, mapa, saida);
+    }
+
+    // prova repetida duplicaria os mesmos atletas em duas provas do balizamento
+    const vistas = new Map();
+    for (const l of saida.linhas) {
+      if (!l.ok) continue;
+      const k = chaveProva(l.prova.distancia, l.prova.estilo,
+                           l.prova.categoria, l.prova.naipe);
+      if (vistas.has(k)) {
+        l.ok = false;
+        l.motivo = "esta prova já aparece na linha " + vistas.get(k) +
+                   ": duas linhas iguais colocariam os mesmos atletas em duas provas";
+        continue;
+      }
+      vistas.set(k, l.linha);
+    }
+    saida.provas = saida.linhas.filter((l) => l.ok).map((l) => l.prova);
+    return saida;
+  }
+
+  /**
+   * Lê o programa de provas de uma planilha.
+   * Devolve { ok, aba, formato, provas, linhas, problemas }, onde `linhas` traz
+   * uma entrada por linha lida, inclusive as recusadas, com o motivo.
+   */
+  function lerProgramaPlanilha(wb) {
+    const vazio = { ok: false, aba: "", formato: "", provas: [], linhas: [],
+                    problemas: [] };
+    if (!wb || !wb.SheetNames || !wb.SheetNames.length) {
+      vazio.problemas.push("O arquivo não tem nenhuma aba.");
+      return vazio;
+    }
+    let primeira = null;
+    for (const nomeAba of wb.SheetNames) {
+      if (ABAS_NAO_PROGRAMA.includes(norm(nomeAba))) continue;
+      const ws = wb.Sheets[nomeAba];
+      if (!ws || !ws["!ref"]) continue;
+      const grade = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: null });
+      const r = lerGradePrograma(grade);
+      r.aba = nomeAba;
+      r.ok = r.provas.length > 0 && !r.linhas.some((l) => !l.ok) && !r.problemas.length;
+      if (!primeira) primeira = r;
+      if (r.linhas.length) return r;      // a primeira aba com conteúdo manda
+    }
+    if (primeira) return primeira;
+    vazio.problemas.push("Não achei nenhuma aba com conteúdo neste arquivo.");
+    return vazio;
+  }
+
+  // volta de prova para linha de texto, usado ao guardar o perfil
+  function linhaDoPrograma(p) {
+    const naipe = { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" }[p.naipe]
+                  || p.naipe;
+    return [String(p.distancia).toLowerCase(), p.estilo,
+            p.rotulo || p.categoria, naipe].join(" ");
+  }
+
+  /* ---------------- planilha modelo do programa ---------------- */
+  function gerarModeloPrograma() {
+    const wb = XLSX.utils.book_new();
+    const linhas = [
+      ["Nº", "DISTÂNCIA", "ESTILO", "CATEGORIA", "NAIPE", "ETAPA"],
+      [1, "25m", "LIVRE", 'PARALÍMPICO "A" + "B"', "FEMININO", "1ª ETAPA"],
+      [2, "25m", "LIVRE", 'PARALÍMPICO "A" + "B"', "MASCULINO", "1ª ETAPA"],
+      [3, "25m", "LIVRE", 'PRÉ-MIRIM "B"', "FEMININO", "1ª ETAPA"],
+      [4, "25m", "LIVRE", 'PRÉ-MIRIM "B"', "MASCULINO", "1ª ETAPA"],
+      [5, "50m", "LIVRE", "MIRIM", "FEMININO", "1ª ETAPA"],
+      [6, "50m", "LIVRE", "MIRIM", "MASCULINO", "1ª ETAPA"],
+      [7, "50m", "COSTAS", "MIRIM", "FEMININO", "2ª ETAPA"],
+      [8, "50m", "COSTAS", "MIRIM", "MASCULINO", "2ª ETAPA"],
+      [9, "4x25m", "LIVRE", 'PRÉ-MIRIM "B"', "MISTO", "2ª ETAPA"],
+      [10, "4x50m", "LIVRE", "MIRIM", "MISTO", "2ª ETAPA"],
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(linhas);
+    ws["!cols"] = [{ wch: 5 }, { wch: 12 }, { wch: 13 }, { wch: 26 },
+                   { wch: 12 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, ws, "PROGRAMA");
+
+    const guia = [
+      ["COMO PREENCHER O PROGRAMA DE PROVAS"],
+      [],
+      ["", "Uma linha por prova, na ordem oficial da competição. É esta ordem que"],
+      ["", "dá a numeração das provas no balizamento, no PDF e nas papeletas."],
+      [],
+      ["OBRIGATORIAS"],
+      ["DISTÂNCIA", "25m, 50m, 100m, 200m. Revezamento: 4x25m, 4x50m."],
+      ["ESTILO", "LIVRE, COSTAS, PEITO, BORBOLETA ou MEDLEY."],
+      ["CATEGORIA", 'Como está no regulamento: MIRIM, PRÉ-MIRIM "B", PARALÍMPICO "A" + "B".'],
+      ["NAIPE", "FEMININO, MASCULINO ou MISTO."],
+      [],
+      ["OPCIONAIS"],
+      ["Nº", "Só para conferência. Quem manda na numeração é a ordem das linhas."],
+      ["ETAPA", "Nome da sessão. O app monta sozinho o intervalo de provas de cada etapa."],
+      ["DIA", "Ex.: 22/09. Aparece no cabeçalho da etapa."],
+      ["PERÍODO", "Ex.: MANHÃ, TARDE."],
+      [],
+      ["NAO FACA"],
+      ["", "Não deixe linhas soltas com recados ou observações: o app não sabe o"],
+      ["", "que fazer com elas e recusa o programa inteiro."],
+      ["", "Não repita a mesma prova em duas linhas."],
+      ["", "Não apague a linha de cabeçalho."],
+      [],
+      ["TAMBEM SERVE"],
+      ["", "Se você já tem o programa escrito por extenso, cole numa coluna só,"],
+      ["", "com o cabeçalho PROVA e uma prova por linha:"],
+      ["", '25m LIVRE PRÉ-MIRIM "B" FEMININO'],
+    ];
+    const wsG = XLSX.utils.aoa_to_sheet(guia);
+    wsG["!cols"] = [{ wch: 14 }, { wch: 92 }];
+    XLSX.utils.book_append_sheet(wb, wsG, "COMO PREENCHER");
+    return wb;
+  }
+
   /* ---------------- montagem do balizamento ---------------- */
 
   /**
@@ -1995,7 +2678,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
     // categoria e naipe de cada inscrição
     for (const i of inscricoes) {
-      if (!i.categoria || !i.naipe) {
+      // na lista vertical o cabeçalho da prova já disse tudo; só o formato de
+      // blocos lado a lado precisa tirar categoria e naipe do nome da aba
+      if (!i.categoriaDefinida && (!i.categoria || !i.naipe)) {
         const c = categoriaDaAba(i.aba);
         i.categoria = i.categoria || c.categoria;
         i.naipe = i.naipe || c.naipe;
@@ -2077,7 +2762,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         titulo: tituloProva(distancia, estilo, categoria, naipe),
         doPrograma: seq.doPrograma,
         aviso: (programa.length && !seq.doPrograma)
-          ? "esta prova não consta no programa oficial — confira a inscrição"
+          ? "esta prova não consta no programa oficial; confira a inscrição"
           : "",
         revezamento: revez, paralimpica: paral, nRaias: raias,
         series, cortados,
@@ -2153,7 +2838,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   const api = {
     lerCabecalhoProva, lerPlanilhaBlocos, lerPlanilhaLinhas, categoriaDaAba, chaveCategoria,
+    lerPlanilhaLista, lerCabecalhoLista, ehAbaLista,
     lerPrograma, lerLinhaPrograma, chaveProva, conferirPlanilha, gerarModelo,
+    lerProgramaPlanilha, linhaDoPrograma, gerarModeloPrograma,
+    normalizarDistancia, normalizarEstilo, normalizarNaipe,
     montarBalizamento, inscricoesPlanas, tituloProva, eventoRegras, COLUNAS_MODELO,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
@@ -2161,7 +2849,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 })(typeof globalThis !== "undefined" ? globalThis : this);
 </script>
 <script>/* =====================================================================
-   BALIZADOR — geração dos arquivos (xlsx, PDF do balizamento, papeletas)
+   BALIZADOR: geração dos arquivos (xlsx, PDF do balizamento, papeletas)
    Depende de XLSX (SheetJS) e jspdf.
    ===================================================================== */
 (function (raiz) {
@@ -2189,10 +2877,19 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const v = [raia, CX(it.nome), CX(it.equipe)];
     if (prova.paralimpica && !prova.revezamento) {
       if (perfil.mostrarCategoria) v.push(CX(it.letraCategoria || it.categoria || ""));
-      v.push(CX(it.classe) || "—");
+      v.push(CX(it.classe));
     }
     v.push("");
     return v;
+  }
+
+  /* Nomes de um revezamento. Quando a equipe se inscreveu sem a lista (os
+     nadadores são escolhidos no dia), devolve quatro linhas em branco, para a
+     raia sair reservada e com espaço de escrever à mão. */
+  function nomesRevezamento(it) {
+    if (it.atletas && it.atletas.length) return it.atletas;
+    if (it.semLista) return ["", "", "", ""];
+    return null;
   }
 
   /* =================== PLANILHA =================== */
@@ -2235,14 +2932,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         linhas.push([ORD(s.numero) + " SÉRIE"]);
         for (const l of s.linhas) {
           const it = l.item;
-          if (it.atletas && it.atletas.length) {
+          const nomesRev = nomesRevezamento(it);
+          if (nomesRev) {
             const ini = linhas.length;
-            it.atletas.forEach((a) => linhas.push([null, CX(a), null, ""]));
+            nomesRev.forEach((a) => linhas.push([null, CX(a), null, ""]));
             const fim = linhas.length - 1;
             [0, 2, cols.length - 1].forEach((c) =>
               merges.push({ s: { r: ini, c }, e: { r: fim, c } }));
             linhas[ini][0] = l.raia;
             linhas[ini][2] = CX(it.equipe);
+            if (it.semLista) linhas[ini][cols.length - 1] = "LISTA DE ATLETAS PENDENTE";
             pintar.push({ r: ini, tipo: "raiaRev", ate: fim });
           } else {
             pintar.push({ r: linhas.length, tipo: it.marcado ? "vermelho" : "" });
@@ -2256,7 +2955,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         linhas.push(["NÃO PARTICIPAM DESTA PROVA"]);
         for (const c of p.cortados) {
           pintar.push({ r: linhas.length, tipo: c.corteTipo === B.SEM_CLASSE ? "azul" : "vermelho" });
-          const v = ["—", CX(c.nome), CX(c.equipe)];
+          const v = ["", CX(c.nome), CX(c.equipe)];
           if (p.paralimpica) {
             if (perfil.mostrarCategoria) v.push(CX(c.letraCategoria || ""));
             v.push(CX(c.classe));
@@ -2359,7 +3058,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function etapaDe(prova, perfil) {
     for (const e of (perfil.etapas || [])) {
       if (prova.numero >= e.de && prova.numero <= e.ate) {
-        return { rotulo: `${e.nome} — ${e.dia} (${e.periodo})  ·  PROVAS ${e.de} A ${e.ate}`, ...e };
+        return { rotulo: `${e.nome}, ${e.dia} (${e.periodo})  ·  PROVAS ${e.de} A ${e.ate}`, ...e };
       }
     }
     return null;
@@ -2374,189 +3073,299 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   }
 
-  function cabecalhoPagina(doc, perfil, rotuloEtapa, pagina) {
-    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(0);
-    doc.text(CX(perfil.nome || "BALIZAMENTO"), MG, MG + 4);
-    doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(70);
-    if (rotuloEtapa) doc.text(CX(rotuloEtapa), A4.w - MG, MG + 4, { align: "right" });
-    doc.setDrawColor(0).setLineWidth(0.3);
-    doc.line(MG, MG + 6.5, A4.w - MG, MG + 6.5);
-    doc.setFontSize(7).setTextColor(110);
-    doc.text("PÁGINA " + pagina, A4.w / 2, A4.h - 6, { align: "center" });
+  /* Cabeçalho de página, no estilo da folha oficial: o que é, de que
+     competição, onde e quando. Sem patrocínio e sem registro de atleta. */
+  const SITE = "erickchoai.github.io/balizador";
+
+  /* Marca d'água e crédito. Bem claros de propósito: esta folha é usada na
+     borda da piscina, com gente escrevendo tempo em cima dela. */
+  function marcaDagua(doc) {
+    doc.setFont("helvetica", "bold").setFontSize(52).setTextColor(244);
+    doc.text("BALIZADOR", A4.w / 2, A4.h / 2, { align: "center", angle: 32 });
     doc.setTextColor(0);
   }
 
-  function larguras(prova, perfil) {
-    const total = A4.w - 2 * MG;
-    const base = (prova.paralimpica && !prova.revezamento)
-      ? (perfil.mostrarCategoria ? [14, 54, 58, 12, 20, 24] : [15, 58, 62, 22, 25])
-      : [15, 66, 72, 33];
-    const soma = base.reduce((a, b) => a + b, 0);
-    return base.map((x) => x * total / soma);
+  function rodapeCredito(doc, pagina) {
+    doc.setFont("helvetica", "normal").setFontSize(6.5).setTextColor(150);
+    doc.text("Feito com Balizador · " + SITE, MG, A4.h - 7);
+    if (pagina != null)
+      doc.text(String(pagina), A4.w - MG, A4.h - 7, { align: "right" });
+    doc.setTextColor(0);
+  }
+
+  function cabecalhoPagina(doc, perfil, rotuloEtapa, pagina) {
+    marcaDagua(doc);
+    let y = MG + 4;
+    doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0);
+    doc.text("BALIZAMENTO", MG, y);
+    doc.setFontSize(11);
+    doc.text(CX(perfil.nome || ""), MG, y + 6);
+    y += 6;
+
+    doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(60);
+    if (perfil.local) { y += 4.5; doc.text("Local: " + perfil.local, MG, y); }
+    const piscina = [
+      perfil.piscina ? "Piscina de " + perfil.piscina + " metros" : "",
+      (perfil.raias || 6) + " raias",
+    ].filter(Boolean).join(" · ");
+    const dataEPiscina = [perfil.data ? "Data: " + perfil.data : "", piscina]
+      .filter(Boolean).join("   ");
+    if (dataEPiscina) { y += 4.5; doc.text(dataEPiscina, MG, y); }
+
+    if (rotuloEtapa) {
+      doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(0);
+      doc.text(CX(rotuloEtapa), A4.w - MG, MG + 4, { align: "right" });
+    }
+    doc.setDrawColor(0).setLineWidth(0.4);
+    doc.line(MG, y + 2.5, A4.w - MG, y + 2.5);
+
+    rodapeCredito(doc, pagina);
+    return y + 7;                       // onde o conteúdo pode começar
+  }
+
+  function nomeInstituicao(perfil) {
+    const r = (perfil.rotuloEquipe || "EQUIPE").toLowerCase();
+    return r.charAt(0).toUpperCase() + r.slice(1);
+  }
+
+  /* As colunas da prova. A de tempo só aparece quando a competição tem tempo
+     de inscrição; a de balizamento é sempre em branco, para anotar na borda
+     da piscina. Nome e instituição dividem o que sobra da largura. */
+  function colunasPdf(prova, perfil) {
+    const cols = [{ chave: "raia", rotulo: "Raia", larg: 12, alinha: "center" }];
+    cols.push({ chave: "nome", rotulo: prova.revezamento ? "Nadadores" : "Nome",
+                larg: 0, peso: prova.revezamento ? 1.3 : 1, alinha: "left" });
+    if (prova.paralimpica && !prova.revezamento) {
+      if (perfil.mostrarCategoria)
+        cols.push({ chave: "categoria", rotulo: "Cat.", larg: 12, alinha: "center" });
+      cols.push({ chave: "classe", rotulo: "Classe", larg: 21, alinha: "center" });
+    }
+    cols.push({ chave: "equipe", rotulo: nomeInstituicao(perfil),
+                larg: 0, peso: 1, alinha: "left" });
+    if (perfil.temTempo)
+      cols.push({ chave: "tempo", rotulo: "Tempo", larg: 19, alinha: "right" });
+    cols.push({ chave: "baliza", rotulo: "Balizamento", larg: 25, alinha: "center" });
+
+    const fixo = cols.reduce((s, c) => s + c.larg, 0);
+    const sobra = (A4.w - 2 * MG) - fixo;
+    const pesos = cols.reduce((s, c) => s + (c.peso || 0), 0);
+    cols.forEach((c) => { if (!c.larg) c.larg = sobra * c.peso / pesos; });
+    return cols;
+  }
+
+  function xDaColuna(cols, k) {
+    let x = MG;
+    for (let i = 0; i < k; i++) x += cols[i].larg;
+    return x;
+  }
+
+  // escreve um valor respeitando o alinhamento da coluna
+  function escreverCelula(doc, cols, k, texto, y) {
+    const c = cols[k];
+    const x = xDaColuna(cols, k);
+    if (c.alinha === "center") doc.text(texto, x + c.larg / 2, y, { align: "center" });
+    else if (c.alinha === "right") doc.text(texto, x + c.larg - 1.5, y, { align: "right" });
+    else doc.text(texto, x + 1.5, y);
   }
 
   function gerarPdfBalizamento(provas, perfil) {
     const doc = novoPdf();
     const util = A4.w - 2 * MG;
-    let y = MG + 12, pagina = 1, etapaAtual = null;
-    let rotuloPagina = null;
+    const RODAPE = A4.h - MG - 6;
+    let pagina = 1, etapaAtual = null, rotuloPagina = null;
+    let y = cabecalhoPagina(doc, perfil, null, 1);
+    // uma página recém-aberta não deve ser quebrada de novo pela etapa
+    let paginaVazia = true;
 
     const novaPagina = (rot) => {
-      doc.addPage(); pagina++; y = MG + 12; rotuloPagina = rot;
-      cabecalhoPagina(doc, perfil, rot, pagina);
+      doc.addPage(); pagina++; rotuloPagina = rot;
+      y = cabecalhoPagina(doc, perfil, rot, pagina);
+      paginaVazia = true;
     };
-    cabecalhoPagina(doc, perfil, null, 1);
 
     for (const p of provas) {
       const et = etapaDe(p, perfil);
-      const cols = colunasDe(p, perfil);
-      const larg = larguras(p, perfil);
+      const cols = colunasPdf(p, perfil);
 
+      /* --- faixa da etapa --- */
       if (et && et.rotulo !== etapaAtual) {
         etapaAtual = et.rotulo;
-        if (y > MG + 14) novaPagina(et.rotulo);
-        rotuloPagina = et.rotulo;
-        doc.setFillColor(26, 26, 26).rect(MG, y, util, 9, "F");
-        doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(255);
-        doc.text(CX(et.nome + " — " + et.dia + " (" + et.periodo + ")"), MG + 3, y + 6);
-        doc.setFontSize(8).text(`PROVAS ${et.de} A ${et.ate}`, A4.w - MG - 3, y + 6, { align: "right" });
+        // cada etapa abre uma página, mas sem deixar uma folha em branco atrás
+        if (!paginaVazia) novaPagina(et.nome);
+        rotuloPagina = et.nome;
+        doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(0);
+        doc.text("Etapa: " + CX(et.nome), MG, y + 3);
+        const quando = [et.dia, et.periodo].filter(Boolean).join("   ");
+        if (quando) doc.text("Data: " + CX(quando), MG + 55, y + 3);
+        doc.setFont("helvetica", "normal").setFontSize(8);
+        doc.text(`Provas ${et.de} a ${et.ate}`, A4.w - MG, y + 3, { align: "right" });
+        doc.setLineWidth(0.4).line(MG, y + 5, A4.w - MG, y + 5);
+        y += 9;
+      }
+      if (rotuloPagina === null && et) rotuloPagina = et.nome;
+
+      /* --- cabeçalho de colunas, redesenhado a cada quebra de página --- */
+      const desenharColunas = () => {
+        doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(0);
+        cols.forEach((c, k) => escreverCelula(doc, cols, k, c.rotulo, y + 3));
+        doc.setDrawColor(0).setLineWidth(0.25);
+        doc.line(MG, y + 4.4, A4.w - MG, y + 4.4);
+        y += 6.5;
+      };
+
+      const cabeDaProva = () => {
+        doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(0);
+        doc.text(ORD(p.numero) + " PROVA", MG, y + 3.4);
+        doc.text(p.distancia + " " + p.estilo, MG + 26, y + 3.4);
+        doc.setFontSize(9);
+        doc.text(CX(p.categoria || ""), MG + 60, y + 3.4);
+        doc.text(nomeNaipe(p.naipe), A4.w - MG, y + 3.4, { align: "right" });
+        doc.setFont("helvetica", "normal").setFontSize(6.5).setTextColor(120);
+        doc.text(`${p.atletas} ${p.revezamento ? "equipes" : "atletas"}` +
+                 ` · ${p.series.length} série(s)`, MG + 26, y + 7);
         doc.setTextColor(0);
-        y += 12;
-      }
-      if (rotuloPagina === null && et) {
-        rotuloPagina = et.rotulo;
-        cabecalhoPagina(doc, perfil, et.rotulo, pagina);
-      }
-
-      const alturaFaixa = 8;
-      const alturaCab = 6;
-      if (y + alturaFaixa + alturaCab + 8 > A4.h - MG - 8) novaPagina(rotuloPagina);
-
-      // faixa da prova
-      doc.setFillColor(255, 242, 0).rect(MG, y, util, alturaFaixa, "F");
-      doc.setDrawColor(0).setLineWidth(0.3).rect(MG, y, util, alturaFaixa);
-      doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(0);
-      doc.text(ORD(p.numero) + " PROVA — " + p.titulo, MG + 3, y + 5.5);
-      doc.setFont("helvetica", "normal").setFontSize(7.5);
-      doc.text(`${p.atletas} ATLETAS · ${p.series.length} SÉRIE(S)`,
-               A4.w - MG - 3, y + 5.5, { align: "right" });
-      y += alturaFaixa + 1;
-
-      const desenharCabecalho = () => {
-        doc.setFillColor(217, 217, 217).rect(MG, y, util, alturaCab, "F");
-        doc.setFont("helvetica", "bold").setFontSize(6.5).setTextColor(0);
-        let x = MG;
-        cols.forEach((c, k) => {
-          doc.text(c, x + larg[k] / 2, y + 4, { align: "center" });
-          x += larg[k];
-        });
-        doc.setDrawColor(128).setLineWidth(0.15).rect(MG, y, util, alturaCab);
-        y += alturaCab;
+        doc.setLineWidth(0.4).line(MG, y + 8.6, A4.w - MG, y + 8.6);
+        y += 10.5;
+        paginaVazia = false;
       };
-      desenharCabecalho();
 
-      const escreverLinha = (valores, altura, fundo, corTexto, negrito) => {
-        if (y + altura > A4.h - MG - 8) {
-          novaPagina(rotuloPagina);
-          desenharCabecalho();
-        }
-        if (fundo) { doc.setFillColor(...fundo); doc.rect(MG, y, util, altura, "F"); }
-        doc.setDrawColor(128).setLineWidth(0.15);
-        let x = MG;
-        doc.setFont("helvetica", negrito ? "bold" : "normal").setFontSize(7.5);
-        doc.setTextColor(...(corTexto || [0, 0, 0]));
-        valores.forEach((v, k) => {
-          doc.rect(x, y, larg[k], altura);
-          const texto = String(v == null ? "" : v);
-          const centro = k === 0 || k > 2;
-          const linhasTxt = doc.splitTextToSize(texto, larg[k] - 2);
-          linhasTxt.slice(0, 3).forEach((t, li) => {
-            doc.text(t, centro ? x + larg[k] / 2 : x + 1.5,
-                     y + 3.2 + li * 3, { align: centro ? "center" : "left" });
-          });
-          x += larg[k];
-        });
-        y += altura;
-      };
+      if (y + 26 > RODAPE) novaPagina(rotuloPagina);
+      cabeDaProva();
 
       if (!p.series.length) {
-        escreverLinha([""].concat(cols.slice(1).map(() => "")), 5, [242, 242, 242]);
-        y -= 5;
-        doc.setFont("helvetica", "bold").setFontSize(7.5);
-        doc.text("SEM INSCRITOS", A4.w / 2, y + 3.4, { align: "center" });
-        y += 5;
+        doc.setFont("helvetica", "italic").setFontSize(8).setTextColor(120);
+        doc.text("Sem inscritos", MG + 1.5, y + 3);
+        doc.setTextColor(0);
+        y += 8;
+        continue;
       }
+      desenharColunas();
 
       for (const s of p.series) {
-        if (y + 5.5 > A4.h - MG - 8) { novaPagina(rotuloPagina); desenharCabecalho(); }
-        doc.setFillColor(217, 217, 217).rect(MG, y, util, 5.5, "F");
-        doc.setDrawColor(128).rect(MG, y, util, 5.5);
-        doc.setFont("helvetica", "bold").setFontSize(7.5).setTextColor(0);
-        doc.text(`${ORD(s.numero)} SÉRIE — ${s.linhas.length} ` +
-                 (p.revezamento ? "EQUIPES" : "NADADORES"), MG + 2, y + 3.8);
-        y += 5.5;
+        if (y + 12 > RODAPE) { novaPagina(rotuloPagina); desenharColunas(); }
+        doc.setFont("helvetica", "bold").setFontSize(6.5).setTextColor(80);
+        doc.text(ORD(s.numero) + " SÉRIE", MG + 1.5, y + 3);
+        doc.setTextColor(0);
+        y += 4.5;
 
         for (const l of s.linhas) {
           const it = l.item;
-          if (it.atletas && it.atletas.length) {
-            const alt = Math.max(10, it.atletas.length * 3.4 + 2);
-            if (y + alt > A4.h - MG - 8) { novaPagina(rotuloPagina); desenharCabecalho(); }
-            doc.setFillColor(192, 0, 0).rect(MG, y, larg[0], alt, "F");
-            doc.setFillColor(248, 215, 213).rect(MG + larg[0], y, util - larg[0], alt, "F");
-            doc.setDrawColor(128).setLineWidth(0.15);
-            let x = MG;
-            larg.forEach((w) => { doc.rect(x, y, w, alt); x += w; });
-            doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(255);
-            doc.text(String(l.raia), MG + larg[0] / 2, y + alt / 2 + 2, { align: "center" });
-            doc.setFontSize(7.5).setTextColor(0).setFont("helvetica", "normal");
-            it.atletas.forEach((a, k) => {
-              doc.text(CX(a), MG + larg[0] + 1.5, y + 4 + k * 3.4);
+          const nomesRev = nomesRevezamento(it);
+          const colNome = cols.findIndex((c) => c.chave === "nome");
+          const largNome = cols[colNome].larg;
+
+          if (nomesRev) {
+            // sem lista sobra espaço embaixo para o aviso não encostar na pauta
+            const alt = Math.max(6, nomesRev.length * 3.6 + (it.semLista ? 5 : 1.6));
+            if (y + alt > RODAPE) { novaPagina(rotuloPagina); desenharColunas(); }
+            doc.setFont("helvetica", "bold").setFontSize(9);
+            escreverCelula(doc, cols, 0, String(l.raia), y + alt / 2 + 1);
+            doc.setFont("helvetica", "normal").setFontSize(7.5);
+            nomesRev.forEach((a, k) => {
+              const ly = y + 3.6 + k * 3.6;
+              if (a) doc.text(CX(a), xDaColuna(cols, colNome) + 1.5, ly);
+              else {   // sem lista: pauta para escrever o nome no dia da prova
+                doc.setDrawColor(170).setLineWidth(0.1);
+                doc.line(xDaColuna(cols, colNome) + 1.5, ly + 0.6,
+                         xDaColuna(cols, colNome) + largNome - 3, ly + 0.6);
+              }
             });
-            doc.setFont("helvetica", "bold");
-            doc.text(CX(it.equipe), MG + larg[0] + larg[1] + 1.5, y + alt / 2 + 1);
+            doc.setFont("helvetica", "bold").setFontSize(8);
+            cols.forEach((c, k) => {
+              if (c.chave === "equipe")
+                escreverCelula(doc, cols, k, CX(it.equipe), y + alt / 2 + 1);
+              if (c.chave === "tempo" && it.tempo != null)
+                escreverCelula(doc, cols, k, B.formatarTempo(it.tempo), y + alt / 2 + 1);
+            });
+            if (it.semLista) {
+              doc.setFont("helvetica", "italic").setFontSize(5.8).setTextColor(150);
+              doc.text("lista de atletas pendente",
+                       xDaColuna(cols, colNome) + 1.5, y + alt - 0.4);
+              doc.setTextColor(0);
+            }
+            linhaDeBase(doc, y + alt);
             y += alt;
-          } else {
-            const vals = linhaAtleta(p, perfil, l.raia, it);
-            // medir com a MESMA fonte usada para escrever, senão a altura erra
-            doc.setFont("helvetica", it.marcado ? "bold" : "normal").setFontSize(7.5);
-            const nLinhas = Math.max(
-              doc.splitTextToSize(CX(it.nome), larg[1] - 2).length,
-              doc.splitTextToSize(CX(it.equipe), larg[2] - 2).length);
-            const alt = Math.max(5, 2 + nLinhas * 3);
-            escreverLinha(vals, alt, it.marcado ? [192, 0, 0] : null,
-                          it.marcado ? [255, 255, 255] : null, !!it.marcado);
+            continue;
           }
+
+          doc.setFont("helvetica", "bold").setFontSize(8);
+          const partesNome = doc.splitTextToSize(CX(it.nome), largNome - 3);
+          const colEq = cols.findIndex((c) => c.chave === "equipe");
+          doc.setFont("helvetica", "normal");
+          const partesEq = doc.splitTextToSize(CX(it.equipe), cols[colEq].larg - 3);
+          const alt = Math.max(5.2, 1.6 + Math.max(partesNome.length,
+                                                   partesEq.length) * 3.4);
+          if (y + alt > RODAPE) { novaPagina(rotuloPagina); desenharColunas(); }
+
+          // acima do limite de provas: fundo claro e texto vermelho, sem bloco
+          if (it.marcado) {
+            doc.setFillColor(252, 231, 228).rect(MG, y, util, alt, "F");
+          }
+          const cor = it.marcado ? [150, 26, 20] : [0, 0, 0];
+          doc.setTextColor(cor[0], cor[1], cor[2]);
+          cols.forEach((c, k) => {
+            if (c.chave === "baliza") return;
+            doc.setFont("helvetica", c.chave === "nome" ? "bold" : "normal");
+            doc.setFontSize(c.chave === "raia" ? 9 : 8);
+            if (c.chave === "nome" || c.chave === "equipe") {
+              const partes = c.chave === "nome" ? partesNome : partesEq;
+              partes.forEach((t, j) =>
+                doc.text(t, xDaColuna(cols, k) + 1.5, y + 3.4 + j * 3.4));
+              return;
+            }
+            const v = {
+              raia: String(l.raia),
+              categoria: CX(it.letraCategoria || it.categoria || ""),
+              classe: CX(it.classe),
+              tempo: it.tempo != null ? B.formatarTempo(it.tempo) : "",
+            }[c.chave] || "";
+            escreverCelula(doc, cols, k, v, y + 3.4);
+          });
+          doc.setTextColor(0);
+          linhaDeBase(doc, y + alt);
+          y += alt;
         }
+        y += 1.5;
       }
 
+      /* --- quem não pode nadar esta prova --- */
       if (p.cortados && p.cortados.length) {
-        if (y + 5.5 > A4.h - MG - 8) { novaPagina(rotuloPagina); desenharCabecalho(); }
-        doc.setFillColor(242, 242, 242).rect(MG, y, util, 5.5, "F");
-        doc.setDrawColor(128).rect(MG, y, util, 5.5);
-        doc.setFont("helvetica", "bold").setFontSize(7.5).setTextColor(0);
-        doc.text("NÃO PARTICIPAM DESTA PROVA", MG + 2, y + 3.8);
-        y += 5.5;
+        if (y + 10 > RODAPE) novaPagina(rotuloPagina);
+        doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(120);
+        doc.text("NÃO PARTICIPAM DESTA PROVA", MG + 1.5, y + 3);
+        doc.setDrawColor(180).setLineWidth(0.2).line(MG, y + 4.2, A4.w - MG, y + 4.2);
+        doc.setTextColor(0);
+        y += 6;
         for (const c of p.cortados) {
           const azul = c.corteTipo === B.SEM_CLASSE;
-          const vals = ["—", CX(c.nome), CX(c.equipe)];
-          if (p.paralimpica) {
-            if (perfil.mostrarCategoria) vals.push(CX(c.letraCategoria || ""));
-            vals.push(CX(c.classe));
-          }
-          vals.push(CX(c.motivo));
+          const cor = azul ? [31, 56, 100] : [150, 26, 20];
           doc.setFont("helvetica", "bold").setFontSize(7.5);
-          const alt = Math.max(5, 2 + Math.max(
-            doc.splitTextToSize(CX(c.motivo), larg[larg.length - 1] - 2).length,
-            doc.splitTextToSize(CX(c.nome), larg[1] - 2).length,
-            doc.splitTextToSize(CX(c.equipe), larg[2] - 2).length) * 3);
-          escreverLinha(vals, alt, azul ? [180, 198, 231] : [192, 0, 0],
-                        azul ? [31, 56, 100] : [255, 255, 255], true);
+          const largMotivo = util - 12 - cols[1].larg - 3;
+          const partes = doc.splitTextToSize(c.motivo || "", largMotivo);
+          const alt = Math.max(4.6, 1.4 + partes.length * 3.2);
+          if (y + alt > RODAPE) novaPagina(rotuloPagina);
+          doc.setTextColor(cor[0], cor[1], cor[2]);
+          doc.text(CX(c.nome), MG + 12, y + 3);
+          doc.setFont("helvetica", "normal");
+          partes.forEach((t, j) =>
+            doc.text(t, MG + 12 + cols[1].larg, y + 3 + j * 3.2));
+          doc.setFontSize(6.5).setTextColor(120);
+          doc.text(CX(c.equipe), MG + 12, y + 3 + 3.2);
+          doc.setTextColor(0);
+          y += alt + 1.4;
         }
       }
-      y += 4;
+      y += 5;
     }
     return doc;
   }
+
+  // filete claríssimo entre atletas: separa sem sujar a folha
+  function linhaDeBase(doc, y) {
+    doc.setDrawColor(225).setLineWidth(0.1);
+    doc.line(MG, y, A4.w - MG, y);
+  }
+
 
   /* =================== PAPELETAS =================== */
   function gerarPapeletas(provas, perfil) {
@@ -2587,6 +3396,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     cartoes.forEach((d, idx) => {
       const pos = idx % 4;
       if (pos === 0 && idx) doc.addPage();
+      if (pos === 0) rodapeCredito(doc, null);
       const topo = MG + pos * alturaSlot;
       desenharPapeleta(doc, MG, topo, lEsq, lDir, d, perfil);
       if (pos < 3 && idx + 1 < cartoes.length) {
@@ -2636,12 +3446,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     doc.text(ORD(d.serie) + " SÉRIE", x0, y);
     if (d.categoria) {
       y += 4.4;
-      doc.text(`CATEGORIA ${CX(d.categoria)}   ·   CLASSE ${CX(d.classe) || "—"}`, x0, y);
+      doc.text(`CATEGORIA ${CX(d.categoria)}` +
+               (CX(d.classe) ? `   ·   CLASSE ${CX(d.classe)}` : ""), x0, y);
     }
     if (d.revezamento) {
       y += 4.4;
       doc.setFont("helvetica", "normal").setFontSize(7.6);
-      doc.text("REVEZAMENTO — TEMPO ÚNICO DA EQUIPE", x0, y);
+      doc.text("REVEZAMENTO: TEMPO ÚNICO DA EQUIPE", x0, y);
     }
 
     const xr = x0 + larg * 0.68;
@@ -2691,7 +3502,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 })(typeof globalThis !== "undefined" ? globalThis : this);
 </script>
 <script>﻿/* =====================================================================
-   BALIZADOR — interface
+   BALIZADOR, interface
    ===================================================================== */
 (function () {
   "use strict";
@@ -2707,7 +3518,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
                  "(S/SB/SM). O app valida cada inscrição contra o mapa de provas.",
       exige: ["nome", "cidade", "segmento", "classe"],
       rotuloEquipe: "CIDADE", usarRegrasPara: true, mostrarCategoria: false,
-      regraSerie: B.INCOMPLETA_PRIMEIRO, limiteInd: 5, limiteRev: null,
+      limiteInd: 5, limiteRev: null,
       categoriasPara: ["DF", "DV", "DI", "DA", "TEA"],
     },
     ESCOLAR: {
@@ -2716,7 +3527,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
                  "define a prova; não há classe funcional.",
       exige: ["nome", "escola", "categoria"],
       rotuloEquipe: "ESCOLA", usarRegrasPara: false, mostrarCategoria: false,
-      regraSerie: B.MENOS_SERIES, limiteInd: 2, limiteRev: 2,
+      limiteInd: 2, limiteRev: 2,
       categoriasPara: [],
     },
     ESCOLAR_PARA: {
@@ -2725,7 +3536,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
                  "mesmo evento, com classe funcional só nas provas paralímpicas.",
       exige: ["nome", "escola", "categoria", "classe (só nas paralímpicas)"],
       rotuloEquipe: "ESCOLA", usarRegrasPara: false, mostrarCategoria: true,
-      regraSerie: B.MENOS_SERIES, limiteInd: 2, limiteRev: 2,
+      limiteInd: 2, limiteRev: 2,
       categoriasPara: ["PARAL"],
     },
     TEMPO: {
@@ -2734,7 +3545,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
                  "o balizamento é por desempenho.",
       exige: ["nome", "equipe", "categoria", "tempo"],
       rotuloEquipe: "EQUIPE", usarRegrasPara: false, mostrarCategoria: false,
-      regraSerie: B.MENOS_SERIES, limiteInd: 5, limiteRev: 2,
+      limiteInd: 5, limiteRev: 2,
       categoriasPara: [],
     },
   };
@@ -2742,17 +3553,21 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   const estado = {
     perfil: null, inscricoes: [], abas: [], provas: [], erros: [], limites: [],
     arquivo: null,
+    // o programa de provas lido da planilha, ou null enquanto não veio um:
+    // { ok, aba, formato, arquivo, provas, linhas, problemas, sem }
+    programa: null,
   };
 
   /* ---------------- perfil ---------------- */
   function perfilPadrao() {
     return {
-      nome: "", raias: "", regraSerie: "",
+      nome: "", local: "", data: "", piscina: "",
+      raias: "", regraSerie: B.MENOS_SERIES,
       rotuloEquipe: "ESCOLA",
       temPara: false, tipoClasse: "FUNCIONAL", temTempo: false,
       temRevezamento: false, mostrarCategoria: false, categoriasPara: [],
       limiteInd: "", limiteRev: "", limiteIndPara: "",
-      etapas: [], grupos: [], programa: [], programaTexto: "",
+      etapas: [], grupos: [], programa: [], programaTexto: "", programaArquivo: "",
       ignorarAbas: ["CASOS ESPECÍFICOS", "LEGENDAS", "COMO PREENCHER"],
       dedupMisto: true,
     };
@@ -2797,36 +3612,270 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if (el) el.classList.toggle("bloqueado", !ok);
   }
 
-  /* ---------------- tela 1: competição ---------------- */
+  /* ---------------- tela 1: programa de provas ----------------
+     Vem antes de tudo porque é o programa que dá a ordem e a numeração das
+     provas. Uma linha que o app não entenda barra o programa inteiro: se ela
+     passasse batida, todas as provas seguintes ficariam com o número trocado.
+  ------------------------------------------------------------- */
+
+  const NAIPE_LONGO = { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" };
+
+  function exemploProgramaVisual() {
+    const cols = ["Nº", "DISTÂNCIA", "ESTILO", "CATEGORIA", "NAIPE", "ETAPA"];
+    const linhas = [
+      ["1", "25m", "LIVRE", 'PARALÍMPICO "A" + "B"', "FEMININO", "1ª ETAPA"],
+      ["2", "25m", "LIVRE", 'PARALÍMPICO "A" + "B"', "MASCULINO", "1ª ETAPA"],
+      ["3", "25m", "LIVRE", 'PRÉ-MIRIM "B"', "FEMININO", "1ª ETAPA"],
+      ["…", "…", "…", "…", "…", "…"],
+      ["21", "4x25m", "LIVRE", 'PRÉ-MIRIM "B"', "MISTO", "2ª ETAPA"],
+    ];
+    const letra = (i) => String.fromCharCode(65 + i);      // A, B, C...
+    const th = cols.map((c, i) =>
+      `<th><span class="col">${letra(i)}</span>${c}</th>`).join("");
+    const corpo = linhas.map((vals, n) =>
+      `<tr><td class="lin">${n + 2}</td>${
+        vals.map((v) => `<td>${v}</td>`).join("")}</tr>`).join("");
+    return `
+      <div class="planilha-exemplo">
+        <div class="abas-exemplo"><span class="aba-ativa">PROGRAMA</span></div>
+        <div class="scroll-x">
+          <table class="grade">
+            <thead><tr><th class="lin"></th>${th}</tr></thead>
+            <tbody>${corpo}</tbody>
+          </table>
+        </div>
+        <p class="legenda-exemplo">A <b>linha 1</b> é o cabeçalho. Daí para baixo,
+          uma prova por linha, na ordem oficial. O nome da aba não importa.</p>
+      </div>`;
+  }
+
+  function baixarModeloPrograma() {
+    const wb = D.gerarModeloPrograma();
+    const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    baixar(new Blob([out], { type: "application/octet-stream" }),
+           "MODELO - PROGRAMA DE PROVAS.xlsx");
+  }
+
+  // agrupa provas consecutivas com a mesma etapa em intervalos de prova
+  function etapasDoPrograma(provas) {
+    const et = [];
+    provas.forEach((p, i) => {
+      const nome = String(p.etapa || "").trim();
+      if (!nome) return;
+      const ultima = et[et.length - 1];
+      if (ultima && ultima.nome === nome && ultima.ate === i) {
+        ultima.ate = i + 1;
+        return;
+      }
+      et.push({ nome, dia: p.dia || "", periodo: p.periodo || "",
+                de: i + 1, ate: i + 1 });
+    });
+    return et;
+  }
+
+  // copia o programa lido para dentro do perfil que está sendo montado
+  function adotarPrograma() {
+    const prog = estado.programa;
+    estado.perfil.programa = (prog && prog.provas) || [];
+    estado.perfil.programaArquivo = (prog && prog.arquivo) || "";
+    if (prog && prog.provas && prog.provas.length) {
+      const et = etapasDoPrograma(prog.provas);
+      if (et.length) estado.perfil.etapas = et;
+    }
+  }
+
+  // recupera o programa de um perfil salvo ou importado
+  function programaDoPerfil(p) {
+    const base = { ok: true, aba: "", formato: "perfil", linhas: [], problemas: [],
+                   arquivo: p.programaArquivo || "perfil salvo" };
+    if (p.programa && p.programa.length)
+      return Object.assign(base, { provas: p.programa });
+    if (p.programaTexto && p.programaTexto.trim()) {
+      const r = D.lerPrograma(p.programaTexto);
+      if (r.provas.length) return Object.assign(base, { provas: r.provas });
+    }
+    return null;
+  }
+
+  function liberarCompeticao(ok) {
+    liberar("competicao", ok);
+    const b = $("#irCompeticao");
+    if (b) b.disabled = !ok;
+  }
+
+  async function carregarPrograma(file) {
+    let wb;
+    try {
+      const buf = await file.arrayBuffer();
+      wb = XLSX.read(buf, { type: "array", cellDates: false });
+    } catch (e) {
+      estado.programa = null;
+      liberarCompeticao(false);
+      html("resultadoPrograma", `
+        <div class="recusa">
+          <h3>Não consegui abrir este arquivo</h3>
+          <p>Ele precisa ser uma planilha <code>.xlsx</code>, <code>.xlsm</code>
+             ou <code>.csv</code>. O que veio foi <b>${file.name}</b>.</p>
+        </div>`);
+      return;
+    }
+    const r = D.lerProgramaPlanilha(wb);
+    r.arquivo = file.name;
+    estado.programa = r.provas.length ? r : null;
+    if (estado.programa) adotarPrograma();
+    liberarCompeticao(!!(estado.programa && r.ok));
+    renderResultadoPrograma(r);
+    renderResumoPrograma();
+    renderEtapas();
+  }
+
+  function renderResultadoPrograma(r) {
+    const ruins = r.linhas.filter((l) => !l.ok);
+
+    if (!r.provas.length) {
+      html("resultadoPrograma", `
+        <div class="recusa">
+          <h3>Não consegui ler o programa desta planilha</h3>
+          <p>Prefiro recusar a montar um balizamento com a numeração trocada.</p>
+          ${r.problemas.length ? `<ul class="lista-motivos">${
+            r.problemas.map((p) => `<li>${p}</li>`).join("")}</ul>` : ""}
+          ${ruins.length ? tabelaLinhasRuins(ruins) : ""}
+          <p class="nota"><b>É assim que ela precisa ser:</b></p>
+          ${exemploProgramaVisual()}
+          <div class="acoes">
+            <button type="button" class="mini claro" id="btnModeloRecusaPrograma">
+              Baixar a planilha modelo</button>
+          </div>
+        </div>`);
+      ao("btnModeloRecusaPrograma", "click", baixarModeloPrograma);
+      return;
+    }
+
+    const et = estado.perfil.etapas || [];
+    const fichas = `
+      <div class="fichas">
+        <div class="ficha ${ruins.length ? "ruim" : "bom"}"><b>${r.provas.length}</b>
+          <span>provas reconhecidas</span></div>
+        <div class="ficha ${ruins.length ? "ruim" : ""}"><b>${ruins.length}</b>
+          <span>linhas não entendidas</span></div>
+        <div class="ficha"><b>${et.length || 0}</b><span>etapas</span></div>
+        <div class="ficha"><b>${r.provas.filter((p) => /^\d+X/.test(p.distancia)).length}</b>
+          <span>revezamentos</span></div>
+      </div>`;
+
+    if (ruins.length) {
+      html("resultadoPrograma", `
+        ${fichas}
+        <div class="recusa">
+          <h3>${ruins.length} linha(s) da planilha eu não entendi</h3>
+          <p>Não sigo assim: se uma prova ficar de fora, todas as seguintes
+             ficam com o número trocado, e isso não aparece em lugar nenhum
+             depois. Corrija estas linhas e envie o arquivo de novo.</p>
+          ${tabelaLinhasRuins(ruins)}
+          <p class="nota">Se elas não forem provas (um recado, um total, uma
+             linha sobrando), apague-as da planilha.</p>
+          <div class="acoes">
+            <button type="button" class="mini claro" id="btnIgnorarLinhas">
+              São linhas que não são provas: ignorar e seguir</button>
+          </div>
+        </div>
+        ${tabelaPrograma(r)}`);
+      ao("btnIgnorarLinhas", "click", () => {
+        estado.programa.ok = true;
+        liberarCompeticao(true);
+        aviso(`Seguindo com as ${r.provas.length} provas reconhecidas.`);
+        renderResultadoPrograma(Object.assign({}, r, {
+          linhas: r.linhas.filter((l) => l.ok), problemas: [] }));
+      });
+      return;
+    }
+
+    html("resultadoPrograma", `${fichas}
+      <p class="nota">Lido de <b>${r.arquivo}</b>, aba <b>${r.aba}</b>,
+        formato ${r.formato === "colunas"
+          ? "de colunas separadas" : "de prova escrita por extenso"}.
+        ${et.length ? `As etapas já foram montadas a partir da coluna ETAPA;
+          você pode ajustá-las na próxima tela.` : ""}</p>
+      ${tabelaPrograma(r)}`);
+  }
+
+  function tabelaLinhasRuins(ruins) {
+    return `<table class="tabela"><thead><tr><th>LINHA</th>
+      <th>O QUE ESTÁ ESCRITO</th><th>O PROBLEMA</th></tr></thead><tbody>${
+      ruins.map((l) => `<tr><td class="num">${l.linha}</td>
+        <td><code>${(l.texto || "(vazia)").slice(0, 70)}</code></td>
+        <td>${l.motivo}</td></tr>`).join("")}</tbody></table>`;
+  }
+
+  function tabelaPrograma(r) {
+    let etapaAtual = null;
+    const linhas = r.provas.map((p, i) => {
+      const et = String(p.etapa || "").trim();
+      const faixa = et && et !== etapaAtual
+        ? `<tr class="faixa-etapa"><td colspan="4">${et}${
+            p.dia ? " · " + p.dia : ""}${p.periodo ? " · " + p.periodo : ""}</td></tr>`
+        : "";
+      etapaAtual = et || etapaAtual;
+      const conferido = p.numero != null && p.numero !== i + 1
+        ? `<span class="discordancia" title="a planilha diz ${p.numero}">≠ ${p.numero}</span>`
+        : "";
+      return faixa + `<tr>
+        <td class="num">${i + 1}ª ${conferido}</td>
+        <td>${p.distancia.toLowerCase()} ${p.estilo}</td>
+        <td>${p.rotulo || p.categoria}</td>
+        <td class="apagado">${NAIPE_LONGO[p.naipe] || p.naipe}</td></tr>`;
+    }).join("");
+    return `<div class="lista-programa">
+      <table class="tabela"><thead><tr><th>Nº</th><th>PROVA</th>
+      <th>CATEGORIA</th><th>NAIPE</th></tr></thead>
+      <tbody>${linhas}</tbody></table></div>`;
+  }
+
+  function seguirSemPrograma() {
+    estado.programa = null;
+    adotarPrograma();
+    liberarCompeticao(true);
+    renderResumoPrograma();
+    html("resultadoPrograma", `
+      <div class="recusa leve">
+        <h3>Seguindo sem o programa</h3>
+        <p>Sem ele o app monta só as provas que têm inscritos, numeradas na
+           ordem que ele deduzir, que quase nunca é a ordem oficial. Dá para
+           voltar aqui e enviar o programa a qualquer momento.</p>
+      </div>`);
+    irPara("competicao");
+  }
+
+  /* ---------------- tela 2: competição ---------------- */
   const ATALHOS = {
     PARA: { temPara: true, tipoClasse: "FUNCIONAL", rotuloEquipe: "CIDADE",
             temTempo: false, temRevezamento: false, mostrarCategoria: false,
-            regraSerie: B.INCOMPLETA_PRIMEIRO, limiteInd: 5, limiteRev: null,
+            limiteInd: 5, limiteRev: null,
             limiteIndPara: 5, categoriasPara: ["DF", "DV", "DI", "DA", "TEA"] },
     ESCOLAR: { temPara: false, rotuloEquipe: "ESCOLA", temTempo: false,
                temRevezamento: true, mostrarCategoria: false,
-               regraSerie: B.MENOS_SERIES, limiteInd: 2, limiteRev: 2,
+               limiteInd: 2, limiteRev: 2,
                limiteIndPara: 3, categoriasPara: [] },
     ESCOLAR_PARA: { temPara: true, tipoClasse: "CONDICAO", rotuloEquipe: "ESCOLA",
                     temTempo: false, temRevezamento: true, mostrarCategoria: true,
-                    regraSerie: B.MENOS_SERIES, limiteInd: 2, limiteRev: 2,
+                    limiteInd: 2, limiteRev: 2,
                     limiteIndPara: 3, categoriasPara: ["PARAL"] },
     TEMPO: { temPara: false, rotuloEquipe: "EQUIPE", temTempo: true,
              temRevezamento: true, mostrarCategoria: false,
-             regraSerie: B.MENOS_SERIES, limiteInd: 5, limiteRev: 2,
+             limiteInd: 5, limiteRev: 2,
              limiteIndPara: 5, categoriasPara: [] },
     VAZIO: { temPara: false, rotuloEquipe: "ESCOLA", temTempo: false,
              temRevezamento: false, mostrarCategoria: false,
-             regraSerie: "", limiteInd: "", limiteRev: "",
+             limiteInd: "", limiteRev: "",
              limiteIndPara: "", raias: "", categoriasPara: [] },
   };
 
   function aplicarAtalho(chave) {
     const nome = estado.perfil ? estado.perfil.nome : "";
-    const prog = estado.perfil ? estado.perfil.programaTexto : "";
     estado.perfil = Object.assign(perfilPadrao(), ATALHOS[chave] || ATALHOS.VAZIO);
     estado.perfil.nome = nome;
-    estado.perfil.programaTexto = prog || "";
+    // o programa veio no passo anterior: um atalho de configuração não o apaga
+    adotarPrograma();
     if (chave === "ESCOLAR_PARA") {
       estado.perfil.grupos = [{
         rotulo: 'PARALÍMPICO "A" + "B"',
@@ -2839,8 +3888,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function preencherConfig() {
     const p = estado.perfil;
     $("#nomeComp").value = p.nome;
+    $("#local").value = p.local || "";
+    $("#dataComp").value = p.data || "";
+    $("#piscina").value = p.piscina || "";
     $("#raias").value = p.raias;
-    $("#regraSerie").value = p.regraSerie;
     $("#limiteInd").value = p.limiteInd;
     $("#limiteRev").value = p.limiteRev == null ? "" : p.limiteRev;
     $("#limiteIndPara").value = p.limiteIndPara;
@@ -2851,10 +3902,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $("#tipoClasse").value = p.tipoClasse || "FUNCIONAL";
     $("#mostrarCategoria").checked = !!p.mostrarCategoria;
     $("#dedupMisto").checked = p.dedupMisto;
-    $("#programa").value = p.programaTexto || "";
     atualizarDependentes();
     atualizarPreviaRaias();
-    atualizarPrograma();
+    renderResumoPrograma();
     renderEtapas();
     renderGrupos();
   }
@@ -2868,101 +3918,85 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         + "provas paralímpico e corta quem não pode nadar aquela prova."
       : "Com o tipo de condição, o app apenas registra a classe no balizamento "
         + "e nas papeletas. Não há mapa de provas para validar.";
-    renderPreviaFormato();
+    renderEspecificacao();
+    validarConfig();
   }
 
   /* ---- exemplo visual: uma miniatura da planilha esperada ---- */
+  /* As colunas de apoio que esta competição pede, na ordem em que aparecem
+     ao lado do nome da prova. */
+  function colunasDeApoio(p) {
+    const cols = [p.rotuloEquipe || "EQUIPE"];
+    if (p.temPara && p.tipoClasse === "FUNCIONAL") cols.push("SEGMENTO");
+    if (p.temPara) cols.push("CLASSE");
+    if (p.temTempo) cols.push("TEMPO");
+    return cols;
+  }
+
+  /* Miniatura da planilha esperada: o nome da prova numa linha, os atletas
+     embaixo, e a próxima prova depois de uma linha em branco. */
   function exemploVisual(p) {
-    const eq = p.rotuloEquipe || "EQUIPE";
-    const para = p.temPara;
-    const funcional = para && p.tipoClasse === "FUNCIONAL";
-    const cols = ["50 LIVRE", eq];
-    if (funcional) cols.push("SEGMENTO", "CLASSE");
-    else if (para) cols.push("CLASSE");
-    cols.push("TEMPO");
+    const funcional = p.temPara && p.tipoClasse === "FUNCIONAL";
+    const cols = colunasDeApoio(p);
+    const equipes = p.rotuloEquipe === "CIDADE"
+      ? ["BLUMENAU", "JOINVILLE"] : ["COLÉGIO EXEMPLO", "ESCOLA MODELO"];
+    const cat = funcional ? "DF" : "MIRIM";
 
-    const ex1 = ["MARIA EXEMPLO DA SILVA", eq === "CIDADE" ? "BLUMENAU" : "COLÉGIO EXEMPLO"];
-    const ex2 = ["JOÃO EXEMPLO SANTOS", eq === "CIDADE" ? "JOINVILLE" : "ESCOLA MODELO"];
-    if (funcional) { ex1.push("DF", "S6/SB5/SM6"); ex2.push("DF", "S9/SB8/SM9"); }
-    else if (para) { ex1.push("TEA"); ex2.push("DI"); }
-    ex1.push(p.temTempo ? "31.20" : "");
-    ex2.push(p.temTempo ? "29.85" : "");
+    const apoio = (k) => {
+      const v = [equipes[k]];
+      if (funcional) v.push("DF");
+      if (p.temPara) v.push(funcional ? (k ? "S9/SB8/SM9" : "S6/SB5/SM6") : "TEA");
+      if (p.temTempo) v.push(k ? "29.85" : "31.20");
+      return v;
+    };
 
-    const letra = (i) => String.fromCharCode(66 + i);   // B, C, D...
-    const aba = funcional ? "DF-FEM" : para ? 'PARAL "A"-FEM' : "MIRIM-FEM";
+    const linhas = [
+      { tipo: "prova", vals: [`50M LIVRE ${cat} MASCULINO`].concat(cols) },
+      { tipo: "atleta", vals: ["JOÃO EXEMPLO SANTOS"].concat(apoio(0)) },
+      { tipo: "atleta", vals: ["PEDRO EXEMPLO LIMA"].concat(apoio(1)) },
+      { tipo: "vazia", vals: [] },
+      { tipo: "prova", vals: [`50M LIVRE ${cat} FEMININO`].concat(cols) },
+      { tipo: "atleta", vals: ["MARIA EXEMPLO DA SILVA"].concat(apoio(0)) },
+    ];
+    if (p.temRevezamento) {
+      linhas.push({ tipo: "vazia", vals: [] });
+      linhas.push({ tipo: "prova", vals: [`4X50M LIVRE ${cat} MISTO`].concat(cols) });
+      linhas.push({ tipo: "atleta", vals: ["ANA<br>BRUNO<br>CARLA<br>DIEGO"]
+        .concat(apoio(0)) });
+    }
 
-    const th = cols.map((c, i) =>
-      `<th><span class="col">${letra(i)}</span>${c}</th>`).join("") +
-      `<th class="vazia"><span class="col">${letra(cols.length)}</span></th>` +
-      `<th><span class="col">${letra(cols.length + 1)}</span>100 COSTAS</th>`;
-    const linha = (vals, n) => `<tr><td class="lin">${n}</td>` +
-      vals.map((v) => `<td>${v}</td>`).join("") +
-      `<td class="vazia"></td><td>${n === 1 ? "MARIA EXEMPLO DA SILVA" : "JOÃO EXEMPLO SANTOS"}</td></tr>`;
+    const nCols = 1 + cols.length;
+    const letra = (i) => String.fromCharCode(65 + i);
+    const th = Array.from({ length: nCols }, (_, i) =>
+      `<th><span class="col">${letra(i)}</span></th>`).join("");
+    const corpo = linhas.map((l, n) => {
+      const tds = Array.from({ length: nCols }, (_, i) =>
+        `<td${l.tipo === "prova" ? ' class="cel-prova"' : ""}>${
+          l.vals[i] == null ? "" : l.vals[i]}</td>`).join("");
+      return `<tr><td class="lin">${n + 1}</td>${tds}</tr>`;
+    }).join("");
 
     return `
       <div class="planilha-exemplo">
-        <div class="abas-exemplo"><span class="aba-ativa">${aba}</span>
-          <span>${aba.replace("-FEM", "-MASC")}</span><span>…</span></div>
         <div class="scroll-x">
           <table class="grade">
             <thead><tr><th class="lin"></th>${th}</tr></thead>
-            <tbody>${linha(ex1, 1)}${linha(ex2, 2)}</tbody>
+            <tbody>${corpo}</tbody>
           </table>
         </div>
-        <p class="legenda-exemplo">A <b>linha 1</b> é o cabeçalho. A coluna
-          <b>${letra(cols.length)}</b> fica em branco para separar um bloco de
-          prova do próximo.${p.temRevezamento
-            ? " Num bloco de revezamento (<b>4x50 LIVRE</b>), os 4 nomes vão na mesma célula, um por linha."
+        <p class="legenda-exemplo">O nome da aba não importa, e você não precisa
+          criar mais de uma. As linhas destacadas são os nomes das provas.${
+          p.temRevezamento
+            ? " No revezamento, os 4 nomes vão na mesma célula, um por linha."
             : ""}</p>
       </div>`;
-  }
-
-  /* mostra, em tempo real, a planilha que será exigida */
-  function renderPreviaFormato() {
-    const p = lerConfig();
-    const eq = p.rotuloEquipe;
-    const linhas = [["NOME DA PROVA", "obrigatória",
-                     "o cabeçalho do bloco: <code>50 LIVRE</code>, <code>4x50 LIVRE MISTO</code>"],
-                    [eq, "obrigatória", "a instituição que o atleta representa"]];
-    if (p.temPara && p.tipoClasse === "FUNCIONAL") {
-      linhas.push(["SEGMENTO", "obrigatória",
-                   "DF, DV, DI, DA ou TEA-DOWN — pode vir no nome da aba, como <code>DF-FEM</code>"]);
-      linhas.push(["CLASSE", "obrigatória", "a classe funcional: <code>S6/SB5/SM6</code>"]);
-    } else if (p.temPara) {
-      linhas.push(["CLASSE", "obrigatória nas abas paralímpicas",
-                   "o tipo de condição: <code>TEA</code>, <code>DI</code>, <code>DA</code>, <code>DOWN</code>"]);
-    }
-    linhas.push(["TEMPO", p.temTempo ? "obrigatória" : "opcional",
-                 p.temTempo ? "o tempo de inscrição: <code>31.20</code> ou <code>1:02.35</code>"
-                            : "se deixar em branco, o app espalha as equipes entre as séries"]);
-
-    const abasEx = p.temPara && p.tipoClasse === "FUNCIONAL"
-      ? ["DF-FEM", "DF-MASC", "DV-FEM", "DI-MASC"]
-      : p.temPara ? ["MIRIM-FEM", "MIRIM-MASC", 'PARAL "A"-FEM', 'PARAL "A"-MASC']
-      : ["MIRIM-FEM", "MIRIM-MASC", "INFANTIL-FEM", "INFANTIL-MASC"];
-
-    html("previaFormato", `
-      <p class="nota"><b>Uma aba por categoria e naipe.</b> O nome da aba manda —
-        sem <code>-FEM</code> ou <code>-MASC</code> no fim, a aba é recusada.
-        Exemplo: ${abasEx.map((x) => `<code>${x}</code>`).join(" · ")}</p>
-      <table class="tabela"><thead><tr><th>COLUNA</th><th>SITUAÇÃO</th>
-      <th>O QUE VAI NELA</th></tr></thead><tbody>${
-        linhas.map(([c, s, d]) => `<tr><td><code>${c}</code></td>
-          <td class="${s.startsWith("obrig") ? "exigida" : "apagado"}">${s}</td>
-          <td>${d}</td></tr>`).join("")}</tbody></table>
-      <p class="nota">Prova sem ninguém: escreva <code>SEM INSCRITOS</code> na
-        primeira linha do bloco.</p>
-      ${exemploVisual(p)}`);
-    validarConfig();
   }
 
   /* ---- nada de defaults escondidos: o que falta bloqueia o avanço ---- */
   const OBRIGATORIOS = [
     ["nomeComp", "o nome da competição"],
     ["raias", "quantas raias tem a piscina"],
-    ["regraSerie", "como distribuir as séries"],
     ["limiteInd", "o limite de provas individuais por atleta"],
-    ["programa", "o programa de provas"],
   ];
 
   function validarConfig() {
@@ -2995,36 +4029,29 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return !faltando.length;
   }
 
-  function atualizarPrograma() {
-    const texto = $("#programa").value;
-    const r = D.lerPrograma(texto);
-    estado.perfil.programaTexto = texto;
-    estado.perfil.programa = r.provas;
-    const alvo = $("#resumoPrograma");
-    if (!texto.trim()) {
-      alvo.innerHTML = `<p class="nota aviso-leve">Sem programa: as provas serão
-        numeradas na ordem que o app deduzir, e provas sem inscritos não
-        aparecerão.</p>`;
+  /* --- o cartão do programa dentro da tela de competição --- */
+  function renderResumoPrograma() {
+    const prog = estado.programa;
+    if (!prog || !prog.provas || !prog.provas.length) {
+      html("resumoPrograma", `<p class="nota aviso-leve">Sem programa: as provas
+        serão numeradas na ordem que o app deduzir, que quase nunca é a ordem
+        oficial; e provas sem inscritos não aparecerão.</p>`);
       return;
     }
-    const recusa = r.recusadas.length
-      ? `<p class="alerta">${r.recusadas.length} linha(s) não reconhecida(s):
-         ${r.recusadas.slice(0, 4).map((x) =>
-           `<code>linha ${x.linha}: ${x.texto.slice(0, 60)}</code>`).join(" ")}</p>`
-      : "";
-    alvo.innerHTML = `
-      <p class="nota"><b>${r.provas.length} provas</b> reconhecidas.
-        As três primeiras: ${r.provas.slice(0, 3).map((p) =>
-          `<code>${p.distancia.toLowerCase()} ${p.estilo} ${p.rotulo} ` +
-          `${{ FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" }[p.naipe]}</code>`
-        ).join(" · ")}</p>${recusa}`;
+    const et = estado.perfil.etapas || [];
+    html("resumoPrograma", `
+      <p class="nota"><b>${prog.provas.length} provas</b>, na ordem do arquivo
+        <b>${prog.arquivo || "perfil salvo"}</b>${et.length
+          ? `, em <b>${et.length} etapa(s)</b>` : ""}.
+        As três primeiras: ${prog.provas.slice(0, 3)
+          .map((p) => `<code>${D.linhaDoPrograma(p)}</code>`).join(" · ")}</p>`);
   }
 
   function atualizarPreviaRaias() {
     const bruto = String($("#raias").value || "").trim();
     if (!bruto) {
-      $("#previaRaias").textContent = "—";
-      $("#previaMinimo").textContent = "—";
+      $("#previaRaias").textContent = "";
+      $("#previaMinimo").textContent = "";
       $("#previaSeries").textContent = "informe as raias para ver";
       return;
     }
@@ -3032,15 +4059,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $("#previaRaias").textContent = B.ordemRaias(n).join(" · ");
     $("#previaMinimo").textContent = B.minimoPorSerie(n);
     const exemplos = [7, 13, 20, 41].map((x) =>
-      `${x} → ${B.tamanhosSeries(x, n, $("#regraSerie").value).join("-")}`);
+      `${x} → ${B.tamanhosSeries(x, n, B.MENOS_SERIES).join("-")}`);
     $("#previaSeries").textContent = exemplos.join("   |   ");
   }
 
   function lerConfig() {
     const p = estado.perfil;
     p.nome = $("#nomeComp").value.trim();
+    p.local = $("#local").value.trim();
+    p.data = $("#dataComp").value.trim();
+    p.piscina = $("#piscina").value;
     p.raias = parseInt($("#raias").value, 10) || 6;   // 6 só como fallback interno
-    p.regraSerie = $("#regraSerie").value;
+    p.regraSerie = B.MENOS_SERIES;   // sempre o menor número de séries
     p.limiteInd = parseInt($("#limiteInd").value, 10) || 0;
     const lr = $("#limiteRev").value.trim();
     p.limiteRev = lr === "" ? null : parseInt(lr, 10);
@@ -3052,8 +4082,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     p.tipoClasse = $("#tipoClasse").value;
     p.mostrarCategoria = $("#mostrarCategoria").checked;
     p.dedupMisto = $("#dedupMisto").checked;
-    p.programaTexto = $("#programa").value;
-    p.programa = D.lerPrograma(p.programaTexto).provas;
+    // o programa veio da planilha do passo 1; o perfil só o carrega junto
+    p.programa = (estado.programa && estado.programa.provas) || [];
+    p.programaArquivo = (estado.programa && estado.programa.arquivo) || "";
+    p.programaTexto = p.programa.map(D.linhaDoPrograma).join("\n");
     // derivados, usados pelo motor
     p.tipo = tipoDe(p);
     p.usarRegrasPara = p.temPara && p.tipoClasse === "FUNCIONAL";
@@ -3120,46 +4152,61 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     });
   }
 
-  /* ---------------- tela 2: inscritos ---------------- */
-  const COLUNAS_POR_TIPO = {
-    PARA: [
-      ["NOME DA PROVA", "obrigatória", "o próprio cabeçalho do bloco: 50 LIVRE"],
-      ["CIDADE", "obrigatória", "a cidade que o atleta representa"],
-      ["SEGMENTO", "obrigatória", "DF, DV, DI, DA ou TEA-DOWN — pode vir no nome da aba (DF-FEM)"],
-      ["CLASSE", "obrigatória", "a classificação funcional: S6/SB5/SM6"],
-      ["TEMPO", "opcional", "se preenchida, o balizamento passa a ser por desempenho"],
-      ["EXCESSÃO", "opcional", "códigos de adaptação, copiados para o balizamento"],
-    ],
-    ESCOLAR: [
-      ["NOME DA PROVA", "obrigatória", "o próprio cabeçalho do bloco: 25 LIVRE"],
-      ["ESCOLA", "obrigatória", "aceita também COLÉGIO, EQUIPE ou CIDADE"],
-      ["TEMPO", "opcional", "se preenchida, o balizamento passa a ser por desempenho"],
-    ],
-    ESCOLAR_PARA: [
-      ["NOME DA PROVA", "obrigatória", "o próprio cabeçalho do bloco"],
-      ["ESCOLA", "obrigatória", "aceita também COLÉGIO, EQUIPE ou CIDADE"],
-      ["CLASSE", "obrigatória nas paralímpicas", "TEA, DI, DA, DOWN, DF-S6…"],
-      ["TEMPO", "opcional", "se preenchida, o balizamento passa a ser por desempenho"],
-    ],
-    TEMPO: [
-      ["NOME DA PROVA", "obrigatória", "o próprio cabeçalho do bloco"],
-      ["EQUIPE", "obrigatória", "aceita também CLUBE, ESCOLA ou CIDADE"],
-      ["TEMPO", "recomendada", "sem ela o app espalha as equipes em vez de balizar por tempo"],
-    ],
-  };
+  /* ---------------- tela 3: inscritos ---------------- */
+  /* O que cada coluna de apoio guarda. A primeira linha não é coluna: é o
+     nome da prova, que abre o bloco. */
+  function colunasExigidasDe(p) {
+    const eq = p.rotuloEquipe || "EQUIPE";
+    const funcional = p.temPara && p.tipoClasse === "FUNCIONAL";
+    const linhas = [[
+      "o nome da prova", "obrigatório",
+      "abre o bloco, na primeira célula da linha: <code>50M LIVRE MIRIM MASCULINO</code>",
+    ], [
+      eq, "obrigatória", "a instituição que o atleta representa",
+    ]];
+    if (funcional) {
+      linhas.push(["SEGMENTO", "obrigatória", "DF, DV, DI, DA ou TEA-DOWN"]);
+      linhas.push(["CLASSE", "obrigatória", "a classe funcional: <code>S6/SB5/SM6</code>"]);
+    } else if (p.temPara) {
+      linhas.push(["CLASSE", "obrigatória nas paralímpicas",
+                   "o tipo de condição: <code>TEA</code>, <code>DI</code>, <code>DA</code>, <code>DOWN</code>"]);
+    }
+    linhas.push(["TEMPO", p.temTempo ? "obrigatória" : "opcional",
+      p.temTempo
+        ? "o tempo de inscrição: <code>31.20</code> ou <code>1:02.35</code>"
+        : "se vier preenchida, o balizamento passa a ser por desempenho"]);
+    linhas.push(["NOME", "opcional",
+      "só se você quiser uma coluna própria para o nome; sem ela, os nomes " +
+      "ficam na mesma coluna do nome da prova"]);
+    linhas.push(["CATEGORIA", "opcional",
+      "para quando a categoria varia dentro da mesma prova"]);
+    if (p.temPara) {
+      linhas.push(["EXCESSÃO", "opcional",
+                   "códigos de adaptação, copiados para o balizamento"]);
+    }
+    return linhas;
+  }
 
   function renderEspecificacao() {
-    const tipo = estado.perfil ? estado.perfil.tipo : "ESCOLAR";
-    $("#tipoAtual").textContent = TIPOS[tipo] ? TIPOS[tipo].rotulo : "";
-    const linhas = COLUNAS_POR_TIPO[tipo] || COLUNAS_POR_TIPO.ESCOLAR;
+    const p = estado.perfil;
+    if (!p) return;
+    const tipo = p.tipo || "ESCOLAR";
+    const alvoTipo = $("#tipoAtual");
+    if (alvoTipo) alvoTipo.textContent = TIPOS[tipo] ? TIPOS[tipo].rotulo : "";
     html("colunasExigidas", `
-      <table class="tabela"><thead><tr><th>COLUNA</th><th>SITUAÇÃO</th>
+      <table class="tabela"><thead><tr><th>O QUE</th><th>SITUAÇÃO</th>
       <th>O QUE VAI NELA</th></tr></thead><tbody>${
-        linhas.map(([c, s, d]) => `<tr>
+        colunasExigidasDe(p).map(([c, s, d]) => `<tr>
           <td><code>${c}</code></td>
-          <td class="${s.startsWith("obrig") ? "exigida" : "apagado"}">${s}</td>
+          <td class="${s.startsWith("obrigat") ? "exigida" : "apagado"}">${s}</td>
           <td>${d}</td></tr>`).join("")}</tbody></table>`);
-    html("exemploFormato", exemploVisual(estado.perfil));
+    html("exemploFormato", exemploVisual(p));
+    const temPrograma = (p.programa || []).length;
+    html("notaModelo", temPrograma
+      ? `A planilha vem com as <b>${temPrograma} provas do seu programa</b> já
+         escritas, na ordem certa. Você só digita os nomes embaixo de cada uma.`
+      : `Sem programa de provas, a planilha vem com algumas provas de exemplo
+         para você trocar.`);
   }
 
   function listaAbasRuins(abas, problemas) {
@@ -3170,8 +4217,23 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <td class="apagado">${a.achado.length
           ? a.achado.map((x) => `<code>${x}</code>`).join(" ")
           : "(nada)"}</td></tr>`).join("")
-      }${problemas.map((p) => `<tr><td>—</td><td colspan="2">${p}</td></tr>`).join("")
+      }${problemas.map((p) => `<tr><td></td><td colspan="2">${p}</td></tr>`).join("")
       }</tbody></table>`;
+  }
+
+  // linhas com instituição mas sem nome de atleta: não viram inscrição, e
+  // sumir com elas caladamente seria justamente o erro que não pode acontecer
+  function listaDescartadas(descartadas) {
+    if (!descartadas || !descartadas.length) return "";
+    return `<div class="recusa leve">
+      <h3>${descartadas.length} linha(s) ficaram de fora</h3>
+      <p>Elas têm a instituição preenchida, mas nenhum nome de atleta ao lado.
+         Se for inscrição de verdade, escreva o nome e envie de novo.</p>
+      <table class="tabela"><thead><tr><th>LINHA</th><th>PROVA</th>
+      <th>INSTITUIÇÃO</th></tr></thead><tbody>${
+        descartadas.slice(0, 12).map((d) => `<tr><td class="num">${d.linha}</td>
+          <td>${d.prova}</td><td>${CX(d.equipe)}</td></tr>`).join("")
+      }</tbody></table></div>`;
   }
 
   async function carregarArquivo(file) {
@@ -3197,7 +4259,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <p class="nota"><b>É assim que ela precisa ser:</b></p>
           ${exemploVisual(estado.perfil)}
           <p class="nota">Corrija a planilha e envie de novo, ou baixe a
-             planilha modelo — ela já vem com os cabeçalhos certos.</p>
+             planilha modelo: ela já vem com os cabeçalhos certos.</p>
           <div class="acoes">
             <button type="button" class="mini claro" id="btnModeloRecusa">Baixar planilha modelo</button>
             <button type="button" class="mini claro" id="btnVoltarFormato">Rever o formato completo</button>
@@ -3208,8 +4270,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       return;
     }
 
-    let r = D.lerPlanilhaBlocos(wb, { ignorar });
-    let formato = "blocos";
+    // a lista vertical é o formato que o app pede; os outros dois continuam
+    // valendo para quem já tem a planilha pronta de anos anteriores
+    let r = D.lerPlanilhaLista(wb, { ignorar });
+    let formato = "lista";
+    if (!r.inscricoes.length) {
+      r = D.lerPlanilhaBlocos(wb, { ignorar });
+      formato = "blocos";
+    }
     if (!r.inscricoes.length) {
       r = D.lerPlanilhaLinhas(wb, {});
       formato = "linhas";
@@ -3259,13 +4327,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         <div class="ficha"><b>${rev}</b><span>equipes de revezamento</span></div>
         <div class="ficha"><b>${comTempo}</b><span>com tempo informado</span></div>
       </div>
-      <p class="nota">Formato reconhecido: <b>${formato === "blocos"
-        ? "blocos de coluna (uma aba por categoria)" : "uma linha por inscrição"}</b>
-        · arquivo <b>${file.name}</b></p>
+      ${listaDescartadas(r.descartadas)}
+      <p class="nota">Formato reconhecido: <b>${{
+        lista: "uma prova embaixo da outra",
+        blocos: "blocos de coluna (uma aba por categoria)",
+        linhas: "uma linha por inscrição",
+      }[formato]}</b> · arquivo <b>${file.name}</b></p>
       <table class="tabela"><thead><tr><th>ABA</th><th>PROVAS ENCONTRADAS</th>
       <th>INSCRIÇÕES</th></tr></thead><tbody>${
         r.abas.map((a) => `<tr><td>${a.aba}</td><td>${
-          (a.provas || []).map((p) => p.distancia + " " + p.estilo).join(" · ") || "—"
+          (a.provas || []).map((p) => p.distancia + " " + p.estilo).join(" · ") || ""
         }</td><td class="num">${a.linhas}</td></tr>`).join("")
       }</tbody></table>`;
 
@@ -3317,7 +4388,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return m ? m[1] : "";
   }
 
-  /* ---------------- tela 3: conferência ---------------- */
+  /* ---------------- tela 4: conferência ---------------- */
   function renderConferencia() {
     if (!estado.provas.length) montar();
     const criticos = estado.erros.filter((e) => e.gravidade === "critico");
@@ -3337,8 +4408,23 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       .filter((p) => p.aviso && p.series.length)
       .map((p) => ({
         prova: p.numero, titulo: p.titulo, nome: "", equipe: "",
-        detalhe: `${p.atletas} atleta(s) inscritos — ${p.aviso}`,
+        detalhe: `${p.atletas} atleta(s) inscritos: ${p.aviso}`,
       }));
+    // revezamentos inscritos só com a equipe: a raia está reservada e o PDF
+    // sai com as linhas em branco, mas o árbitro precisa saber quais são
+    const semLista = [];
+    for (const p of estado.provas) {
+      for (const s of p.series) {
+        for (const l of s.linhas) {
+          if (!l.item.semLista) continue;
+          semLista.push({
+            prova: p.numero, titulo: p.titulo, nome: "", equipe: l.item.equipe,
+            detalhe: `${s.numero}ª série, raia ${l.raia}: a raia está reservada e ` +
+                     "o balizamento sai com as linhas em branco para anotar no dia",
+          });
+        }
+      }
+    }
     const semInscritos = estado.provas.filter((p) => !p.series.length).length;
     const totCrit = criticos.length + estado.limites.length +
                     cortes.filter((c) => c.gravidade === "critico").length +
@@ -3353,6 +4439,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           semInscritos ? `, ${semInscritos} sem inscritos` : ""}</span></div>
       </div>
       ${bloco("Provas fora do programa oficial", foraDoPrograma, "critico")}
+      ${bloco("Revezamentos ainda sem a lista de atletas", semLista, "info")}
       ${bloco("Atletas acima do limite de provas", estado.limites.map((a) => ({
         prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
         detalhe: `${a.quantidade} provas (máximo ${a.limite}): ${a.provas.join(", ")}`,
@@ -3362,8 +4449,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
               cortes.filter((c) => c.gravidade === "critico"), "critico")}
       ${bloco("Sem classe definida", cortes.filter((c) => c.gravidade === "info"), "info")}
       ${bloco("Avisos de organização das raias", avisos, "aviso")}
-      ${totCrit === 0 && !avisos.length
-        ? '<p class="ok-vazio">Nenhum problema encontrado. O balizamento está pronto para gerar.</p>' : ""}`;
+      ${totCrit === 0 && !avisos.length && !semLista.length
+        ? '<p class="ok-vazio">Nenhum problema encontrado. O balizamento está pronto para gerar.</p>'
+        : totCrit === 0 && !avisos.length
+        ? '<p class="ok-vazio">Nenhum erro. Só falta a lista de atletas dos revezamentos acima, que dá para anotar no dia.</p>'
+        : ""}`;
   }
 
   function bloco(titulo, itens, nivel) {
@@ -3373,13 +4463,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       <table class="tabela"><thead><tr><th>PROVA</th><th>ATLETA</th>
       <th>EQUIPE</th><th>DETALHE</th></tr></thead><tbody>${
       itens.map((e) => `<tr>
-        <td>${e.prova ? e.prova + "ª " + (e.titulo || "") : "—"}</td>
+        <td>${e.prova ? e.prova + "ª " + (e.titulo || "") : ""}</td>
         <td>${CX(e.nome || "")}</td>
         <td class="apagado">${CX(e.equipe || "")}</td>
         <td>${e.detalhe || ""}</td></tr>`).join("")}</tbody></table></section>`;
   }
 
-  /* ---------------- tela 4: gerar ---------------- */
+  /* ---------------- tela 5: gerar ---------------- */
   function renderGerar() {
     if (!estado.provas.length) montar();
     const atletas = estado.provas.reduce((s, p) => s + p.atletas, 0);
@@ -3436,8 +4526,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (!p.classList.contains("bloqueado")) irPara(p.dataset.passo);
     }));
     $("#raias").oninput = atualizarPreviaRaias;
-    $("#regraSerie").oninput = atualizarPreviaRaias;
-    $("#programa").oninput = atualizarPrograma;
     ["temPara", "tipoClasse", "temTempo", "temRevezamento", "rotuloEquipe",
      "mostrarCategoria"].forEach((id) => {
       const el = $("#" + id);
@@ -3455,11 +4543,32 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     };
     $("#irInscritos").onclick = () => {
       if (!validarConfig()) return;
-      lerConfig(); renderEspecificacao(); irPara("inscritos");
+      lerConfig(); renderEspecificacao();
+      liberar("inscritos", true);
+      irPara("inscritos");
     };
-    ["nomeComp", "raias", "regraSerie", "limiteInd", "limiteIndPara", "programa"]
+    ["nomeComp", "raias", "limiteInd", "limiteIndPara"]
       .forEach((id) => $("#" + id).addEventListener("input", validarConfig));
-    $("#regraSerie").addEventListener("change", validarConfig);
+    // --- tela do programa de provas ---
+    html("exemploPrograma", exemploProgramaVisual());
+    ao("btnModeloPrograma", "click", baixarModeloPrograma);
+    ao("irCompeticao", "click", () => { lerConfig(); irPara("competicao"); });
+    ao("semPrograma", "click", seguirSemPrograma);
+    ao("btnTrocarPrograma", "click", () => irPara("programa"));
+    const zonaP = $("#zonaPrograma");
+    if (zonaP) {
+      zonaP.onclick = () => $("#arquivoPrograma").click();
+      zonaP.ondragover = (e) => { e.preventDefault(); zonaP.classList.add("sobre"); };
+      zonaP.ondragleave = () => zonaP.classList.remove("sobre");
+      zonaP.ondrop = (e) => {
+        e.preventDefault(); zonaP.classList.remove("sobre");
+        if (e.dataTransfer.files[0]) carregarPrograma(e.dataTransfer.files[0]);
+      };
+      $("#arquivoPrograma").onchange = (e) => {
+        if (e.target.files[0]) carregarPrograma(e.target.files[0]);
+      };
+    }
+
     $("#btnModelo").onclick = () => baixarModelo();
     $("#btnEntendi").onclick = () => mostrarPainel("envio");
     $("#verFormato").onclick = () => mostrarPainel("formato");
@@ -3516,6 +4625,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       try {
         const p = JSON.parse(await f.text());
         estado.perfil = Object.assign(perfilPadrao(), p);
+        carregarProgramaDoPerfil(p);
         preencherConfig();
         aviso("Perfil carregado.");
       } catch (err) { alert("Não consegui ler este arquivo de perfil."); }
@@ -3532,10 +4642,22 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       `<button type="button" class="mini claro" data-k="${k}">${p.nome}</button>`).join(" ");
     $$("button", alvo).forEach((b) => {
       b.onclick = () => {
-        estado.perfil = Object.assign(perfilPadrao(), lista[b.dataset.k]);
+        const p = lista[b.dataset.k];
+        estado.perfil = Object.assign(perfilPadrao(), p);
+        carregarProgramaDoPerfil(p);
         preencherConfig();
       };
     });
+  }
+
+  // um perfil guarda o programa junto: recuperá-lo destrava o passo seguinte
+  function carregarProgramaDoPerfil(p) {
+    const prog = programaDoPerfil(p);
+    if (!prog) return;
+    estado.programa = prog;
+    estado.perfil.programa = prog.provas;
+    liberarCompeticao(true);
+    renderResultadoPrograma(prog);
   }
 
   function aviso(txt) {

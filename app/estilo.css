@@ -32,12 +32,12 @@
 body{
   margin:0;background:var(--fundo);color:var(--tinta);
   font-family:"Asap",system-ui,-apple-system,"Segoe UI",sans-serif;
-  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;
+  font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased;
 }
 h1,h2,h3{font-family:"Archivo",system-ui,sans-serif;margin:0;text-wrap:balance}
 h1{font-size:1.45rem;font-weight:700;letter-spacing:-.02em;line-height:1.1}
-h2{font-size:1.35rem;font-weight:600;letter-spacing:-.01em;margin-bottom:.2rem}
-h3{font-size:1rem;font-weight:600}
+h2{font-size:1.6rem;font-weight:600;letter-spacing:-.01em;margin-bottom:.2rem}
+h3{font-size:1.15rem;font-weight:600;margin-bottom:.15rem}
 p{margin:0}
 .mono{font-family:"Roboto Mono",ui-monospace,monospace;font-size:.85em}
 
@@ -71,7 +71,7 @@ p{margin:0}
 .passo.bloqueado{opacity:.4;cursor:not-allowed}
 
 main{max-width:70rem;margin:0 auto;padding:1.6rem clamp(1rem,4vw,2.5rem) 5rem}
-.sub{color:var(--suave);max-width:62ch;margin-bottom:1.2rem}
+.sub{color:var(--suave);max-width:64ch;margin-bottom:1.4rem;font-size:1.02rem;line-height:1.55}
 
 /* ---------- tipos de competição ---------- */
 .grade-tipos{
@@ -109,7 +109,7 @@ main{max-width:70rem;margin:0 auto;padding:1.6rem clamp(1rem,4vw,2.5rem) 5rem}
   margin-left:.4rem;vertical-align:middle;
 }
 .campos{display:flex;gap:.7rem;flex-wrap:wrap}
-.campo{display:flex;flex-direction:column;gap:.25rem;font-size:.82rem;color:var(--suave)}
+.campo{display:flex;flex-direction:column;gap:.3rem;font-size:.92rem;color:var(--suave)}
 .campo.largo{flex:1;min-width:16rem}
 textarea{
   font-family:"Roboto Mono",ui-monospace,monospace;font-size:.8rem;line-height:1.5;
@@ -136,7 +136,7 @@ input[type=number]{width:6rem}
 .previa div{display:flex;flex-direction:column;gap:.15rem}
 .previa dt{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--suave)}
 .previa dd{margin:0;font-weight:500}
-.nota{color:var(--suave);font-size:.85rem;max-width:70ch}
+.nota{color:var(--suave);font-size:.95rem;max-width:72ch;line-height:1.5}
 
 .cabecalho-lista{
   display:flex;gap:.5rem;font-size:.68rem;text-transform:uppercase;
@@ -151,9 +151,17 @@ input[type=number]{width:6rem}
 .linha-etapa{display:flex;gap:.5rem;margin-bottom:.4rem;align-items:center}
 .linha-etapa input{flex:1;min-width:0}
 
-.marcavel{display:flex;gap:.5rem;align-items:flex-start;font-size:.9rem;
+.marcavel{display:flex;gap:.6rem;align-items:center;font-size:1.05rem;
   color:var(--suave);max-width:70ch;cursor:pointer}
-.marcavel input{margin-top:.25rem}
+.marcavel input{width:1.15rem;height:1.15rem;accent-color:var(--agua);flex:none}
+.marcavel:hover{color:var(--tinta)}
+.marcavel span b{color:var(--tinta)}
+.cartao .marcavel + .marcavel{margin-top:-.25rem}
+
+/* a linha que abre uma prova, na miniatura da planilha de inscritos */
+.grade .cel-prova{background:var(--agua-fraca);font-weight:600;color:var(--tinta)}
+.botao.claro{background:var(--papel);color:var(--agua);
+  border:1px solid var(--agua)}
 
 /* ---------- botões ---------- */
 .acoes{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-top:1rem}
@@ -185,8 +193,8 @@ input[type=number]{width:6rem}
   transition:border-color .12s,background .12s;
 }
 .zona:hover,.zona.sobre{border-color:var(--agua);background:var(--agua-fraca)}
-.zona strong{font-family:"Archivo",sans-serif;font-size:1.05rem}
-.zona span{color:var(--suave);font-size:.86rem}
+.zona strong{font-family:"Archivo",sans-serif;font-size:1.2rem}
+.zona span{color:var(--suave);font-size:.95rem}
 
 /* ---------- atalhos e blocos condicionais ---------- */
 .atalhos{
@@ -251,7 +259,7 @@ input.pendente,select.pendente,textarea.pendente{
 /* ---------- especificação do formato ---------- */
 .especificacao{border-left:3px solid var(--agua)}
 .regras-formato{margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.35rem}
-.regras-formato li{font-size:.88rem;max-width:78ch}
+.regras-formato li{font-size:1rem;max-width:76ch;line-height:1.5}
 .regras-formato b{font-weight:600}
 .tabela .exigida{color:var(--grave);font-weight:600}
 
@@ -262,8 +270,8 @@ input.pendente,select.pendente,textarea.pendente{
   padding:1rem 1.15rem;margin-bottom:1rem;
   display:flex;flex-direction:column;gap:.6rem;
 }
-.recusa h3{color:var(--grave)}
-.recusa p{font-size:.9rem;max-width:74ch}
+.recusa h3{color:var(--grave);font-size:1.2rem}
+.recusa p{font-size:1rem;max-width:74ch;line-height:1.5}
 .recusa.leve{background:var(--ambar-fraca);border-color:var(--ambar)}
 .recusa.leve h3{color:var(--ambar)}
 
@@ -300,6 +308,25 @@ input.pendente,select.pendente,textarea.pendente{
 .tabela tbody tr:last-child td{border-bottom:0}
 .tabela .num{font-family:"Roboto Mono",monospace;text-align:right}
 .tabela .apagado{color:var(--suave)}
+
+/* ---------- programa de provas ---------- */
+.lista-programa{
+  max-height:26rem;overflow:auto;border:1px solid var(--linha);
+  border-radius:4px;background:var(--papel);margin-top:.8rem;
+}
+.lista-programa .tabela{margin:0;border:0}
+.lista-programa thead th{position:sticky;top:0;z-index:1}
+.faixa-etapa td{
+  background:var(--papel2);font-weight:600;font-size:.78rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--suave);
+}
+.discordancia{
+  font-family:"Roboto Mono",monospace;font-size:.72rem;font-weight:600;
+  color:var(--ambar);background:var(--ambar-fraca);
+  padding:.05rem .3rem;border-radius:2px;margin-left:.3rem;
+}
+.lista-motivos{margin:.4rem 0 .8rem;padding-left:1.1rem;font-size:.9rem}
+.lista-motivos li{margin-bottom:.2rem}
 
 /* ---------- conferência ---------- */
 .bloco{margin:1.2rem 0}
@@ -349,3 +376,6 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
   .previa{gap:.9rem}
   .linha-etapa{flex-wrap:wrap}
 }
+
+/* rótulo e etiqueta "opcional" na mesma linha dentro de um campo */
+.campo > .rotulo{display:flex;align-items:center;gap:0}

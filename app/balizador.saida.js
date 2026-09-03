@@ -1,5 +1,5 @@
 /* =====================================================================
-   BALIZADOR — geração dos arquivos (xlsx, PDF do balizamento, papeletas)
+   BALIZADOR: geração dos arquivos (xlsx, PDF do balizamento, papeletas)
    Depende de XLSX (SheetJS) e jspdf.
    ===================================================================== */
 (function (raiz) {
@@ -27,10 +27,19 @@
     const v = [raia, CX(it.nome), CX(it.equipe)];
     if (prova.paralimpica && !prova.revezamento) {
       if (perfil.mostrarCategoria) v.push(CX(it.letraCategoria || it.categoria || ""));
-      v.push(CX(it.classe) || "—");
+      v.push(CX(it.classe));
     }
     v.push("");
     return v;
+  }
+
+  /* Nomes de um revezamento. Quando a equipe se inscreveu sem a lista (os
+     nadadores são escolhidos no dia), devolve quatro linhas em branco, para a
+     raia sair reservada e com espaço de escrever à mão. */
+  function nomesRevezamento(it) {
+    if (it.atletas && it.atletas.length) return it.atletas;
+    if (it.semLista) return ["", "", "", ""];
+    return null;
   }
 
   /* =================== PLANILHA =================== */
@@ -73,14 +82,16 @@
         linhas.push([ORD(s.numero) + " SÉRIE"]);
         for (const l of s.linhas) {
           const it = l.item;
-          if (it.atletas && it.atletas.length) {
+          const nomesRev = nomesRevezamento(it);
+          if (nomesRev) {
             const ini = linhas.length;
-            it.atletas.forEach((a) => linhas.push([null, CX(a), null, ""]));
+            nomesRev.forEach((a) => linhas.push([null, CX(a), null, ""]));
             const fim = linhas.length - 1;
             [0, 2, cols.length - 1].forEach((c) =>
               merges.push({ s: { r: ini, c }, e: { r: fim, c } }));
             linhas[ini][0] = l.raia;
             linhas[ini][2] = CX(it.equipe);
+            if (it.semLista) linhas[ini][cols.length - 1] = "LISTA DE ATLETAS PENDENTE";
             pintar.push({ r: ini, tipo: "raiaRev", ate: fim });
           } else {
             pintar.push({ r: linhas.length, tipo: it.marcado ? "vermelho" : "" });
@@ -94,7 +105,7 @@
         linhas.push(["NÃO PARTICIPAM DESTA PROVA"]);
         for (const c of p.cortados) {
           pintar.push({ r: linhas.length, tipo: c.corteTipo === B.SEM_CLASSE ? "azul" : "vermelho" });
-          const v = ["—", CX(c.nome), CX(c.equipe)];
+          const v = ["", CX(c.nome), CX(c.equipe)];
           if (p.paralimpica) {
             if (perfil.mostrarCategoria) v.push(CX(c.letraCategoria || ""));
             v.push(CX(c.classe));
@@ -197,7 +208,7 @@
   function etapaDe(prova, perfil) {
     for (const e of (perfil.etapas || [])) {
       if (prova.numero >= e.de && prova.numero <= e.ate) {
-        return { rotulo: `${e.nome} — ${e.dia} (${e.periodo})  ·  PROVAS ${e.de} A ${e.ate}`, ...e };
+        return { rotulo: `${e.nome}, ${e.dia} (${e.periodo})  ·  PROVAS ${e.de} A ${e.ate}`, ...e };
       }
     }
     return null;
@@ -212,189 +223,299 @@
     return new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
   }
 
-  function cabecalhoPagina(doc, perfil, rotuloEtapa, pagina) {
-    doc.setFont("helvetica", "bold").setFontSize(12).setTextColor(0);
-    doc.text(CX(perfil.nome || "BALIZAMENTO"), MG, MG + 4);
-    doc.setFont("helvetica", "normal").setFontSize(7.5).setTextColor(70);
-    if (rotuloEtapa) doc.text(CX(rotuloEtapa), A4.w - MG, MG + 4, { align: "right" });
-    doc.setDrawColor(0).setLineWidth(0.3);
-    doc.line(MG, MG + 6.5, A4.w - MG, MG + 6.5);
-    doc.setFontSize(7).setTextColor(110);
-    doc.text("PÁGINA " + pagina, A4.w / 2, A4.h - 6, { align: "center" });
+  /* Cabeçalho de página, no estilo da folha oficial: o que é, de que
+     competição, onde e quando. Sem patrocínio e sem registro de atleta. */
+  const SITE = "erickchoai.github.io/balizador";
+
+  /* Marca d'água e crédito. Bem claros de propósito: esta folha é usada na
+     borda da piscina, com gente escrevendo tempo em cima dela. */
+  function marcaDagua(doc) {
+    doc.setFont("helvetica", "bold").setFontSize(52).setTextColor(244);
+    doc.text("BALIZADOR", A4.w / 2, A4.h / 2, { align: "center", angle: 32 });
     doc.setTextColor(0);
   }
 
-  function larguras(prova, perfil) {
-    const total = A4.w - 2 * MG;
-    const base = (prova.paralimpica && !prova.revezamento)
-      ? (perfil.mostrarCategoria ? [14, 54, 58, 12, 20, 24] : [15, 58, 62, 22, 25])
-      : [15, 66, 72, 33];
-    const soma = base.reduce((a, b) => a + b, 0);
-    return base.map((x) => x * total / soma);
+  function rodapeCredito(doc, pagina) {
+    doc.setFont("helvetica", "normal").setFontSize(6.5).setTextColor(150);
+    doc.text("Feito com Balizador · " + SITE, MG, A4.h - 7);
+    if (pagina != null)
+      doc.text(String(pagina), A4.w - MG, A4.h - 7, { align: "right" });
+    doc.setTextColor(0);
+  }
+
+  function cabecalhoPagina(doc, perfil, rotuloEtapa, pagina) {
+    marcaDagua(doc);
+    let y = MG + 4;
+    doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0);
+    doc.text("BALIZAMENTO", MG, y);
+    doc.setFontSize(11);
+    doc.text(CX(perfil.nome || ""), MG, y + 6);
+    y += 6;
+
+    doc.setFont("helvetica", "normal").setFontSize(8).setTextColor(60);
+    if (perfil.local) { y += 4.5; doc.text("Local: " + perfil.local, MG, y); }
+    const piscina = [
+      perfil.piscina ? "Piscina de " + perfil.piscina + " metros" : "",
+      (perfil.raias || 6) + " raias",
+    ].filter(Boolean).join(" · ");
+    const dataEPiscina = [perfil.data ? "Data: " + perfil.data : "", piscina]
+      .filter(Boolean).join("   ");
+    if (dataEPiscina) { y += 4.5; doc.text(dataEPiscina, MG, y); }
+
+    if (rotuloEtapa) {
+      doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(0);
+      doc.text(CX(rotuloEtapa), A4.w - MG, MG + 4, { align: "right" });
+    }
+    doc.setDrawColor(0).setLineWidth(0.4);
+    doc.line(MG, y + 2.5, A4.w - MG, y + 2.5);
+
+    rodapeCredito(doc, pagina);
+    return y + 7;                       // onde o conteúdo pode começar
+  }
+
+  function nomeInstituicao(perfil) {
+    const r = (perfil.rotuloEquipe || "EQUIPE").toLowerCase();
+    return r.charAt(0).toUpperCase() + r.slice(1);
+  }
+
+  /* As colunas da prova. A de tempo só aparece quando a competição tem tempo
+     de inscrição; a de balizamento é sempre em branco, para anotar na borda
+     da piscina. Nome e instituição dividem o que sobra da largura. */
+  function colunasPdf(prova, perfil) {
+    const cols = [{ chave: "raia", rotulo: "Raia", larg: 12, alinha: "center" }];
+    cols.push({ chave: "nome", rotulo: prova.revezamento ? "Nadadores" : "Nome",
+                larg: 0, peso: prova.revezamento ? 1.3 : 1, alinha: "left" });
+    if (prova.paralimpica && !prova.revezamento) {
+      if (perfil.mostrarCategoria)
+        cols.push({ chave: "categoria", rotulo: "Cat.", larg: 12, alinha: "center" });
+      cols.push({ chave: "classe", rotulo: "Classe", larg: 21, alinha: "center" });
+    }
+    cols.push({ chave: "equipe", rotulo: nomeInstituicao(perfil),
+                larg: 0, peso: 1, alinha: "left" });
+    if (perfil.temTempo)
+      cols.push({ chave: "tempo", rotulo: "Tempo", larg: 19, alinha: "right" });
+    cols.push({ chave: "baliza", rotulo: "Balizamento", larg: 25, alinha: "center" });
+
+    const fixo = cols.reduce((s, c) => s + c.larg, 0);
+    const sobra = (A4.w - 2 * MG) - fixo;
+    const pesos = cols.reduce((s, c) => s + (c.peso || 0), 0);
+    cols.forEach((c) => { if (!c.larg) c.larg = sobra * c.peso / pesos; });
+    return cols;
+  }
+
+  function xDaColuna(cols, k) {
+    let x = MG;
+    for (let i = 0; i < k; i++) x += cols[i].larg;
+    return x;
+  }
+
+  // escreve um valor respeitando o alinhamento da coluna
+  function escreverCelula(doc, cols, k, texto, y) {
+    const c = cols[k];
+    const x = xDaColuna(cols, k);
+    if (c.alinha === "center") doc.text(texto, x + c.larg / 2, y, { align: "center" });
+    else if (c.alinha === "right") doc.text(texto, x + c.larg - 1.5, y, { align: "right" });
+    else doc.text(texto, x + 1.5, y);
   }
 
   function gerarPdfBalizamento(provas, perfil) {
     const doc = novoPdf();
     const util = A4.w - 2 * MG;
-    let y = MG + 12, pagina = 1, etapaAtual = null;
-    let rotuloPagina = null;
+    const RODAPE = A4.h - MG - 6;
+    let pagina = 1, etapaAtual = null, rotuloPagina = null;
+    let y = cabecalhoPagina(doc, perfil, null, 1);
+    // uma página recém-aberta não deve ser quebrada de novo pela etapa
+    let paginaVazia = true;
 
     const novaPagina = (rot) => {
-      doc.addPage(); pagina++; y = MG + 12; rotuloPagina = rot;
-      cabecalhoPagina(doc, perfil, rot, pagina);
+      doc.addPage(); pagina++; rotuloPagina = rot;
+      y = cabecalhoPagina(doc, perfil, rot, pagina);
+      paginaVazia = true;
     };
-    cabecalhoPagina(doc, perfil, null, 1);
 
     for (const p of provas) {
       const et = etapaDe(p, perfil);
-      const cols = colunasDe(p, perfil);
-      const larg = larguras(p, perfil);
+      const cols = colunasPdf(p, perfil);
 
+      /* --- faixa da etapa --- */
       if (et && et.rotulo !== etapaAtual) {
         etapaAtual = et.rotulo;
-        if (y > MG + 14) novaPagina(et.rotulo);
-        rotuloPagina = et.rotulo;
-        doc.setFillColor(26, 26, 26).rect(MG, y, util, 9, "F");
-        doc.setFont("helvetica", "bold").setFontSize(11).setTextColor(255);
-        doc.text(CX(et.nome + " — " + et.dia + " (" + et.periodo + ")"), MG + 3, y + 6);
-        doc.setFontSize(8).text(`PROVAS ${et.de} A ${et.ate}`, A4.w - MG - 3, y + 6, { align: "right" });
+        // cada etapa abre uma página, mas sem deixar uma folha em branco atrás
+        if (!paginaVazia) novaPagina(et.nome);
+        rotuloPagina = et.nome;
+        doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(0);
+        doc.text("Etapa: " + CX(et.nome), MG, y + 3);
+        const quando = [et.dia, et.periodo].filter(Boolean).join("   ");
+        if (quando) doc.text("Data: " + CX(quando), MG + 55, y + 3);
+        doc.setFont("helvetica", "normal").setFontSize(8);
+        doc.text(`Provas ${et.de} a ${et.ate}`, A4.w - MG, y + 3, { align: "right" });
+        doc.setLineWidth(0.4).line(MG, y + 5, A4.w - MG, y + 5);
+        y += 9;
+      }
+      if (rotuloPagina === null && et) rotuloPagina = et.nome;
+
+      /* --- cabeçalho de colunas, redesenhado a cada quebra de página --- */
+      const desenharColunas = () => {
+        doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(0);
+        cols.forEach((c, k) => escreverCelula(doc, cols, k, c.rotulo, y + 3));
+        doc.setDrawColor(0).setLineWidth(0.25);
+        doc.line(MG, y + 4.4, A4.w - MG, y + 4.4);
+        y += 6.5;
+      };
+
+      const cabeDaProva = () => {
+        doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(0);
+        doc.text(ORD(p.numero) + " PROVA", MG, y + 3.4);
+        doc.text(p.distancia + " " + p.estilo, MG + 26, y + 3.4);
+        doc.setFontSize(9);
+        doc.text(CX(p.categoria || ""), MG + 60, y + 3.4);
+        doc.text(nomeNaipe(p.naipe), A4.w - MG, y + 3.4, { align: "right" });
+        doc.setFont("helvetica", "normal").setFontSize(6.5).setTextColor(120);
+        doc.text(`${p.atletas} ${p.revezamento ? "equipes" : "atletas"}` +
+                 ` · ${p.series.length} série(s)`, MG + 26, y + 7);
         doc.setTextColor(0);
-        y += 12;
-      }
-      if (rotuloPagina === null && et) {
-        rotuloPagina = et.rotulo;
-        cabecalhoPagina(doc, perfil, et.rotulo, pagina);
-      }
-
-      const alturaFaixa = 8;
-      const alturaCab = 6;
-      if (y + alturaFaixa + alturaCab + 8 > A4.h - MG - 8) novaPagina(rotuloPagina);
-
-      // faixa da prova
-      doc.setFillColor(255, 242, 0).rect(MG, y, util, alturaFaixa, "F");
-      doc.setDrawColor(0).setLineWidth(0.3).rect(MG, y, util, alturaFaixa);
-      doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(0);
-      doc.text(ORD(p.numero) + " PROVA — " + p.titulo, MG + 3, y + 5.5);
-      doc.setFont("helvetica", "normal").setFontSize(7.5);
-      doc.text(`${p.atletas} ATLETAS · ${p.series.length} SÉRIE(S)`,
-               A4.w - MG - 3, y + 5.5, { align: "right" });
-      y += alturaFaixa + 1;
-
-      const desenharCabecalho = () => {
-        doc.setFillColor(217, 217, 217).rect(MG, y, util, alturaCab, "F");
-        doc.setFont("helvetica", "bold").setFontSize(6.5).setTextColor(0);
-        let x = MG;
-        cols.forEach((c, k) => {
-          doc.text(c, x + larg[k] / 2, y + 4, { align: "center" });
-          x += larg[k];
-        });
-        doc.setDrawColor(128).setLineWidth(0.15).rect(MG, y, util, alturaCab);
-        y += alturaCab;
+        doc.setLineWidth(0.4).line(MG, y + 8.6, A4.w - MG, y + 8.6);
+        y += 10.5;
+        paginaVazia = false;
       };
-      desenharCabecalho();
 
-      const escreverLinha = (valores, altura, fundo, corTexto, negrito) => {
-        if (y + altura > A4.h - MG - 8) {
-          novaPagina(rotuloPagina);
-          desenharCabecalho();
-        }
-        if (fundo) { doc.setFillColor(...fundo); doc.rect(MG, y, util, altura, "F"); }
-        doc.setDrawColor(128).setLineWidth(0.15);
-        let x = MG;
-        doc.setFont("helvetica", negrito ? "bold" : "normal").setFontSize(7.5);
-        doc.setTextColor(...(corTexto || [0, 0, 0]));
-        valores.forEach((v, k) => {
-          doc.rect(x, y, larg[k], altura);
-          const texto = String(v == null ? "" : v);
-          const centro = k === 0 || k > 2;
-          const linhasTxt = doc.splitTextToSize(texto, larg[k] - 2);
-          linhasTxt.slice(0, 3).forEach((t, li) => {
-            doc.text(t, centro ? x + larg[k] / 2 : x + 1.5,
-                     y + 3.2 + li * 3, { align: centro ? "center" : "left" });
-          });
-          x += larg[k];
-        });
-        y += altura;
-      };
+      if (y + 26 > RODAPE) novaPagina(rotuloPagina);
+      cabeDaProva();
 
       if (!p.series.length) {
-        escreverLinha([""].concat(cols.slice(1).map(() => "")), 5, [242, 242, 242]);
-        y -= 5;
-        doc.setFont("helvetica", "bold").setFontSize(7.5);
-        doc.text("SEM INSCRITOS", A4.w / 2, y + 3.4, { align: "center" });
-        y += 5;
+        doc.setFont("helvetica", "italic").setFontSize(8).setTextColor(120);
+        doc.text("Sem inscritos", MG + 1.5, y + 3);
+        doc.setTextColor(0);
+        y += 8;
+        continue;
       }
+      desenharColunas();
 
       for (const s of p.series) {
-        if (y + 5.5 > A4.h - MG - 8) { novaPagina(rotuloPagina); desenharCabecalho(); }
-        doc.setFillColor(217, 217, 217).rect(MG, y, util, 5.5, "F");
-        doc.setDrawColor(128).rect(MG, y, util, 5.5);
-        doc.setFont("helvetica", "bold").setFontSize(7.5).setTextColor(0);
-        doc.text(`${ORD(s.numero)} SÉRIE — ${s.linhas.length} ` +
-                 (p.revezamento ? "EQUIPES" : "NADADORES"), MG + 2, y + 3.8);
-        y += 5.5;
+        if (y + 12 > RODAPE) { novaPagina(rotuloPagina); desenharColunas(); }
+        doc.setFont("helvetica", "bold").setFontSize(6.5).setTextColor(80);
+        doc.text(ORD(s.numero) + " SÉRIE", MG + 1.5, y + 3);
+        doc.setTextColor(0);
+        y += 4.5;
 
         for (const l of s.linhas) {
           const it = l.item;
-          if (it.atletas && it.atletas.length) {
-            const alt = Math.max(10, it.atletas.length * 3.4 + 2);
-            if (y + alt > A4.h - MG - 8) { novaPagina(rotuloPagina); desenharCabecalho(); }
-            doc.setFillColor(192, 0, 0).rect(MG, y, larg[0], alt, "F");
-            doc.setFillColor(248, 215, 213).rect(MG + larg[0], y, util - larg[0], alt, "F");
-            doc.setDrawColor(128).setLineWidth(0.15);
-            let x = MG;
-            larg.forEach((w) => { doc.rect(x, y, w, alt); x += w; });
-            doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(255);
-            doc.text(String(l.raia), MG + larg[0] / 2, y + alt / 2 + 2, { align: "center" });
-            doc.setFontSize(7.5).setTextColor(0).setFont("helvetica", "normal");
-            it.atletas.forEach((a, k) => {
-              doc.text(CX(a), MG + larg[0] + 1.5, y + 4 + k * 3.4);
+          const nomesRev = nomesRevezamento(it);
+          const colNome = cols.findIndex((c) => c.chave === "nome");
+          const largNome = cols[colNome].larg;
+
+          if (nomesRev) {
+            // sem lista sobra espaço embaixo para o aviso não encostar na pauta
+            const alt = Math.max(6, nomesRev.length * 3.6 + (it.semLista ? 5 : 1.6));
+            if (y + alt > RODAPE) { novaPagina(rotuloPagina); desenharColunas(); }
+            doc.setFont("helvetica", "bold").setFontSize(9);
+            escreverCelula(doc, cols, 0, String(l.raia), y + alt / 2 + 1);
+            doc.setFont("helvetica", "normal").setFontSize(7.5);
+            nomesRev.forEach((a, k) => {
+              const ly = y + 3.6 + k * 3.6;
+              if (a) doc.text(CX(a), xDaColuna(cols, colNome) + 1.5, ly);
+              else {   // sem lista: pauta para escrever o nome no dia da prova
+                doc.setDrawColor(170).setLineWidth(0.1);
+                doc.line(xDaColuna(cols, colNome) + 1.5, ly + 0.6,
+                         xDaColuna(cols, colNome) + largNome - 3, ly + 0.6);
+              }
             });
-            doc.setFont("helvetica", "bold");
-            doc.text(CX(it.equipe), MG + larg[0] + larg[1] + 1.5, y + alt / 2 + 1);
+            doc.setFont("helvetica", "bold").setFontSize(8);
+            cols.forEach((c, k) => {
+              if (c.chave === "equipe")
+                escreverCelula(doc, cols, k, CX(it.equipe), y + alt / 2 + 1);
+              if (c.chave === "tempo" && it.tempo != null)
+                escreverCelula(doc, cols, k, B.formatarTempo(it.tempo), y + alt / 2 + 1);
+            });
+            if (it.semLista) {
+              doc.setFont("helvetica", "italic").setFontSize(5.8).setTextColor(150);
+              doc.text("lista de atletas pendente",
+                       xDaColuna(cols, colNome) + 1.5, y + alt - 0.4);
+              doc.setTextColor(0);
+            }
+            linhaDeBase(doc, y + alt);
             y += alt;
-          } else {
-            const vals = linhaAtleta(p, perfil, l.raia, it);
-            // medir com a MESMA fonte usada para escrever, senão a altura erra
-            doc.setFont("helvetica", it.marcado ? "bold" : "normal").setFontSize(7.5);
-            const nLinhas = Math.max(
-              doc.splitTextToSize(CX(it.nome), larg[1] - 2).length,
-              doc.splitTextToSize(CX(it.equipe), larg[2] - 2).length);
-            const alt = Math.max(5, 2 + nLinhas * 3);
-            escreverLinha(vals, alt, it.marcado ? [192, 0, 0] : null,
-                          it.marcado ? [255, 255, 255] : null, !!it.marcado);
+            continue;
           }
+
+          doc.setFont("helvetica", "bold").setFontSize(8);
+          const partesNome = doc.splitTextToSize(CX(it.nome), largNome - 3);
+          const colEq = cols.findIndex((c) => c.chave === "equipe");
+          doc.setFont("helvetica", "normal");
+          const partesEq = doc.splitTextToSize(CX(it.equipe), cols[colEq].larg - 3);
+          const alt = Math.max(5.2, 1.6 + Math.max(partesNome.length,
+                                                   partesEq.length) * 3.4);
+          if (y + alt > RODAPE) { novaPagina(rotuloPagina); desenharColunas(); }
+
+          // acima do limite de provas: fundo claro e texto vermelho, sem bloco
+          if (it.marcado) {
+            doc.setFillColor(252, 231, 228).rect(MG, y, util, alt, "F");
+          }
+          const cor = it.marcado ? [150, 26, 20] : [0, 0, 0];
+          doc.setTextColor(cor[0], cor[1], cor[2]);
+          cols.forEach((c, k) => {
+            if (c.chave === "baliza") return;
+            doc.setFont("helvetica", c.chave === "nome" ? "bold" : "normal");
+            doc.setFontSize(c.chave === "raia" ? 9 : 8);
+            if (c.chave === "nome" || c.chave === "equipe") {
+              const partes = c.chave === "nome" ? partesNome : partesEq;
+              partes.forEach((t, j) =>
+                doc.text(t, xDaColuna(cols, k) + 1.5, y + 3.4 + j * 3.4));
+              return;
+            }
+            const v = {
+              raia: String(l.raia),
+              categoria: CX(it.letraCategoria || it.categoria || ""),
+              classe: CX(it.classe),
+              tempo: it.tempo != null ? B.formatarTempo(it.tempo) : "",
+            }[c.chave] || "";
+            escreverCelula(doc, cols, k, v, y + 3.4);
+          });
+          doc.setTextColor(0);
+          linhaDeBase(doc, y + alt);
+          y += alt;
         }
+        y += 1.5;
       }
 
+      /* --- quem não pode nadar esta prova --- */
       if (p.cortados && p.cortados.length) {
-        if (y + 5.5 > A4.h - MG - 8) { novaPagina(rotuloPagina); desenharCabecalho(); }
-        doc.setFillColor(242, 242, 242).rect(MG, y, util, 5.5, "F");
-        doc.setDrawColor(128).rect(MG, y, util, 5.5);
-        doc.setFont("helvetica", "bold").setFontSize(7.5).setTextColor(0);
-        doc.text("NÃO PARTICIPAM DESTA PROVA", MG + 2, y + 3.8);
-        y += 5.5;
+        if (y + 10 > RODAPE) novaPagina(rotuloPagina);
+        doc.setFont("helvetica", "bold").setFontSize(7).setTextColor(120);
+        doc.text("NÃO PARTICIPAM DESTA PROVA", MG + 1.5, y + 3);
+        doc.setDrawColor(180).setLineWidth(0.2).line(MG, y + 4.2, A4.w - MG, y + 4.2);
+        doc.setTextColor(0);
+        y += 6;
         for (const c of p.cortados) {
           const azul = c.corteTipo === B.SEM_CLASSE;
-          const vals = ["—", CX(c.nome), CX(c.equipe)];
-          if (p.paralimpica) {
-            if (perfil.mostrarCategoria) vals.push(CX(c.letraCategoria || ""));
-            vals.push(CX(c.classe));
-          }
-          vals.push(CX(c.motivo));
+          const cor = azul ? [31, 56, 100] : [150, 26, 20];
           doc.setFont("helvetica", "bold").setFontSize(7.5);
-          const alt = Math.max(5, 2 + Math.max(
-            doc.splitTextToSize(CX(c.motivo), larg[larg.length - 1] - 2).length,
-            doc.splitTextToSize(CX(c.nome), larg[1] - 2).length,
-            doc.splitTextToSize(CX(c.equipe), larg[2] - 2).length) * 3);
-          escreverLinha(vals, alt, azul ? [180, 198, 231] : [192, 0, 0],
-                        azul ? [31, 56, 100] : [255, 255, 255], true);
+          const largMotivo = util - 12 - cols[1].larg - 3;
+          const partes = doc.splitTextToSize(c.motivo || "", largMotivo);
+          const alt = Math.max(4.6, 1.4 + partes.length * 3.2);
+          if (y + alt > RODAPE) novaPagina(rotuloPagina);
+          doc.setTextColor(cor[0], cor[1], cor[2]);
+          doc.text(CX(c.nome), MG + 12, y + 3);
+          doc.setFont("helvetica", "normal");
+          partes.forEach((t, j) =>
+            doc.text(t, MG + 12 + cols[1].larg, y + 3 + j * 3.2));
+          doc.setFontSize(6.5).setTextColor(120);
+          doc.text(CX(c.equipe), MG + 12, y + 3 + 3.2);
+          doc.setTextColor(0);
+          y += alt + 1.4;
         }
       }
-      y += 4;
+      y += 5;
     }
     return doc;
   }
+
+  // filete claríssimo entre atletas: separa sem sujar a folha
+  function linhaDeBase(doc, y) {
+    doc.setDrawColor(225).setLineWidth(0.1);
+    doc.line(MG, y, A4.w - MG, y);
+  }
+
 
   /* =================== PAPELETAS =================== */
   function gerarPapeletas(provas, perfil) {
@@ -425,6 +546,7 @@
     cartoes.forEach((d, idx) => {
       const pos = idx % 4;
       if (pos === 0 && idx) doc.addPage();
+      if (pos === 0) rodapeCredito(doc, null);
       const topo = MG + pos * alturaSlot;
       desenharPapeleta(doc, MG, topo, lEsq, lDir, d, perfil);
       if (pos < 3 && idx + 1 < cartoes.length) {
@@ -474,12 +596,13 @@
     doc.text(ORD(d.serie) + " SÉRIE", x0, y);
     if (d.categoria) {
       y += 4.4;
-      doc.text(`CATEGORIA ${CX(d.categoria)}   ·   CLASSE ${CX(d.classe) || "—"}`, x0, y);
+      doc.text(`CATEGORIA ${CX(d.categoria)}` +
+               (CX(d.classe) ? `   ·   CLASSE ${CX(d.classe)}` : ""), x0, y);
     }
     if (d.revezamento) {
       y += 4.4;
       doc.setFont("helvetica", "normal").setFontSize(7.6);
-      doc.text("REVEZAMENTO — TEMPO ÚNICO DA EQUIPE", x0, y);
+      doc.text("REVEZAMENTO: TEMPO ÚNICO DA EQUIPE", x0, y);
     }
 
     const xr = x0 + larg * 0.68;

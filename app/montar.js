@@ -33,7 +33,7 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Balizador — natação</title>
+<title>Balizador, natação</title>
 <meta name="description" content="Monta balizamento, papeletas de raia e confere erros de inscrição em competições de natação. Roda inteiramente no seu computador.">
 ${FONTES}
 <style>
@@ -58,6 +58,6 @@ if (fs.existsSync(path.dirname(offline))) destinos.push(offline);
 
 for (const d of destinos) {
   fs.writeFileSync(d, html, "utf8");
-  console.log(`${path.basename(d)} — ${(fs.statSync(d).size / 1024).toFixed(0)} KB`);
+  console.log(`${path.basename(d)}: ${(fs.statSync(d).size / 1024).toFixed(0)} KB`);
   console.log("   " + d);
 }
