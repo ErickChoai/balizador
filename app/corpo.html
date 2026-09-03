@@ -1,0 +1,177 @@
+<header class="topo">
+  <div class="marca">
+    <span class="sigla">BZ</span>
+    <div>
+      <h1>Balizador</h1>
+      <p>Balizamento, papeletas e conferência de erros para competições de natação</p>
+    </div>
+  </div>
+  <nav class="passos">
+    <button type="button" class="passo ativo" data-passo="competicao"><b>1</b> Competição</button>
+    <button type="button" class="passo" data-passo="inscritos"><b>2</b> Inscritos</button>
+    <button type="button" class="passo bloqueado" data-passo="conferencia"><b>3</b> Conferência</button>
+    <button type="button" class="passo bloqueado" data-passo="gerar"><b>4</b> Gerar</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ 1. COMPETIÇÃO ============ -->
+  <section class="tela" data-tela="competicao">
+    <h2>Que competição é esta?</h2>
+    <p class="sub">A escolha define quais colunas a planilha precisa ter e quais
+      regras o app aplica.</p>
+    <div id="tipos" class="grade-tipos"></div>
+
+    <div id="perfisSalvos" class="perfis"></div>
+
+    <div id="config" hidden>
+      <div class="cartao">
+        <h3>Identificação</h3>
+        <div class="campos">
+          <label class="campo largo">Nome da competição
+            <input id="nomeComp" placeholder="JEPB 2026 — NATAÇÃO">
+          </label>
+          <label class="campo">Como chamar a instituição
+            <input id="rotuloEquipe" placeholder="ESCOLA">
+          </label>
+        </div>
+      </div>
+
+      <div class="cartao">
+        <h3>Piscina e séries</h3>
+        <div class="campos">
+          <label class="campo">Raias
+            <input id="raias" type="number" min="2" max="12" value="6">
+          </label>
+          <label class="campo largo">Como distribuir as séries
+            <select id="regraSerie">
+              <option value="MENOS_SERIES">Menos séries possíveis, mínimo de metade das raias</option>
+              <option value="INCOMPLETA_PRIMEIRO">Série incompleta primeiro (padrão ParaJASC)</option>
+            </select>
+          </label>
+        </div>
+        <dl class="previa">
+          <div><dt>Ordem de preenchimento</dt><dd id="previaRaias" class="mono"></dd></div>
+          <div><dt>Mínimo por série</dt><dd id="previaMinimo" class="mono"></dd></div>
+          <div><dt>Exemplos</dt><dd id="previaSeries" class="mono"></dd></div>
+        </dl>
+        <p class="nota">Havendo tempo de inscrição na planilha, o balizamento passa
+          a ser por desempenho: os mais rápidos vão para a última série e ocupam as
+          raias centrais. Quem não tem tempo fica nas primeiras séries.</p>
+      </div>
+
+      <div class="cartao">
+        <h3>Limite de provas por atleta</h3>
+        <div class="campos">
+          <label class="campo">Individuais
+            <input id="limiteInd" type="number" min="1" max="20" value="2">
+          </label>
+          <label class="campo">Revezamentos
+            <input id="limiteRev" type="number" min="0" max="20" placeholder="sem limite">
+          </label>
+          <label class="campo" id="linhaPara">Individuais no paradesporto
+            <input id="limiteIndPara" type="number" min="1" max="20" value="3">
+          </label>
+        </div>
+      </div>
+
+      <div class="cartao">
+        <h3>Etapas <span class="opcional">opcional</span></h3>
+        <p class="nota">Divide o programa em sessões. Cada etapa começa em página
+          nova no PDF e aparece no cabeçalho.</p>
+        <div class="cabecalho-lista">
+          <span>Nome</span><span>Dia</span><span>Período</span>
+          <span>Da prova</span><span>Até</span><span></span>
+        </div>
+        <div id="etapas"></div>
+        <button type="button" class="mini claro" id="addEtapa">+ etapa</button>
+      </div>
+
+      <div class="cartao">
+        <h3>Categorias que nadam juntas <span class="opcional">opcional</span></h3>
+        <p class="nota">Use quando duas categorias disputam a mesma prova — como o
+          <b>Paralímpico "A" + "B"</b> nos 25m e o <b>"B" + "C"</b> nos 50m.
+          Deixe distância e estilo em branco para valer em todas as provas.</p>
+        <div class="cabecalho-lista grupos">
+          <span>Nome da prova resultante</span><span>Categorias que se juntam</span>
+          <span>Só nas distâncias</span><span>Só nos estilos</span><span></span>
+        </div>
+        <div id="grupos"></div>
+        <button type="button" class="mini claro" id="addGrupo">+ agrupamento</button>
+      </div>
+
+      <div class="cartao">
+        <h3>Leitura da planilha</h3>
+        <label class="marcavel">
+          <input type="checkbox" id="dedupMisto" checked>
+          Revezamentos mistos aparecem repetidos nas abas feminina e masculina —
+          contar uma vez só
+        </label>
+      </div>
+
+      <div class="acoes">
+        <button type="button" class="botao" id="irInscritos">Continuar para os inscritos</button>
+        <button type="button" class="mini claro" id="btnPerfilSalvar">Salvar perfil</button>
+        <button type="button" class="mini claro" id="btnPerfilExportar">Exportar perfil</button>
+        <label class="mini claro arquivo">Importar perfil
+          <input type="file" id="perfilArquivo" accept=".json" hidden>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2. INSCRITOS ============ -->
+  <section class="tela" data-tela="inscritos" hidden>
+    <h2>Planilha de inscritos</h2>
+    <p class="sub">O app lê os formatos que você já recebe: startlist em blocos de
+      coluna (uma aba por categoria) ou uma linha por inscrição.
+      Nada é enviado para servidor nenhum — a leitura acontece no seu computador.</p>
+
+    <div id="zona" class="zona">
+      <strong>Arraste a planilha aqui</strong>
+      <span>ou clique para escolher · .xlsx, .xlsm ou .csv</span>
+      <input type="file" id="arquivo" accept=".xlsx,.xlsm,.csv" hidden>
+    </div>
+
+    <div id="resumoArquivo"></div>
+
+    <div class="acoes">
+      <button type="button" class="botao" id="irConferencia" disabled>Ver a conferência</button>
+    </div>
+  </section>
+
+  <!-- ============ 3. CONFERÊNCIA ============ -->
+  <section class="tela" data-tela="conferencia" hidden>
+    <h2>Conferência</h2>
+    <p class="sub">O balizamento é gerado de qualquer forma; o que estiver aqui
+      aparece destacado nos arquivos, com o motivo escrito.</p>
+    <div id="painelConferencia"></div>
+    <div class="acoes">
+      <button type="button" class="botao" id="irGerar">Gerar os arquivos</button>
+    </div>
+  </section>
+
+  <!-- ============ 4. GERAR ============ -->
+  <section class="tela" data-tela="gerar" hidden>
+    <h2>Gerar</h2>
+    <p class="sub">Os arquivos são montados no seu navegador e baixados direto
+      para o computador.</p>
+    <div id="resumoGerar"></div>
+    <div class="grade-saidas">
+      <button type="button" class="saida" id="btnXlsx">
+        <b>Planilha do balizamento</b>
+        <span>Abas de balizamento, resumo, atletas e conferência. Editável no Excel.</span>
+      </button>
+      <button type="button" class="saida" id="btnPdf">
+        <b>PDF do balizamento</b>
+        <span>Provas corridas, faixa de etapa e espaço para anotar o tempo.</span>
+      </button>
+      <button type="button" class="saida" id="btnPapeletas">
+        <b>Papeletas de raia</b>
+        <span>Quatro por folha A4, com prova, série, raia e quadros de tempo.</span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<div id="aviso" class="aviso"></div>
