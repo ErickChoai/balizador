@@ -52,11 +52,19 @@
     categorias: [], descartadas: [], arquivo: null,
     // correções feitas na tela da conferência, sem mexer na planilha:
     // provas tiradas de quem passou do limite, e nomes que faltavam
-    ajustes: { removidas: new Set(), nomes: {} },
+    ajustes: novosAjustes(),
     // o programa de provas lido da planilha, ou null enquanto não veio um:
     // { ok, aba, formato, arquivo, provas, linhas, problemas, sem }
     programa: null,
   };
+
+  /* O que o árbitro mexeu na tela da conferência, sem tocar na planilha:
+     linhas tiradas do balizamento, nomes que ele completou, e os problemas
+     que ele leu e decidiu deixar como estão. */
+  function novosAjustes() {
+    return { removidas: new Set(), nomes: {}, aceitos: new Set(),
+             jaVistos: new Set() };
+  }
 
   /* ---------------- perfil ---------------- */
   function perfilPadrao() {
@@ -1052,7 +1060,7 @@
     estado.abas = r.abas;
     estado.arquivo = file.name;
     estado.descartadas = r.descartadas || [];
-    estado.ajustes = { removidas: new Set(), nomes: {} };
+    estado.ajustes = novosAjustes();
 
     const ind = inscricoes.filter((i) => !i.revezamento).length;
     const rev = inscricoes.filter((i) => i.revezamento).length;
@@ -1089,8 +1097,9 @@
 
     montar();
     liberar("conferencia", true);
-    liberar("gerar", true);
     $("#irConferencia").disabled = false;
+    // a conferência é quem destranca o passo de gerar
+    renderConferencia();
     mostrarResultado("resumoArquivo");
   }
 
@@ -1171,14 +1180,16 @@
   }
 
   /* ---------------- tela 4: conferência ----------------
-     Cada problema traz três coisas: o que é, o que vai acontecer com ele no
-     balizamento se ficar assim, e, quando dá, o jeito de resolver aqui mesmo.
-     Voltar ao Excel para trocar um nome é o tipo de ida e volta que faz o
-     árbitro desistir de conferir.
+     Cada problema traz três coisas: o que é, o que vai acontecer com ele nos
+     arquivos, e o jeito de resolver aqui mesmo. Voltar ao Excel para trocar um
+     nome é o tipo de ida e volta que faz o árbitro desistir de conferir.
+
+     Enquanto sobrar problema vermelho sem resolver, o passo de gerar fica
+     trancado. Nem todo vermelho tem conserto dentro do app; para esses existe
+     o "seguir assim mesmo", que é uma decisão consciente e fica registrada.
   ------------------------------------------------------- */
 
-  function renderConferencia() {
-    if (!estado.provas.length) montar();
+  function montarSecoes() {
     const criticos = estado.erros.filter((e) => e.gravidade === "critico");
     const avisos = estado.erros.filter((e) => e.gravidade !== "critico");
 
@@ -1193,13 +1204,7 @@
       }
     }
 
-    const foraDoPrograma = estado.provas
-      .filter((p) => p.aviso && p.series.length)
-      .map((p) => ({
-        prova: p.numero, titulo: p.titulo, nome: "", equipe: "",
-        detalhe: `${p.atletas} atleta(s) inscritos nela`,
-      }));
-
+    const provasFora = estado.provas.filter((p) => p.aviso && p.series.length);
     const semLista = [];
     for (const p of estado.provas) {
       for (const s of p.series) {
@@ -1207,7 +1212,7 @@
           if (!l.item.semLista) continue;
           semLista.push({
             prova: p.numero, titulo: p.titulo, nome: "", equipe: l.item.equipe,
-            detalhe: `${s.numero}ª série, raia ${l.raia}`,
+            detalhe: `${s.numero}ª série, raia ${l.raia}`, item: l.item,
           });
         }
       }
@@ -1216,19 +1221,21 @@
     const semInscritos = estado.provas.filter((p) => !p.series.length);
     const descartadas = (estado.descartadas || [])
       .filter((d) => !String((estado.ajustes.nomes || {})[chaveDaLinha(d)] || "").trim());
+    const juntaveis = provasQueDaParaJuntar();
 
-    const secoes = [
+    return [
       {
         id: "foraPrograma", titulo: "Provas fora do programa oficial",
-        nivel: "critico", itens: foraDoPrograma,
-        explica: `Cada uma destas provas sai no balizamento <b>em vermelho</b>,
-          com o aviso <i>"esta prova não consta no programa oficial"</i> escrito
-          ao lado do título, e os atletas dela ocupam raias normalmente. A
-          numeração delas vem depois da última prova do programa.
-          <br><br>Se a prova é para valer, acrescente-a ao programa de provas e
-          envie o programa de novo. Se não é, tire esses inscritos da planilha.
-          <b>Resolva antes de gerar as papeletas</b>, porque elas saem com o
-          número da prova impresso.`,
+        nivel: "critico",
+        itens: provasFora.map((p) => ({
+          prova: p.numero, titulo: p.titulo, nome: "", equipe: "",
+          detalhe: `${p.atletas} atleta(s) inscritos nela`,
+        })),
+        explica: `Cada uma sai nos arquivos <b>em vermelho</b>, com o aviso
+          <i>"esta prova não consta no programa oficial"</i> ao lado do título, e
+          os atletas dela ocupam raias normalmente. A numeração delas vem depois
+          da última prova do programa.`,
+        resolver: () => resolverProvasFora(provasFora),
       },
       {
         id: "categorias", titulo: "Atleta em mais de uma categoria",
@@ -1239,11 +1246,9 @@
         explica: `Categoria é idade: ninguém é mirim e infantil na mesma
           competição. Quando o mesmo nome aparece nas duas, a inscrição foi
           digitada errada em uma delas.
-          <br><br>Estes atletas saem <b>em vermelho no balizamento</b>, com o
-          motivo escrito embaixo do nome, e continuam ocupando raia nas duas
-          provas. Corrija a categoria na planilha e envie de novo, ou use o
-          quadro de provas abaixo para tirar as que não são dele.`,
-        corrigir: () => corrigirProvasDoAtleta(estado.categorias, null),
+          <br><br>Assim como está, o atleta sai <b>em vermelho no balizamento</b>,
+          com o motivo embaixo do nome, e ocupa raia nas duas provas.`,
+        resolver: () => escolherProvasDoAtleta(estado.categorias, null, true),
       },
       {
         id: "limites", titulo: "Atletas acima do limite de provas",
@@ -1253,31 +1258,36 @@
                    a.provas.join(", "),
         })),
         explica: `O atleta sai <b>em vermelho no balizamento</b>, com o motivo
-          escrito embaixo do nome, e ocupa raia em todas as provas em que foi
-          inscrito. O app não escolhe por você quais provas cortar.
-          <br><br>Marque abaixo as que ele vai nadar de verdade. O balizamento
-          é remontado na hora, sem precisar mexer na planilha.`,
-        corrigir: () => corrigirProvasDoAtleta(estado.limites, estado.perfil.limiteInd),
+          embaixo do nome, e ocupa raia em todas as provas em que foi inscrito.
+          O app não escolhe por você quais cortar.`,
+        resolver: () => escolherProvasDoAtleta(estado.limites,
+          estado.perfil.limiteInd, true),
       },
       {
         id: "duplicados", titulo: "Raias e duplicidades",
         nivel: "critico", itens: criticos,
         explica: `Atleta repetido na mesma prova, ou raia com mais de um
-          nadador. O app tirou o repetido do balizamento e ficou com a primeira
-          inscrição; o segundo não aparece nas raias.
-          <br><br>Se as duas inscrições eram de pessoas diferentes com nome
-          parecido, aí sim tem de arrumar a planilha, escrevendo o nome
-          completo de cada uma.`,
+          nadador. O app ficou com a primeira inscrição e tirou a repetida das
+          raias, então o balizamento já sai certo.
+          <br><br>Confira se as duas linhas eram mesmo da mesma pessoa. Se eram
+          duas pessoas de nome parecido, escreva o nome completo de cada uma na
+          planilha e envie de novo.`,
+        resolver: () => apenasTexto(`O balizamento já está montado sem o
+          repetido. Se as duas linhas eram de pessoas diferentes, isso só se
+          resolve na planilha, escrevendo o nome completo das duas. Marque como
+          resolvido quando tiver conferido.`),
       },
       {
         id: "regulamento", titulo: "Inscrições contra o regulamento",
         nivel: "critico", itens: cortes.filter((c) => c.gravidade === "critico"),
         explica: `A classe funcional destes atletas não disputa esta prova, pelo
           mapa de provas paralímpico. Eles <b>não ocupam raia</b>: saem numa
-          faixa vermelha "NÃO PARTICIPAM DESTA PROVA" logo abaixo da prova, com
-          o motivo escrito.
-          <br><br>Se a classe está errada na planilha, corrija e envie de novo.
-          Se está certa, a inscrição é que não podia ter sido feita.`,
+          faixa vermelha "NÃO PARTICIPAM DESTA PROVA" abaixo da prova, com o
+          motivo escrito.`,
+        resolver: () => apenasTexto(`Se a classe está errada na planilha,
+          corrija e envie de novo. Se está certa, a inscrição é que não podia
+          ter sido feita, e o balizamento já está tratando disso: eles não
+          entram nas raias.`),
       },
       {
         id: "semNome", titulo: "Linhas que ficaram de fora",
@@ -1287,28 +1297,27 @@
         })),
         explica: `Estas linhas têm a instituição e o tempo preenchidos, mas
           nenhum nome de atleta ao lado. Elas <b>não entraram no balizamento</b>:
-          ninguém ocupa essa raia.
-          <br><br>Se era inscrição de verdade, escreva o nome abaixo e o atleta
-          entra na prova na hora, sem mexer na planilha.`,
-        corrigir: () => corrigirNomesFaltando(descartadas),
+          ninguém ocupa essa raia.`,
+        resolver: () => escreverNomesFaltando(descartadas),
       },
       {
         id: "semLista", titulo: "Revezamentos ainda sem a lista de atletas",
         nivel: "info", itens: semLista,
         explica: `A equipe se inscreveu sem dizer quem nada. Isto <b>não é
           erro</b>: a raia fica reservada em nome da equipe e o balizamento sai
-          com quatro linhas em branco, para o árbitro anotar os nomes na borda
-          da piscina no dia da prova.
-          <br><br>Se você já sabe quem vai nadar, escreva os quatro nomes na
-          mesma célula da planilha, um por linha.`,
+          com quatro linhas em branco, para anotar os nomes na borda da piscina
+          no dia da prova.`,
+        resolver: () => escreverNadadoresDoRevezamento(semLista),
       },
       {
         id: "semClasse", titulo: "Atletas sem classe definida",
         nivel: "info", itens: cortes.filter((c) => c.gravidade === "info"),
         explica: `A classe destes atletas veio em branco ou ilegível, então o
           app não tem como conferir se eles podem nadar a prova. Eles saem numa
-          faixa azul abaixo da prova e <b>não ocupam raia</b>.
-          <br><br>Preencha a classe na planilha e envie de novo.`,
+          faixa azul abaixo da prova e <b>não ocupam raia</b>.`,
+        resolver: () => apenasTexto(`Preencha a classe na planilha de inscritos
+          e envie de novo. Sem a classe o app não tem como saber se a inscrição
+          é válida, e prefere não colocar o atleta numa raia por engano.`),
       },
       {
         id: "provasVazias", titulo: "Provas do programa sem ninguém inscrito",
@@ -1320,53 +1329,128 @@
           <i>"Sem inscritos"</i>, mantendo o número dela. Isso é de propósito:
           tirar a prova mudaria a numeração de todas as seguintes, e o programa
           impresso já está na mão de todo mundo.`,
+        resolver: () => apenasTexto(`Não há o que resolver: a prova fica no
+          balizamento com o número dela e a marca de vazia, que é o certo para
+          quem está com o programa impresso na mão.`),
+      },
+      {
+        id: "juntar", titulo: "Provas pequenas que dá para juntar",
+        nivel: "info", itens: juntaveis.map((j) => ({
+          prova: j.a.numero, titulo: j.a.titulo, nome: "", equipe: "",
+          detalhe: `${j.nA} inscritos; a ${j.b.numero}ª prova ` +
+                   `(${j.b.categoria}) tem ${j.nB}, mesmo estilo e mesmo naipe`,
+        })),
+        explica: `Duas provas do mesmo estilo e do mesmo naipe, em categorias
+          seguidas, ambas com gente de menos para encher uma série. Juntar as
+          duas dá uma série cheia em vez de duas quase vazias.
+          <br><br>Só faz sentido entre categorias vizinhas e do mesmo naipe:
+          feminino não nada com masculino.`,
+        resolver: () => juntarCategorias(juntaveis),
       },
       {
         id: "raias", titulo: "Avisos de organização das raias",
         nivel: "info", itens: avisos,
-        explica: `Séries com menos gente que o mínimo, ou raias fora do padrão
-          de preenchimento. Numa prova pequena não há o que dividir, e o
-          balizamento sai assim mesmo: é só para você saber, e decidir se vale
-          juntar categorias.`,
+        explica: `Séries com menos gente que o mínimo dentro de uma prova
+          grande, ou raias fora do padrão de preenchimento. O balizamento sai
+          assim mesmo: é só para você conferir.`,
+        resolver: () => apenasTexto(`Não há o que corrigir na planilha: é como a
+          divisão em séries ficou. Marque como resolvido quando tiver
+          conferido.`),
       },
-    ].filter((s) => s.itens.length);
+    ];
+  }
 
-    const totCrit = secoes.filter((s) => s.nivel === "critico")
-                          .reduce((t, s) => t + s.itens.length, 0);
-    const totInfo = secoes.filter((s) => s.nivel === "info")
-                          .reduce((t, s) => t + s.itens.length, 0);
+  /* Provas pequenas do mesmo estilo e naipe, em categorias vizinhas: as
+     únicas que dá para juntar de verdade. Sem isso o aviso de série curta
+     aparecia para provas de naipes diferentes, onde não há o que fazer. */
+  function provasQueDaParaJuntar() {
+    const minimo = B.minimoPorSerie(estado.perfil.raias || 6);
+    const grupos = new Map();
+    for (const p of estado.provas) {
+      const total = p.series.reduce((t, s) => t + s.linhas.length, 0);
+      if (!total || total >= minimo || p.revezamento) continue;
+      const k = [p.distancia, p.estilo, p.naipe].join("|");
+      if (!grupos.has(k)) grupos.set(k, []);
+      grupos.get(k).push({ prova: p, total });
+    }
+    const pares = [];
+    for (const [, lista] of grupos) {
+      for (let i = 0; i + 1 < lista.length; i++) {
+        pares.push({
+          a: lista[i].prova, nA: lista[i].total,
+          b: lista[i + 1].prova, nB: lista[i + 1].total,
+        });
+      }
+    }
+    return pares;
+  }
+
+  function renderConferencia() {
+    if (!estado.provas.length) montar();
+    const secoes = montarSecoes();
+    const comItens = secoes.filter((s) => s.itens.length);
+    comItens.forEach((s) => estado.ajustes.jaVistos.add(s.id));
+
+    const resolvidas = secoes.filter((s) =>
+      estado.ajustes.jaVistos.has(s.id) && !s.itens.length);
+    const pendentesCriticas = comItens.filter((s) =>
+      s.nivel === "critico" && !estado.ajustes.aceitos.has(s.id));
+
+    const totCrit = comItens.filter((s) => s.nivel === "critico")
+                            .reduce((t, s) => t + s.itens.length, 0);
+    const totInfo = comItens.filter((s) => s.nivel === "info")
+                            .reduce((t, s) => t + s.itens.length, 0);
 
     $("#painelConferencia").innerHTML = `
       <div class="fichas">
-        <div class="ficha ${totCrit ? "ruim" : "bom"}"><b>${totCrit}</b>
-          <span>${totCrit === 1 ? "problema para resolver" : "problemas para resolver"}</span></div>
+        <div class="ficha ${pendentesCriticas.length ? "ruim" : "bom"}">
+          <b>${pendentesCriticas.length}</b>
+          <span>${pendentesCriticas.length === 1
+            ? "problema à espera de você" : "problemas à espera de você"}</span></div>
+        <div class="ficha"><b>${totCrit}</b><span>casos em vermelho</span></div>
         <div class="ficha"><b>${totInfo}</b><span>avisos, sem impedimento</span></div>
         <div class="ficha"><b>${estado.provas.length}</b><span>provas montadas</span></div>
-        <div class="ficha"><b>${estado.provas.reduce((s, p) => s + p.atletas, 0)}</b>
-          <span>atletas balizados</span></div>
       </div>
-      ${totCrit ? `<p class="nota">Nada aqui impede de gerar os arquivos. O que
-        estiver em vermelho sai destacado no balizamento, com o motivo escrito.
-        Clique em <b>o que vai acontecer</b> para ver o que cada caso vira nos
-        arquivos.</p>` : ""}
-      ${secoes.map(secaoHtml).join("")}
-      ${!secoes.length
+      ${pendentesCriticas.length ? `<p class="nota">Resolva os blocos vermelhos
+        para liberar a geração dos arquivos. Em cada um, <b>resolver</b> abre o
+        conserto e <b>o que acontece</b> explica o que aquele caso vira nos
+        arquivos. Quando não houver conserto possível, o próprio bloco oferece
+        seguir assim mesmo.</p>` : ""}
+      ${resolvidas.map(secaoResolvidaHtml).join("")}
+      ${comItens.map(secaoHtml).join("")}
+      ${!comItens.length && !resolvidas.length
         ? '<p class="ok-vazio">Nenhum problema encontrado. O balizamento está pronto para gerar.</p>'
         : ""}`;
 
-    ligarSecoes(secoes);
+    ligarSecoes(comItens);
+    const botao = $("#irGerar");
+    if (botao) {
+      botao.disabled = pendentesCriticas.length > 0;
+      botao.textContent = pendentesCriticas.length
+        ? `Faltam ${pendentesCriticas.length} bloco(s) vermelho(s)`
+        : "Gerar os arquivos";
+    }
+    liberar("gerar", !pendentesCriticas.length);
+  }
+
+  function secaoResolvidaHtml(s) {
+    const aceito = estado.ajustes.aceitos.has(s.id);
+    return `<section class="bloco resolvido">
+      <h3>${s.titulo} <span class="contador">${aceito ? "seguindo assim" : "resolvido"}</span></h3>
+    </section>`;
   }
 
   function secaoHtml(s) {
-    const temCorrecao = typeof s.corrigir === "function";
-    return `<section class="bloco ${s.nivel}" data-secao="${s.id}">
+    const aceito = estado.ajustes.aceitos.has(s.id);
+    return `<section class="bloco ${aceito ? "aceito" : s.nivel}" data-secao="${s.id}">
       <h3>${s.titulo} <span class="contador">${s.itens.length}</span>
-        <button type="button" class="info" data-info="${s.id}"
-          aria-expanded="false">o que vai acontecer</button></h3>
-      <div class="explicacao" id="explica-${s.id}" hidden>
-        <p>${s.explica}</p>
-        ${temCorrecao ? `<div class="correcao" id="corrige-${s.id}"></div>` : ""}
-      </div>
+        ${aceito ? '<span class="selo-aceito">você decidiu seguir assim</span>' : ""}
+        <span class="botoes-bloco">
+          <button type="button" class="resolver" data-resolver="${s.id}">resolver</button>
+          <button type="button" class="info" data-info="${s.id}">o que acontece</button>
+        </span></h3>
+      <div class="explicacao" id="explica-${s.id}" hidden><p>${s.explica}</p></div>
+      <div class="explicacao correcao" id="corrige-${s.id}" hidden></div>
       <table class="tabela"><thead><tr><th>PROVA</th><th>ATLETA</th>
       <th>EQUIPE</th><th>DETALHE</th></tr></thead><tbody>${
       s.itens.map((e) => `<tr>
@@ -1378,24 +1462,93 @@
 
   function ligarSecoes(secoes) {
     for (const s of secoes) {
-      const botao = $(`[data-info="${s.id}"]`);
-      const painel = $("#explica-" + s.id);
-      if (!botao || !painel) continue;
-      botao.onclick = () => {
-        const abrindo = painel.hidden;
-        painel.hidden = !abrindo;
-        botao.setAttribute("aria-expanded", String(abrindo));
-        botao.textContent = abrindo ? "fechar" : "o que vai acontecer";
-        if (abrindo && typeof s.corrigir === "function") {
-          html("corrige-" + s.id, "");
-          $("#corrige-" + s.id).appendChild(s.corrigir());
-        }
+      const bInfo = $(`[data-info="${s.id}"]`);
+      const pInfo = $("#explica-" + s.id);
+      if (bInfo && pInfo) {
+        bInfo.onclick = () => {
+          pInfo.hidden = !pInfo.hidden;
+          bInfo.textContent = pInfo.hidden ? "o que acontece" : "fechar";
+        };
+      }
+      const bFix = $(`[data-resolver="${s.id}"]`);
+      const pFix = $("#corrige-" + s.id);
+      if (!bFix || !pFix) continue;
+      bFix.onclick = () => {
+        const abrindo = pFix.hidden;
+        pFix.hidden = !abrindo;
+        bFix.textContent = abrindo ? "fechar" : "resolver";
+        if (!abrindo) return;
+        pFix.innerHTML = "";
+        if (typeof s.resolver === "function") pFix.appendChild(s.resolver());
+        pFix.appendChild(botaoSeguirAssim(s));
       };
     }
   }
 
-  /* --- corrigir aqui: escolher quais provas o atleta fica --- */
-  function corrigirProvasDoAtleta(achados, limite) {
+  function apenasTexto(html) {
+    const p = document.createElement("p");
+    p.innerHTML = html;
+    return p;
+  }
+
+  /* Todo bloco pode ser encerrado por decisão do árbitro. É o que destranca a
+     geração quando o problema não tem conserto dentro do app. */
+  function botaoSeguirAssim(s) {
+    const acoes = document.createElement("div");
+    acoes.className = "acoes";
+    const aceito = estado.ajustes.aceitos.has(s.id);
+    acoes.innerHTML = `<button type="button" class="${aceito ? "mini claro" : "botao claro"}">
+      ${aceito ? "voltar a marcar como pendente" : "li e vou seguir assim mesmo"}</button>`;
+    $("button", acoes).onclick = () => {
+      if (aceito) estado.ajustes.aceitos.delete(s.id);
+      else estado.ajustes.aceitos.add(s.id);
+      renderConferencia();
+      aviso(aceito ? "Bloco voltou para pendente."
+                   : "Anotado. Este bloco não trava mais a geração.");
+    };
+    return acoes;
+  }
+
+  /* --- resolver: tirar do balizamento a prova que não está no programa --- */
+  function resolverProvasFora(provasFora) {
+    const caixa = document.createElement("div");
+    caixa.className = "correcao-lista";
+    for (const p of provasFora) {
+      const bloco = document.createElement("div");
+      bloco.className = "correcao-atleta";
+      bloco.innerHTML = `
+        <p class="correcao-titulo"><b>${p.numero}ª ${p.titulo}</b>
+          <span class="apagado">${p.atletas} atleta(s)</span></p>
+        <p class="nota">Ela não está no programa. Dá para tirar do balizamento e
+          das papeletas, ou deixar como está, em vermelho, e acertar o programa
+          depois.</p>`;
+      const acoes = document.createElement("div");
+      acoes.className = "acoes";
+      acoes.innerHTML = `<button type="button" class="botao">
+        Tirar esta prova do balizamento</button>`;
+      $("button", acoes).onclick = () => {
+        for (const s of p.series) {
+          for (const l of s.linhas) estado.ajustes.removidas.add(chaveDaLinha(l.item));
+        }
+        for (const c of (p.cortados || [])) {
+          estado.ajustes.removidas.add(chaveDaLinha(c));
+        }
+        montar();
+        renderConferencia();
+        aviso(`${p.titulo} saiu do balizamento e das papeletas.`);
+      };
+      bloco.appendChild(acoes);
+      caixa.appendChild(bloco);
+    }
+    return caixa;
+  }
+
+  /* --- resolver: escolher as provas que o atleta fica ---
+     As caixas nascem vazias de propósito: quem escolhe é o árbitro, e uma
+     caixa já marcada é uma escolha que ninguém conferiu. Marcar a primeira
+     fecha a categoria, porque ninguém nada mirim e infantil na mesma
+     competição. --- */
+  function escolherProvasDoAtleta(achados, limite, exigirMesmaCategoria) {
     const caixa = document.createElement("div");
     caixa.className = "correcao-lista";
     if (!achados.length) return caixa;
@@ -1407,70 +1560,90 @@
         B.normalizar(i.nome) + "|" + B.normalizar(i.equipe) === chave);
       if (!minhas.length) continue;
 
+      const teto = limite || minhas.length;
+      const escolhidas = new Set();
       const bloco = document.createElement("div");
       bloco.className = "correcao-atleta";
-      const teto = limite || minhas.length;
       bloco.innerHTML = `
         <p class="correcao-titulo"><b>${CX(a.nome)}</b>
           <span class="apagado">${CX(a.equipe)}</span></p>
-        <p class="nota">Marque as provas que ele vai nadar${
-          limite ? `, no máximo <b>${limite}</b>` : ""}.</p>
+        <p class="nota">Marque as provas que ele vai nadar de verdade:
+          até <b>${teto}</b>${exigirMesmaCategoria
+            ? ", todas da <b>mesma categoria</b>" : ""}.</p>
         <div class="provas-do-atleta"></div>
         <p class="nota contagem"></p>`;
       const lista = $(".provas-do-atleta", bloco);
 
-      minhas.forEach((i) => {
-        const k = chaveDaLinha(i);
+      const rotulos = minhas.map((i) => {
         const rot = document.createElement("label");
         rot.className = "marcavel";
-        const marcada = !estado.ajustes.removidas.has(k);
-        rot.innerHTML = `<input type="checkbox" ${marcada ? "checked" : ""}>
-          <span>${CX(D.tituloProva(i.distancia, i.estilo, i.categoria, i.naipe))}
+        rot.innerHTML = `<input type="checkbox">
+          <span><b>${CX(i.categoria || "")}</b>
+          ${CX(D.tituloProva(i.distancia, i.estilo, "", i.naipe))}
           <span class="apagado">linha ${i.linha}</span></span>`;
-        $("input", rot).onchange = (ev) => {
-          if (ev.target.checked) estado.ajustes.removidas.delete(k);
-          else estado.ajustes.removidas.add(k);
-          atualizarContagem();
-        };
         lista.appendChild(rot);
+        return rot;
       });
 
-      const atualizarContagem = () => {
-        const marcadas = minhas.filter((i) =>
-          !estado.ajustes.removidas.has(chaveDaLinha(i))).length;
+      const atualizar = () => {
+        const catEscolhida = escolhidas.size
+          ? D.chaveCategoria([...escolhidas][0].categoria) : null;
+        minhas.forEach((i, k) => {
+          const cx = $("input", rotulos[k]);
+          const marcada = escolhidas.has(i);
+          const outraCategoria = exigirMesmaCategoria && catEscolhida &&
+            D.chaveCategoria(i.categoria) !== catEscolhida;
+          const cheio = escolhidas.size >= teto;
+          cx.checked = marcada;
+          cx.disabled = !marcada && (outraCategoria || cheio);
+          rotulos[k].classList.toggle("bloqueada", cx.disabled);
+          rotulos[k].title = cx.disabled
+            ? (outraCategoria ? "outra categoria: escolha uma só"
+                              : `já marcou ${teto} provas`) : "";
+        });
         const alvo = $(".contagem", bloco);
-        const excedeu = limite && marcadas > limite;
-        alvo.textContent = excedeu
-          ? `${marcadas} marcadas, ${marcadas - limite} a mais do que o limite`
-          : `${marcadas} de ${teto} provas`;
-        alvo.classList.toggle("alerta-inline", !!excedeu);
+        alvo.textContent = escolhidas.size
+          ? `${escolhidas.size} de ${teto} marcadas` +
+            (catEscolhida ? `, categoria ${CX([...escolhidas][0].categoria)}` : "")
+          : "nenhuma marcada ainda";
+        alvo.classList.toggle("alerta-inline", !escolhidas.size);
       };
-      atualizarContagem();
+
+      minhas.forEach((i, k) => {
+        $("input", rotulos[k]).onchange = (ev) => {
+          if (ev.target.checked) escolhidas.add(i);
+          else escolhidas.delete(i);
+          atualizar();
+        };
+      });
+      atualizar();
+
+      const acoes = document.createElement("div");
+      acoes.className = "acoes";
+      acoes.innerHTML = `<button type="button" class="botao">
+        Aplicar: ficar só com as marcadas</button>`;
+      $("button", acoes).onclick = () => {
+        if (!escolhidas.size) {
+          aviso("Marque pelo menos uma prova antes de aplicar.");
+          return;
+        }
+        minhas.forEach((i) => {
+          const k = chaveDaLinha(i);
+          if (escolhidas.has(i)) estado.ajustes.removidas.delete(k);
+          else estado.ajustes.removidas.add(k);
+        });
+        montar();
+        renderConferencia();
+        aviso(`${CX(a.nome)} ficou com ${escolhidas.size} prova(s).`);
+      };
+      bloco.appendChild(acoes);
       caixa.appendChild(bloco);
     }
-
-    const acoes = document.createElement("div");
-    acoes.className = "acoes";
-    acoes.innerHTML = `<button type="button" class="botao">Aplicar e remontar</button>
-      <button type="button" class="mini claro">Desfazer</button>`;
-    const [aplicar, desfazer] = $$("button", acoes);
-    aplicar.onclick = () => {
-      montar();
-      renderConferencia();
-      aviso("Balizamento remontado com as provas que você marcou.");
-    };
-    desfazer.onclick = () => {
-      estado.ajustes.removidas.clear();
-      montar();
-      renderConferencia();
-      aviso("Voltou tudo como estava na planilha.");
-    };
-    caixa.appendChild(acoes);
     return caixa;
   }
 
-  /* --- corrigir aqui: digitar o nome que faltou na linha --- */
-  function corrigirNomesFaltando(descartadas) {
+  /* --- resolver: digitar o nome que faltou na linha --- */
+  function escreverNomesFaltando(descartadas) {
     const caixa = document.createElement("div");
     caixa.className = "correcao-lista";
     const campos = [];
@@ -1483,7 +1656,7 @@
         <p class="correcao-titulo"><b>${d.prova}</b>
           <span class="apagado">linha ${d.linha} · ${CX(d.equipe)}</span></p>
         <label class="campo largo">Nome do atleta que faltou
-          <input placeholder="digite o nome e aplique">
+          <input placeholder="digite o nome completo">
         </label>`;
       const campo = $("input", bloco);
       campo.value = (estado.ajustes.nomes || {})[k] || "";
@@ -1493,7 +1666,8 @@
 
     const acoes = document.createElement("div");
     acoes.className = "acoes";
-    acoes.innerHTML = `<button type="button" class="botao">Aplicar e remontar</button>`;
+    acoes.innerHTML = `<button type="button" class="botao">
+      Aplicar e colocar na raia</button>`;
     $("button", acoes).onclick = () => {
       let quantos = 0;
       for (const [k, campo] of campos) {
@@ -1503,11 +1677,88 @@
       }
       montar();
       renderConferencia();
-      aviso(quantos
-        ? `${quantos} atleta(s) entraram no balizamento.`
-        : "Nenhum nome foi digitado.");
+      aviso(quantos ? `${quantos} atleta(s) entraram no balizamento.`
+                    : "Nenhum nome foi digitado.");
     };
     caixa.appendChild(acoes);
+    return caixa;
+  }
+
+  /* --- resolver: escrever os 4 nadadores de um revezamento --- */
+  function escreverNadadoresDoRevezamento(semLista) {
+    const caixa = document.createElement("div");
+    caixa.className = "correcao-lista";
+    const campos = [];
+
+    for (const r of semLista) {
+      const bloco = document.createElement("div");
+      bloco.className = "correcao-atleta";
+      bloco.innerHTML = `
+        <p class="correcao-titulo"><b>${CX(r.equipe)}</b>
+          <span class="apagado">${r.prova}ª ${r.titulo}</span></p>
+        <label class="campo largo">Os quatro nadadores, um por linha
+          <textarea rows="4" spellcheck="false"
+            placeholder="deixe em branco para anotar no dia da prova"></textarea>
+        </label>`;
+      const campo = $("textarea", bloco);
+      campo.value = (r.item.atletas || []).join("\n");
+      campos.push([r.item, campo]);
+      caixa.appendChild(bloco);
+    }
+
+    const acoes = document.createElement("div");
+    acoes.className = "acoes";
+    acoes.innerHTML = `<button type="button" class="botao">
+      Aplicar os nomes</button>`;
+    $("button", acoes).onclick = () => {
+      let quantos = 0;
+      for (const [item, campo] of campos) {
+        const nomes = campo.value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+        if (!nomes.length) continue;
+        // mexe na inscrição original, para o ajuste sobreviver a um remontar
+        const alvo = estado.inscricoes.find((i) => chaveDaLinha(i) === chaveDaLinha(item));
+        if (alvo) { alvo.atletas = nomes; alvo.semLista = false; quantos++; }
+      }
+      montar();
+      renderConferencia();
+      aviso(quantos ? `${quantos} revezamento(s) com a lista completa.`
+                    : "Nenhum nome foi digitado; segue para anotar no dia.");
+    };
+    caixa.appendChild(acoes);
+    return caixa;
+  }
+
+  /* --- resolver: juntar duas categorias vizinhas numa prova só --- */
+  function juntarCategorias(pares) {
+    const caixa = document.createElement("div");
+    caixa.className = "correcao-lista";
+    for (const j of pares) {
+      const bloco = document.createElement("div");
+      bloco.className = "correcao-atleta";
+      const rotulo = `${j.a.categoria} + ${j.b.categoria}`;
+      bloco.innerHTML = `
+        <p class="correcao-titulo"><b>${j.a.distancia} ${j.a.estilo}
+          ${NAIPE_LONGO[j.a.naipe] || j.a.naipe}</b></p>
+        <p class="nota">${j.a.categoria} tem ${j.nA} e ${j.b.categoria} tem
+          ${j.nB}. Juntas dão ${j.nA + j.nB} numa série só, com o nome
+          <b>${rotulo}</b>.</p>`;
+      const acoes = document.createElement("div");
+      acoes.className = "acoes";
+      acoes.innerHTML = `<button type="button" class="botao">
+        Juntar estas duas categorias</button>`;
+      $("button", acoes).onclick = () => {
+        estado.perfil.grupos.push({
+          rotulo, categorias: [j.a.categoria, j.b.categoria],
+          distancias: [j.a.distancia], estilos: [j.a.estilo],
+        });
+        renderGrupos();
+        montar();
+        renderConferencia();
+        aviso(`${rotulo} agora nadam juntos. Dá para desfazer na tela da competição.`);
+      };
+      bloco.appendChild(acoes);
+      caixa.appendChild(bloco);
+    }
     return caixa;
   }
 

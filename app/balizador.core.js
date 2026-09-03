@@ -380,18 +380,16 @@
             detalhe: `${s.linhas.length} nadadores para ${nRaias} raias`,
           });
         }
-        // Série curta demais. Numa prova com pouca gente não há o que dividir,
-        // e aí o aviso serve para o árbitro decidir se junta categorias.
+        // Série curta no meio de uma prova grande é problema de divisão. Prova
+        // pequena inteira não é: isso é tratado fora do laço, e só vira aviso
+        // quando existe outra prova com que dê para juntar.
         const minimo = minimoPorSerie(nRaias);
-        if (s.linhas.length < minimo) {
-          const total = p.series.reduce((t, x) => t + x.linhas.length, 0);
+        const totalDaProva = p.series.reduce((t, x) => t + x.linhas.length, 0);
+        if (s.linhas.length < minimo && totalDaProva >= minimo) {
           erros.push({
             tipo: "SÉRIE ABAIXO DO MÍNIMO", gravidade: "aviso", prova: p.numero,
             titulo: p.titulo, serie: s.numero,
-            detalhe: total < minimo
-              ? `a prova toda tem ${total} inscrito(s), e o mínimo por série ` +
-                `em ${nRaias} raias é ${minimo}`
-              : `${s.linhas.length} nadadores, abaixo do mínimo de ${minimo}`,
+            detalhe: `${s.linhas.length} nadadores, abaixo do mínimo de ${minimo}`,
           });
         }
         for (const l of s.linhas) {

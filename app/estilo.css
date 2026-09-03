@@ -447,3 +447,35 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
 .provas-do-atleta .apagado{color:var(--suave);font-size:.8rem;margin-left:.4rem}
 .contagem{font-size:.85rem}
 .alerta-inline{color:var(--grave);font-weight:600}
+
+/* ---------- botões e estados dos blocos da conferência ---------- */
+.botoes-bloco{margin-left:auto;display:flex;gap:.35rem}
+.bloco h3 .resolver,.bloco h3 .info{
+  font:inherit;font-size:.8rem;cursor:pointer;border-radius:3px;
+  padding:.2rem .7rem;font-weight:600;
+}
+.bloco h3 .resolver{background:currentColor;border:1px solid currentColor}
+.bloco.critico h3 .resolver{color:var(--grave)}
+.bloco.info h3 .resolver{color:var(--info)}
+.bloco.aviso h3 .resolver{color:var(--ambar)}
+.bloco h3 .resolver::first-letter{text-transform:uppercase}
+.bloco h3 .resolver{position:relative}
+.bloco h3 .resolver span,.bloco h3 .resolver{color:var(--papel)}
+.bloco.critico h3 .resolver{background:var(--grave);border-color:var(--grave)}
+.bloco.info h3 .resolver{background:var(--info);border-color:var(--info)}
+.bloco.aviso h3 .resolver{background:var(--ambar);border-color:var(--ambar)}
+.bloco h3 .info{
+  background:none;border:1px solid var(--linha);color:var(--suave);font-weight:500;
+}
+.bloco h3 .info:hover{color:var(--tinta);border-color:var(--suave)}
+
+.bloco.resolvido h3{border-left-color:var(--bom);color:var(--bom)}
+.bloco.resolvido .contador{background:var(--bom-fraca);color:var(--bom);font-weight:600}
+.bloco.aceito h3{border-left-color:var(--bom);color:var(--bom)}
+.selo-aceito{
+  font-family:"Roboto Mono",monospace;font-size:.62rem;text-transform:uppercase;
+  letter-spacing:.06em;color:var(--bom);background:var(--bom-fraca);
+  padding:.1rem .4rem;border-radius:2px;
+}
+.marcavel.bloqueada{opacity:.42;cursor:not-allowed}
+.correcao textarea{font-size:.9rem}
