@@ -444,6 +444,43 @@
     return achados;
   }
 
+  // Compara categorias ignorando aspas e pontuação: PARAL "A" == PARAL A
+  function chaveDeCategoria(t) {
+    return normalizar(t).replace(/["'“”‘’.]/g, "").replace(/\s+/g, " ").trim();
+  }
+
+  /**
+   * Atleta inscrito em mais de uma categoria. Categoria é idade: ninguém é
+   * mirim e infantil na mesma competição. Quando isso aparece, a inscrição
+   * foi digitada errada, e o balizamento sairia com a pessoa nadando contra
+   * duas faixas etárias diferentes.
+   */
+  function conferirCategorias(inscricoes) {
+    const porAtleta = new Map();
+    for (const i of inscricoes) {
+      const cat = chaveDeCategoria(i.categoria);
+      if (!cat) continue;
+      const k = normalizar(i.nome) + "|" + normalizar(i.equipe);
+      if (!porAtleta.has(k)) porAtleta.set(k, { ref: i, cats: new Map() });
+      const v = porAtleta.get(k);
+      if (!v.cats.has(cat)) v.cats.set(cat, { rotulo: i.categoria, provas: [] });
+      v.cats.get(cat).provas.push(i.tituloProva);
+    }
+    const achados = [];
+    for (const [, v] of porAtleta) {
+      if (v.cats.size < 2) continue;
+      const cats = [...v.cats.values()];
+      achados.push({
+        tipo: "ATLETA EM MAIS DE UMA CATEGORIA", gravidade: "critico",
+        nome: v.ref.nome, equipe: v.ref.equipe, quantidade: cats.length,
+        categorias: cats.map((c) => c.rotulo),
+        provas: cats.map((c) => c.rotulo + ": " + c.provas.join(", ")),
+      });
+    }
+    achados.sort((a, b) => cmpTexto(a.nome, b.nome));
+    return achados;
+  }
+
   /* ---------------- tempo ---------------- */
 
   // Aceita "1:02.35", "62.35", "1:02:35", "00:31,20"
@@ -482,7 +519,8 @@
     ordemRaias, minimoPorSerie, tamanhosSeries, raiasPara,
     espalharEquipes, ordemPorTempo, montarSeries,
     REGRAS_PARA, PREFIXO_PROVA, parseClasses, segmentoEfetivo, classificar,
-    faixaTexto, normalizar, validar, conferirLimites, lerTempo, formatarTempo,
+    faixaTexto, normalizar, validar, conferirLimites, conferirCategorias,
+    lerTempo, formatarTempo,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;

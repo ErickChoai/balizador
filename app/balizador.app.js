@@ -49,7 +49,10 @@
 
   const estado = {
     perfil: null, inscricoes: [], abas: [], provas: [], erros: [], limites: [],
-    arquivo: null,
+    categorias: [], descartadas: [], arquivo: null,
+    // correções feitas na tela da conferência, sem mexer na planilha:
+    // provas tiradas de quem passou do limite, e nomes que faltavam
+    ajustes: { removidas: new Set(), nomes: {} },
     // o programa de provas lido da planilha, ou null enquanto não veio um:
     // { ok, aba, formato, arquivo, provas, linhas, problemas, sem }
     programa: null,
@@ -58,7 +61,8 @@
   /* ---------------- perfil ---------------- */
   function perfilPadrao() {
     return {
-      nome: "", local: "", data: "", dataInicio: "", dataFim: "", piscina: "",
+      nome: "", local: "", data: "", dataInicio: "", dataFim: "",
+      datasDoPrograma: false, piscina: "",
       raias: "", regraSerie: B.ULTIMAS_CHEIAS,
       rotuloEquipe: "EQUIPE",
       temPara: false, tipoClasse: "FUNCIONAL", temTempo: false,
@@ -107,6 +111,30 @@
   function liberar(passo, ok) {
     const el = $(`.passo[data-passo="${passo}"]`);
     if (el) el.classList.toggle("bloqueado", !ok);
+  }
+
+  /* Depois de ler uma planilha, o que interessa aparece lá embaixo. Quem
+     arrastou o arquivo no meio da página não vê nada mudar e acha que não
+     pegou. Então a página vai até o resultado sozinha. */
+  function mostrarResultado(id) {
+    const alvo = $("#" + id);
+    if (!alvo) return;
+    // deixa o navegador pintar antes de medir a posição. Vai de setTimeout
+    // porque requestAnimationFrame não roda com a aba em segundo plano.
+    setTimeout(() => {
+      const topo = $(".topo");
+      const folga = (topo ? topo.getBoundingClientRect().height : 0) + 12;
+      const destino = Math.max(0,
+        alvo.getBoundingClientRect().top + window.scrollY - folga);
+      window.scrollTo({ top: destino, behavior: "smooth" });
+      // se a rolagem suave não pegou, vai direto: o importante é ver o resultado
+      setTimeout(() => {
+        if (Math.abs(window.scrollY - destino) > 40) window.scrollTo(0, destino);
+      }, 400);
+      alvo.classList.remove("recem-chegado");
+      void alvo.offsetWidth;                       // reinicia a animação
+      alvo.classList.add("recem-chegado");
+    });
   }
 
   /* ---------------- tela 1: programa de provas ----------------
@@ -214,7 +242,25 @@
     if (prog && prog.provas && prog.provas.length) {
       const et = etapasDoPrograma(prog.provas);
       if (et.length) estado.perfil.etapas = et;
+      // as datas já estavam na planilha: não faz sentido pedir de novo
+      const datas = datasDoPrograma(prog.provas);
+      if (datas && !estado.perfil.dataInicio && !estado.perfil.dataFim) {
+        estado.perfil.dataInicio = datas.inicio;
+        estado.perfil.dataFim = datas.fim;
+        estado.perfil.datasDoPrograma = true;
+      }
     }
+  }
+
+  /* Joga para os campos da tela as datas que vieram do programa. Sem isto o
+     lerConfig da tela seguinte leria os campos ainda vazios e apagaria o que
+     a planilha trouxe. */
+  function sincronizarDatas() {
+    const p = estado.perfil;
+    const ini = $("#dataInicio"), fim = $("#dataFim");
+    if (ini) ini.value = p.dataInicio || "";
+    if (fim) fim.value = p.dataFim || "";
+    atualizarPreviaData();
   }
 
   // recupera o programa de um perfil salvo ou importado
@@ -255,11 +301,12 @@
     const r = D.lerProgramaPlanilha(wb);
     r.arquivo = file.name;
     estado.programa = r.provas.length ? r : null;
-    if (estado.programa) adotarPrograma();
+    if (estado.programa) { adotarPrograma(); sincronizarDatas(); }
     liberarCompeticao(!!(estado.programa && r.ok));
     renderResultadoPrograma(r);
     renderResumoPrograma();
     renderEtapas();
+    mostrarResultado("resultadoPrograma");
   }
 
   function renderResultadoPrograma(r) {
@@ -628,10 +675,41 @@
            `${b.dia} de ${MESES[b.mes]} de ${b.ano}`;
   }
 
+  /* A coluna DIA do programa vira as datas da competição, para ninguém ter de
+     digitar duas vezes o que já está na planilha. Aceita 17/10, 17/10/2026 e
+     2026-10-17; sem o ano, assume o ano corrente. */
+  function diaParaIso(bruto) {
+    const t = String(bruto == null ? "" : bruto).trim();
+    if (!t) return "";
+    const iso = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    if (iso) return `${iso[1]}-${pad2(iso[2])}-${pad2(iso[3])}`;
+    const br = t.match(/^(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?$/);
+    if (!br) return "";
+    let ano = br[3] ? parseInt(br[3], 10) : new Date().getFullYear();
+    if (ano < 100) ano += 2000;
+    const mes = parseInt(br[2], 10), dia = parseInt(br[1], 10);
+    if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return "";
+    return `${ano}-${pad2(mes)}-${pad2(dia)}`;
+  }
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function datasDoPrograma(provas) {
+    const dias = (provas || []).map((p) => diaParaIso(p.dia)).filter(Boolean).sort();
+    if (!dias.length) return null;
+    return { inicio: dias[0], fim: dias[dias.length - 1] };
+  }
+
   function atualizarPreviaData() {
     const texto = textoDaData($("#dataInicio").value, $("#dataFim").value);
     const alvo = $("#previaData");
-    if (alvo) alvo.textContent = texto;
+    if (alvo) {
+      alvo.textContent = texto;
+      alvo.classList.toggle("veio-do-programa",
+        !!(estado.perfil && estado.perfil.datasDoPrograma && texto));
+    }
     // uma data de fim antes do início é engano de clique, não de digitação
     const fim = $("#dataFim");
     const invertida = $("#dataInicio").value && fim.value &&
@@ -973,6 +1051,8 @@
     estado.inscricoes = inscricoes;
     estado.abas = r.abas;
     estado.arquivo = file.name;
+    estado.descartadas = r.descartadas || [];
+    estado.ajustes = { removidas: new Set(), nomes: {} };
 
     const ind = inscricoes.filter((i) => !i.revezamento).length;
     const rev = inscricoes.filter((i) => i.revezamento).length;
@@ -1011,11 +1091,32 @@
     liberar("conferencia", true);
     liberar("gerar", true);
     $("#irConferencia").disabled = false;
+    mostrarResultado("resumoArquivo");
+  }
+
+  // uma inscrição é identificada pela linha da planilha de onde veio
+  function chaveDaLinha(x) {
+    return String(x.aba) + "|" + String(x.linha);
+  }
+
+  /* As inscrições que vão para o balizamento: as lidas da planilha, menos as
+     que o árbitro tirou na conferência, mais as que ele completou ali. */
+  function inscricoesAjustadas() {
+    const aj = estado.ajustes || { removidas: new Set(), nomes: {} };
+    let lista = estado.inscricoes.filter((i) => !aj.removidas.has(chaveDaLinha(i)));
+    for (const [chave, nome] of Object.entries(aj.nomes || {})) {
+      if (!String(nome || "").trim()) continue;
+      const d = (estado.descartadas || []).find((x) => chaveDaLinha(x) === chave);
+      if (d && d.base) {
+        lista = lista.concat([Object.assign({}, d.base, { nome: nome.trim() })]);
+      }
+    }
+    return lista;
   }
 
   function montar() {
     const p = lerConfig();
-    estado.provas = D.montarBalizamento(estado.inscricoes, p);
+    estado.provas = D.montarBalizamento(inscricoesAjustadas(), p);
     if (p.etapas && p.etapas.length === 0) {
       p.etapas = [];
     }
@@ -1028,16 +1129,30 @@
       limiteRevezamento: p.limiteRev,
       limiteDe: (i) => (ehPara(i.categoria, p) ? p.limiteIndPara : p.limiteInd),
     });
-    // marca em vermelho quem passou do limite
-    const marcados = new Set(estado.limites.map(
-      (a) => B.normalizar(a.nome) + "|" + B.normalizar(a.equipe)));
+    estado.categorias = B.conferirCategorias(planas);
+
+    /* Marca em vermelho, com o motivo escrito, quem o balizamento não deveria
+       aceitar do jeito que está: passou do limite de provas, ou aparece em
+       duas categorias de idade ao mesmo tempo. */
+    const marcados = new Map();
+    const anotar = (a, motivo) => {
+      const k = B.normalizar(a.nome) + "|" + B.normalizar(a.equipe);
+      marcados.set(k, marcados.has(k) ? marcados.get(k) + "; " + motivo : motivo);
+    };
+    estado.limites.forEach((a) => anotar(a,
+      `${a.quantidade} provas, o limite é ${a.limite}`));
+    estado.categorias.forEach((a) => anotar(a,
+      `inscrito em ${a.categorias.join(" e ")}`));
+
     for (const pr of estado.provas) {
       for (const s of pr.series) {
         for (const l of s.linhas) {
           const it = l.item;
           const chaves = (it.atletas && it.atletas.length ? it.atletas : [it.nome])
             .map((n) => B.normalizar(n) + "|" + B.normalizar(it.equipe));
-          it.marcado = chaves.some((k) => marcados.has(k));
+          const achado = chaves.find((k) => marcados.has(k));
+          it.marcado = !!achado;
+          it.motivoMarcado = achado ? marcados.get(achado) : "";
           it.letraCategoria = letraCategoria(it.categoria);
         }
       }
@@ -1055,30 +1170,36 @@
     return m ? m[1] : "";
   }
 
-  /* ---------------- tela 4: conferência ---------------- */
+  /* ---------------- tela 4: conferência ----------------
+     Cada problema traz três coisas: o que é, o que vai acontecer com ele no
+     balizamento se ficar assim, e, quando dá, o jeito de resolver aqui mesmo.
+     Voltar ao Excel para trocar um nome é o tipo de ida e volta que faz o
+     árbitro desistir de conferir.
+  ------------------------------------------------------- */
+
   function renderConferencia() {
     if (!estado.provas.length) montar();
     const criticos = estado.erros.filter((e) => e.gravidade === "critico");
     const avisos = estado.erros.filter((e) => e.gravidade !== "critico");
+
     const cortes = [];
     for (const p of estado.provas) {
       for (const c of (p.cortados || [])) {
         cortes.push({
-          tipo: c.corteTipo === B.SEM_CLASSE ? "SEM CLASSE" : "CONTRA O REGULAMENTO",
           gravidade: c.corteTipo === B.SEM_CLASSE ? "info" : "critico",
           prova: p.numero, titulo: p.titulo, nome: c.nome, equipe: c.equipe,
           detalhe: c.motivo,
         });
       }
     }
+
     const foraDoPrograma = estado.provas
       .filter((p) => p.aviso && p.series.length)
       .map((p) => ({
         prova: p.numero, titulo: p.titulo, nome: "", equipe: "",
-        detalhe: `${p.atletas} atleta(s) inscritos: ${p.aviso}`,
+        detalhe: `${p.atletas} atleta(s) inscritos nela`,
       }));
-    // revezamentos inscritos só com a equipe: a raia está reservada e o PDF
-    // sai com as linhas em branco, mas o árbitro precisa saber quais são
+
     const semLista = [];
     for (const p of estado.provas) {
       for (const s of p.series) {
@@ -1086,55 +1207,310 @@
           if (!l.item.semLista) continue;
           semLista.push({
             prova: p.numero, titulo: p.titulo, nome: "", equipe: l.item.equipe,
-            detalhe: `${s.numero}ª série, raia ${l.raia}: a raia está reservada e ` +
-                     "o balizamento sai com as linhas em branco para anotar no dia",
+            detalhe: `${s.numero}ª série, raia ${l.raia}`,
           });
         }
       }
     }
-    const semInscritos = estado.provas.filter((p) => !p.series.length).length;
-    const totCrit = criticos.length + estado.limites.length +
-                    cortes.filter((c) => c.gravidade === "critico").length +
-                    foraDoPrograma.length;
+
+    const semInscritos = estado.provas.filter((p) => !p.series.length);
+    const descartadas = (estado.descartadas || [])
+      .filter((d) => !String((estado.ajustes.nomes || {})[chaveDaLinha(d)] || "").trim());
+
+    const secoes = [
+      {
+        id: "foraPrograma", titulo: "Provas fora do programa oficial",
+        nivel: "critico", itens: foraDoPrograma,
+        explica: `Cada uma destas provas sai no balizamento <b>em vermelho</b>,
+          com o aviso <i>"esta prova não consta no programa oficial"</i> escrito
+          ao lado do título, e os atletas dela ocupam raias normalmente. A
+          numeração delas vem depois da última prova do programa.
+          <br><br>Se a prova é para valer, acrescente-a ao programa de provas e
+          envie o programa de novo. Se não é, tire esses inscritos da planilha.
+          <b>Resolva antes de gerar as papeletas</b>, porque elas saem com o
+          número da prova impresso.`,
+      },
+      {
+        id: "categorias", titulo: "Atleta em mais de uma categoria",
+        nivel: "critico", itens: estado.categorias.map((a) => ({
+          prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
+          detalhe: a.categorias.join(" e ") + ": " + a.provas.join(" · "),
+        })),
+        explica: `Categoria é idade: ninguém é mirim e infantil na mesma
+          competição. Quando o mesmo nome aparece nas duas, a inscrição foi
+          digitada errada em uma delas.
+          <br><br>Estes atletas saem <b>em vermelho no balizamento</b>, com o
+          motivo escrito embaixo do nome, e continuam ocupando raia nas duas
+          provas. Corrija a categoria na planilha e envie de novo, ou use o
+          quadro de provas abaixo para tirar as que não são dele.`,
+        corrigir: () => corrigirProvasDoAtleta(estado.categorias, null),
+      },
+      {
+        id: "limites", titulo: "Atletas acima do limite de provas",
+        nivel: "critico", itens: estado.limites.map((a) => ({
+          prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
+          detalhe: `${a.quantidade} provas, o limite é ${a.limite}: ` +
+                   a.provas.join(", "),
+        })),
+        explica: `O atleta sai <b>em vermelho no balizamento</b>, com o motivo
+          escrito embaixo do nome, e ocupa raia em todas as provas em que foi
+          inscrito. O app não escolhe por você quais provas cortar.
+          <br><br>Marque abaixo as que ele vai nadar de verdade. O balizamento
+          é remontado na hora, sem precisar mexer na planilha.`,
+        corrigir: () => corrigirProvasDoAtleta(estado.limites, estado.perfil.limiteInd),
+      },
+      {
+        id: "duplicados", titulo: "Raias e duplicidades",
+        nivel: "critico", itens: criticos,
+        explica: `Atleta repetido na mesma prova, ou raia com mais de um
+          nadador. O app tirou o repetido do balizamento e ficou com a primeira
+          inscrição; o segundo não aparece nas raias.
+          <br><br>Se as duas inscrições eram de pessoas diferentes com nome
+          parecido, aí sim tem de arrumar a planilha, escrevendo o nome
+          completo de cada uma.`,
+      },
+      {
+        id: "regulamento", titulo: "Inscrições contra o regulamento",
+        nivel: "critico", itens: cortes.filter((c) => c.gravidade === "critico"),
+        explica: `A classe funcional destes atletas não disputa esta prova, pelo
+          mapa de provas paralímpico. Eles <b>não ocupam raia</b>: saem numa
+          faixa vermelha "NÃO PARTICIPAM DESTA PROVA" logo abaixo da prova, com
+          o motivo escrito.
+          <br><br>Se a classe está errada na planilha, corrija e envie de novo.
+          Se está certa, a inscrição é que não podia ter sido feita.`,
+      },
+      {
+        id: "semNome", titulo: "Linhas que ficaram de fora",
+        nivel: "critico", itens: descartadas.map((d) => ({
+          prova: "", titulo: d.prova, nome: "", equipe: d.equipe,
+          detalhe: `linha ${d.linha} da planilha: ${d.motivo}`,
+        })),
+        explica: `Estas linhas têm a instituição e o tempo preenchidos, mas
+          nenhum nome de atleta ao lado. Elas <b>não entraram no balizamento</b>:
+          ninguém ocupa essa raia.
+          <br><br>Se era inscrição de verdade, escreva o nome abaixo e o atleta
+          entra na prova na hora, sem mexer na planilha.`,
+        corrigir: () => corrigirNomesFaltando(descartadas),
+      },
+      {
+        id: "semLista", titulo: "Revezamentos ainda sem a lista de atletas",
+        nivel: "info", itens: semLista,
+        explica: `A equipe se inscreveu sem dizer quem nada. Isto <b>não é
+          erro</b>: a raia fica reservada em nome da equipe e o balizamento sai
+          com quatro linhas em branco, para o árbitro anotar os nomes na borda
+          da piscina no dia da prova.
+          <br><br>Se você já sabe quem vai nadar, escreva os quatro nomes na
+          mesma célula da planilha, um por linha.`,
+      },
+      {
+        id: "semClasse", titulo: "Atletas sem classe definida",
+        nivel: "info", itens: cortes.filter((c) => c.gravidade === "info"),
+        explica: `A classe destes atletas veio em branco ou ilegível, então o
+          app não tem como conferir se eles podem nadar a prova. Eles saem numa
+          faixa azul abaixo da prova e <b>não ocupam raia</b>.
+          <br><br>Preencha a classe na planilha e envie de novo.`,
+      },
+      {
+        id: "provasVazias", titulo: "Provas do programa sem ninguém inscrito",
+        nivel: "info", itens: semInscritos.map((p) => ({
+          prova: p.numero, titulo: p.titulo, nome: "", equipe: "",
+          detalhe: "nenhuma inscrição chegou para esta prova",
+        })),
+        explica: `A prova está no programa e sai no balizamento com a marca
+          <i>"Sem inscritos"</i>, mantendo o número dela. Isso é de propósito:
+          tirar a prova mudaria a numeração de todas as seguintes, e o programa
+          impresso já está na mão de todo mundo.`,
+      },
+      {
+        id: "raias", titulo: "Avisos de organização das raias",
+        nivel: "info", itens: avisos,
+        explica: `Séries com menos gente que o mínimo, ou raias fora do padrão
+          de preenchimento. Numa prova pequena não há o que dividir, e o
+          balizamento sai assim mesmo: é só para você saber, e decidir se vale
+          juntar categorias.`,
+      },
+    ].filter((s) => s.itens.length);
+
+    const totCrit = secoes.filter((s) => s.nivel === "critico")
+                          .reduce((t, s) => t + s.itens.length, 0);
+    const totInfo = secoes.filter((s) => s.nivel === "info")
+                          .reduce((t, s) => t + s.itens.length, 0);
 
     $("#painelConferencia").innerHTML = `
       <div class="fichas">
-        <div class="ficha ${totCrit ? "ruim" : "bom"}"><b>${totCrit}</b><span>problemas críticos</span></div>
-        <div class="ficha"><b>${avisos.length}</b><span>avisos de raia</span></div>
-        <div class="ficha"><b>${cortes.filter((c) => c.gravidade === "info").length}</b><span>sem classe definida</span></div>
-        <div class="ficha"><b>${estado.provas.length}</b><span>provas montadas${
-          semInscritos ? `, ${semInscritos} sem inscritos` : ""}</span></div>
+        <div class="ficha ${totCrit ? "ruim" : "bom"}"><b>${totCrit}</b>
+          <span>${totCrit === 1 ? "problema para resolver" : "problemas para resolver"}</span></div>
+        <div class="ficha"><b>${totInfo}</b><span>avisos, sem impedimento</span></div>
+        <div class="ficha"><b>${estado.provas.length}</b><span>provas montadas</span></div>
+        <div class="ficha"><b>${estado.provas.reduce((s, p) => s + p.atletas, 0)}</b>
+          <span>atletas balizados</span></div>
       </div>
-      ${bloco("Provas fora do programa oficial", foraDoPrograma, "critico")}
-      ${bloco("Revezamentos ainda sem a lista de atletas", semLista, "info")}
-      ${bloco("Atletas acima do limite de provas", estado.limites.map((a) => ({
-        prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
-        detalhe: `${a.quantidade} provas (máximo ${a.limite}): ${a.provas.join(", ")}`,
-      })), "critico")}
-      ${bloco("Raias e duplicidades", criticos, "critico")}
-      ${bloco("Inscrições contra o regulamento",
-              cortes.filter((c) => c.gravidade === "critico"), "critico")}
-      ${bloco("Sem classe definida", cortes.filter((c) => c.gravidade === "info"), "info")}
-      ${bloco("Avisos de organização das raias", avisos, "aviso")}
-      ${totCrit === 0 && !avisos.length && !semLista.length
+      ${totCrit ? `<p class="nota">Nada aqui impede de gerar os arquivos. O que
+        estiver em vermelho sai destacado no balizamento, com o motivo escrito.
+        Clique em <b>o que vai acontecer</b> para ver o que cada caso vira nos
+        arquivos.</p>` : ""}
+      ${secoes.map(secaoHtml).join("")}
+      ${!secoes.length
         ? '<p class="ok-vazio">Nenhum problema encontrado. O balizamento está pronto para gerar.</p>'
-        : totCrit === 0 && !avisos.length
-        ? '<p class="ok-vazio">Nenhum erro. Só falta a lista de atletas dos revezamentos acima, que dá para anotar no dia.</p>'
         : ""}`;
+
+    ligarSecoes(secoes);
   }
 
-  function bloco(titulo, itens, nivel) {
-    if (!itens.length) return "";
-    return `<section class="bloco ${nivel}">
-      <h3>${titulo} <span class="contador">${itens.length}</span></h3>
+  function secaoHtml(s) {
+    const temCorrecao = typeof s.corrigir === "function";
+    return `<section class="bloco ${s.nivel}" data-secao="${s.id}">
+      <h3>${s.titulo} <span class="contador">${s.itens.length}</span>
+        <button type="button" class="info" data-info="${s.id}"
+          aria-expanded="false">o que vai acontecer</button></h3>
+      <div class="explicacao" id="explica-${s.id}" hidden>
+        <p>${s.explica}</p>
+        ${temCorrecao ? `<div class="correcao" id="corrige-${s.id}"></div>` : ""}
+      </div>
       <table class="tabela"><thead><tr><th>PROVA</th><th>ATLETA</th>
       <th>EQUIPE</th><th>DETALHE</th></tr></thead><tbody>${
-      itens.map((e) => `<tr>
-        <td>${e.prova ? e.prova + "ª " + (e.titulo || "") : ""}</td>
+      s.itens.map((e) => `<tr>
+        <td>${e.prova ? e.prova + "ª " + (e.titulo || "") : (e.titulo || "")}</td>
         <td>${CX(e.nome || "")}</td>
         <td class="apagado">${CX(e.equipe || "")}</td>
         <td>${e.detalhe || ""}</td></tr>`).join("")}</tbody></table></section>`;
   }
+
+  function ligarSecoes(secoes) {
+    for (const s of secoes) {
+      const botao = $(`[data-info="${s.id}"]`);
+      const painel = $("#explica-" + s.id);
+      if (!botao || !painel) continue;
+      botao.onclick = () => {
+        const abrindo = painel.hidden;
+        painel.hidden = !abrindo;
+        botao.setAttribute("aria-expanded", String(abrindo));
+        botao.textContent = abrindo ? "fechar" : "o que vai acontecer";
+        if (abrindo && typeof s.corrigir === "function") {
+          html("corrige-" + s.id, "");
+          $("#corrige-" + s.id).appendChild(s.corrigir());
+        }
+      };
+    }
+  }
+
+  /* --- corrigir aqui: escolher quais provas o atleta fica --- */
+  function corrigirProvasDoAtleta(achados, limite) {
+    const caixa = document.createElement("div");
+    caixa.className = "correcao-lista";
+    if (!achados.length) return caixa;
+
+    for (const a of achados) {
+      const chave = B.normalizar(a.nome) + "|" + B.normalizar(a.equipe);
+      const minhas = estado.inscricoes.filter((i) =>
+        !i.revezamento &&
+        B.normalizar(i.nome) + "|" + B.normalizar(i.equipe) === chave);
+      if (!minhas.length) continue;
+
+      const bloco = document.createElement("div");
+      bloco.className = "correcao-atleta";
+      const teto = limite || minhas.length;
+      bloco.innerHTML = `
+        <p class="correcao-titulo"><b>${CX(a.nome)}</b>
+          <span class="apagado">${CX(a.equipe)}</span></p>
+        <p class="nota">Marque as provas que ele vai nadar${
+          limite ? `, no máximo <b>${limite}</b>` : ""}.</p>
+        <div class="provas-do-atleta"></div>
+        <p class="nota contagem"></p>`;
+      const lista = $(".provas-do-atleta", bloco);
+
+      minhas.forEach((i) => {
+        const k = chaveDaLinha(i);
+        const rot = document.createElement("label");
+        rot.className = "marcavel";
+        const marcada = !estado.ajustes.removidas.has(k);
+        rot.innerHTML = `<input type="checkbox" ${marcada ? "checked" : ""}>
+          <span>${CX(D.tituloProva(i.distancia, i.estilo, i.categoria, i.naipe))}
+          <span class="apagado">linha ${i.linha}</span></span>`;
+        $("input", rot).onchange = (ev) => {
+          if (ev.target.checked) estado.ajustes.removidas.delete(k);
+          else estado.ajustes.removidas.add(k);
+          atualizarContagem();
+        };
+        lista.appendChild(rot);
+      });
+
+      const atualizarContagem = () => {
+        const marcadas = minhas.filter((i) =>
+          !estado.ajustes.removidas.has(chaveDaLinha(i))).length;
+        const alvo = $(".contagem", bloco);
+        const excedeu = limite && marcadas > limite;
+        alvo.textContent = excedeu
+          ? `${marcadas} marcadas, ${marcadas - limite} a mais do que o limite`
+          : `${marcadas} de ${teto} provas`;
+        alvo.classList.toggle("alerta-inline", !!excedeu);
+      };
+      atualizarContagem();
+      caixa.appendChild(bloco);
+    }
+
+    const acoes = document.createElement("div");
+    acoes.className = "acoes";
+    acoes.innerHTML = `<button type="button" class="botao">Aplicar e remontar</button>
+      <button type="button" class="mini claro">Desfazer</button>`;
+    const [aplicar, desfazer] = $$("button", acoes);
+    aplicar.onclick = () => {
+      montar();
+      renderConferencia();
+      aviso("Balizamento remontado com as provas que você marcou.");
+    };
+    desfazer.onclick = () => {
+      estado.ajustes.removidas.clear();
+      montar();
+      renderConferencia();
+      aviso("Voltou tudo como estava na planilha.");
+    };
+    caixa.appendChild(acoes);
+    return caixa;
+  }
+
+  /* --- corrigir aqui: digitar o nome que faltou na linha --- */
+  function corrigirNomesFaltando(descartadas) {
+    const caixa = document.createElement("div");
+    caixa.className = "correcao-lista";
+    const campos = [];
+
+    for (const d of descartadas) {
+      const k = chaveDaLinha(d);
+      const bloco = document.createElement("div");
+      bloco.className = "correcao-atleta";
+      bloco.innerHTML = `
+        <p class="correcao-titulo"><b>${d.prova}</b>
+          <span class="apagado">linha ${d.linha} · ${CX(d.equipe)}</span></p>
+        <label class="campo largo">Nome do atleta que faltou
+          <input placeholder="digite o nome e aplique">
+        </label>`;
+      const campo = $("input", bloco);
+      campo.value = (estado.ajustes.nomes || {})[k] || "";
+      campos.push([k, campo]);
+      caixa.appendChild(bloco);
+    }
+
+    const acoes = document.createElement("div");
+    acoes.className = "acoes";
+    acoes.innerHTML = `<button type="button" class="botao">Aplicar e remontar</button>`;
+    $("button", acoes).onclick = () => {
+      let quantos = 0;
+      for (const [k, campo] of campos) {
+        const nome = campo.value.trim();
+        if (nome) { estado.ajustes.nomes[k] = nome; quantos++; }
+        else delete estado.ajustes.nomes[k];
+      }
+      montar();
+      renderConferencia();
+      aviso(quantos
+        ? `${quantos} atleta(s) entraram no balizamento.`
+        : "Nenhum nome foi digitado.");
+    };
+    caixa.appendChild(acoes);
+    return caixa;
+  }
+
 
   /* ---------------- tela 5: gerar ---------------- */
   function renderGerar() {
@@ -1193,8 +1569,12 @@
       if (!p.classList.contains("bloqueado")) irPara(p.dataset.passo);
     }));
     $("#raias").oninput = atualizarPreviaRaias;
-    ao("dataInicio", "change", atualizarPreviaData);
-    ao("dataFim", "change", atualizarPreviaData);
+    const mexeuNaData = () => {
+      estado.perfil.datasDoPrograma = false;
+      atualizarPreviaData();
+    };
+    ao("dataInicio", "change", mexeuNaData);
+    ao("dataFim", "change", mexeuNaData);
     ["temPara", "tipoClasse", "temTempo", "temRevezamento", "mostrarCategoria"].forEach((id) => {
       const el = $("#" + id);
       el.addEventListener("change", atualizarDependentes);

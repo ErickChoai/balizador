@@ -285,7 +285,10 @@
             prova: tituloProva(bloco.info.distancia, bloco.info.estilo,
                                 bloco.info.rotulo || bloco.info.categoria,
                                 bloco.info.naipe),
-            motivo: "tem a instituição preenchida mas não tem o nome do atleta" });
+            motivo: "tem a instituição preenchida mas não tem o nome do atleta",
+            // guarda o resto da linha: com o nome digitado na conferência,
+            // a inscrição volta sem precisar mexer na planilha
+            base: Object.assign({}, base, { atletas: null }) });
           continue;
         }
         inscricoes.push(Object.assign({}, base, { nome, atletas: null }));

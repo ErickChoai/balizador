@@ -405,3 +405,45 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
 .linha-exemplo b{display:block;font-family:"Archivo",sans-serif;font-size:.98rem}
 .linha-exemplo span{color:var(--suave);font-size:.88rem}
 .acoes-exemplo{display:flex;gap:.4rem;flex-wrap:wrap}
+
+/* o bloco que acabou de chegar pisca de leve, para o olho achar onde parou */
+@keyframes chegou{from{background:var(--agua-fraca)}to{background:transparent}}
+.recem-chegado{animation:chegou 1.2s ease-out}
+@media (prefers-reduced-motion:reduce){.recem-chegado{animation:none}}
+.valor-calculado.veio-do-programa::after{
+  content:"veio do programa";font-family:"Roboto Mono",monospace;font-size:.62rem;
+  text-transform:uppercase;letter-spacing:.06em;color:var(--agua);
+  border:1px solid var(--agua);border-radius:2px;padding:.05rem .3rem;margin-left:.5rem;
+}
+
+/* ---------- conferência que explica e corrige ---------- */
+.bloco h3 .info{
+  margin-left:auto;font:inherit;font-size:.78rem;cursor:pointer;
+  background:none;border:1px solid currentColor;border-radius:3px;
+  padding:.15rem .55rem;color:inherit;opacity:.8;font-weight:500;
+}
+.bloco h3 .info:hover{opacity:1}
+.explicacao{
+  background:var(--papel);border:1px solid var(--linha);border-left:3px solid;
+  border-radius:4px;padding:.9rem 1rem;margin:.5rem 0 .7rem;
+}
+.bloco.critico .explicacao{border-left-color:var(--grave)}
+.bloco.aviso .explicacao{border-left-color:var(--ambar)}
+.bloco.info .explicacao{border-left-color:var(--info)}
+.explicacao p{font-size:.95rem;line-height:1.55;max-width:76ch;color:var(--tinta)}
+.explicacao b{font-weight:600}
+
+.correcao{margin-top:.9rem}
+.correcao-lista{display:flex;flex-direction:column;gap:.8rem}
+.correcao-atleta{
+  background:var(--fundo);border:1px solid var(--linha);border-radius:4px;
+  padding:.8rem .9rem;display:flex;flex-direction:column;gap:.45rem;
+}
+.correcao-titulo{font-size:1rem}
+.correcao-titulo .apagado{color:var(--suave);font-weight:400;margin-left:.5rem;
+  font-size:.88rem}
+.provas-do-atleta{display:flex;flex-direction:column;gap:.15rem}
+.provas-do-atleta .marcavel{font-size:.95rem}
+.provas-do-atleta .apagado{color:var(--suave);font-size:.8rem;margin-left:.4rem}
+.contagem{font-size:.85rem}
+.alerta-inline{color:var(--grave);font-weight:600}

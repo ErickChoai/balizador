@@ -13,12 +13,23 @@
     return { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" }[n] || n;
   }
 
+  /* Quem não informou tempo aparece como 99:99.99, que é o que os programas
+     de natação escrevem e o que o árbitro espera ler na folha. Espaço em
+     branco confunde com erro de impressão. */
+  const SEM_TEMPO = "99:99.99";
+
+  function tempoDeInscricao(it) {
+    return it && it.tempo != null && isFinite(it.tempo)
+      ? B.formatarTempo(it.tempo) : SEM_TEMPO;
+  }
+
   function colunasDe(prova, perfil) {
     const c = ["RAIA", "NOME DO ATLETA", perfil.rotuloEquipe || "EQUIPE"];
     if (prova.paralimpica && !prova.revezamento) {
       if (perfil.mostrarCategoria) c.push("CAT.");
       c.push("CLASSE");
     }
+    if (perfil.temTempo) c.push("INSCRIÇÃO");
     c.push("TEMPO");
     return c;
   }
@@ -29,6 +40,7 @@
       if (perfil.mostrarCategoria) v.push(CX(it.letraCategoria || it.categoria || ""));
       v.push(CX(it.classe));
     }
+    if (perfil.temTempo) v.push(tempoDeInscricao(it));
     v.push("");
     return v;
   }
@@ -66,8 +78,13 @@
         linhas.push([CX(et.rotulo)]);
         linhas.push([]);
       }
-      pintar.push({ r: linhas.length, tipo: "prova" });
+      pintar.push({ r: linhas.length, tipo: p.aviso ? "provaFora" : "prova" });
       linhas.push([ORD(p.numero) + " PROVA", p.titulo].concat(cols.slice(2)));
+      if (p.aviso) {
+        merges.push({ s: { r: linhas.length, c: 0 }, e: { r: linhas.length, c: cols.length - 1 } });
+        pintar.push({ r: linhas.length, tipo: "provaFora" });
+        linhas.push([CX(p.aviso)]);
+      }
 
       if (!p.series.length) {
         merges.push({ s: { r: linhas.length, c: 0 }, e: { r: linhas.length, c: cols.length - 1 } });
@@ -91,11 +108,15 @@
               merges.push({ s: { r: ini, c }, e: { r: fim, c } }));
             linhas[ini][0] = l.raia;
             linhas[ini][2] = CX(it.equipe);
+            if (perfil.temTempo) linhas[ini][cols.length - 2] = tempoDeInscricao(it);
             if (it.semLista) linhas[ini][cols.length - 1] = "LISTA DE ATLETAS PENDENTE";
             pintar.push({ r: ini, tipo: "raiaRev", ate: fim });
           } else {
             pintar.push({ r: linhas.length, tipo: it.marcado ? "vermelho" : "" });
-            linhas.push(linhaAtleta(p, perfil, l.raia, it));
+            const linha = linhaAtleta(p, perfil, l.raia, it);
+            // por que está em vermelho, escrito ao lado e não só na conferência
+            if (it.marcado && it.motivoMarcado) linha.push(CX(it.motivoMarcado));
+            linhas.push(linha);
           }
         }
       }
@@ -180,6 +201,7 @@
   const CORES = {
     etapa: { fg: "FFFFFF", bg: "1A1A1A", b: true },
     prova: { fg: "000000", bg: "FFF200", b: true },
+    provaFora: { fg: "FFFFFF", bg: "C00000", b: true },
     serie: { fg: "000000", bg: "D9D9D9", b: true },
     vazia: { fg: "000000", bg: "F2F2F2", b: true },
     cabCorte: { fg: "000000", bg: "F2F2F2", b: true },
@@ -364,18 +386,28 @@
       };
 
       const cabeDaProva = () => {
-        doc.setFont("helvetica", "bold").setFontSize(10).setTextColor(0);
+        // prova que não consta no programa sai em vermelho, com o motivo
+        // escrito embaixo: na borda da piscina ninguém tem a conferência à mão
+        const fora = !!p.aviso;
+        if (fora) doc.setFillColor(252, 231, 228).rect(MG, y - 1, util, 12.5, "F");
+        const cor = fora ? [150, 26, 20] : [0, 0, 0];
+        doc.setFont("helvetica", "bold").setFontSize(10);
+        doc.setTextColor(cor[0], cor[1], cor[2]);
         doc.text(ORD(p.numero) + " PROVA", MG, y + 3.4);
         doc.text(p.distancia + " " + p.estilo, MG + 26, y + 3.4);
         doc.setFontSize(9);
         doc.text(CX(p.categoria || ""), MG + 60, y + 3.4);
         doc.text(nomeNaipe(p.naipe), A4.w - MG, y + 3.4, { align: "right" });
-        doc.setFont("helvetica", "normal").setFontSize(6.5).setTextColor(120);
+        doc.setFont("helvetica", fora ? "bold" : "normal").setFontSize(6.5);
+        if (!fora) doc.setTextColor(120);
         doc.text(`${p.atletas} ${p.revezamento ? "equipes" : "atletas"}` +
                  ` · ${p.series.length} série(s)`, MG + 26, y + 7);
+        if (fora) doc.text(CX(p.aviso), MG + 60, y + 7);
         doc.setTextColor(0);
+        doc.setDrawColor(fora ? 150 : 0);
         doc.setLineWidth(0.4).line(MG, y + 8.6, A4.w - MG, y + 8.6);
-        y += 10.5;
+        doc.setDrawColor(0);
+        y += fora ? 12 : 10.5;
         paginaVazia = false;
       };
 
@@ -424,8 +456,8 @@
             cols.forEach((c, k) => {
               if (c.chave === "equipe")
                 escreverCelula(doc, cols, k, CX(it.equipe), y + alt / 2 + 1);
-              if (c.chave === "tempo" && it.tempo != null)
-                escreverCelula(doc, cols, k, B.formatarTempo(it.tempo), y + alt / 2 + 1);
+              if (c.chave === "tempo")
+                escreverCelula(doc, cols, k, tempoDeInscricao(it), y + alt / 2 + 1);
             });
             if (it.semLista) {
               doc.setFont("helvetica", "italic").setFontSize(5.8).setTextColor(150);
@@ -443,8 +475,10 @@
           const colEq = cols.findIndex((c) => c.chave === "equipe");
           doc.setFont("helvetica", "normal");
           const partesEq = doc.splitTextToSize(CX(it.equipe), cols[colEq].larg - 3);
+          const motivo = it.marcado && it.motivoMarcado ? it.motivoMarcado : "";
           const alt = Math.max(5.2, 1.6 + Math.max(partesNome.length,
-                                                   partesEq.length) * 3.4);
+                                                   partesEq.length) * 3.4) +
+                      (motivo ? 3 : 0);
           if (y + alt > RODAPE) { novaPagina(rotuloPagina); desenharColunas(); }
 
           // acima do limite de provas: fundo claro e texto vermelho, sem bloco
@@ -467,10 +501,15 @@
               raia: String(l.raia),
               categoria: CX(it.letraCategoria || it.categoria || ""),
               classe: CX(it.classe),
-              tempo: it.tempo != null ? B.formatarTempo(it.tempo) : "",
+              tempo: tempoDeInscricao(it),
             }[c.chave] || "";
             escreverCelula(doc, cols, k, v, y + 3.4);
           });
+          if (motivo) {
+            doc.setFont("helvetica", "italic").setFontSize(6);
+            doc.setTextColor(150, 26, 20);
+            doc.text(CX(motivo), xDaColuna(cols, colNome) + 1.5, y + alt - 1.2);
+          }
           doc.setTextColor(0);
           linhaDeBase(doc, y + alt);
           y += alt;
@@ -530,6 +569,7 @@
             cartoes.push({
               prova: p.numero, titulo: p.titulo, serie: s.numero, raia: l.raia,
               nome, equipe: it.equipe,
+              tempo: perfil.temTempo ? tempoDeInscricao(it) : "",
               categoria: p.paralimpica ? (it.letraCategoria || it.categoria || "") : null,
               classe: p.paralimpica ? it.classe : "",
               revezamento: p.revezamento,
@@ -598,6 +638,13 @@
       y += 4.4;
       doc.text(`CATEGORIA ${CX(d.categoria)}` +
                (CX(d.classe) ? `   ·   CLASSE ${CX(d.classe)}` : ""), x0, y);
+    }
+    if (d.tempo) {
+      // o tempo de inscrição na papeleta serve de conferência na borda da
+      // piscina; quem não informou aparece como 99:99.99, não em branco
+      y += 4.4;
+      doc.setFont("helvetica", "normal").setFontSize(8);
+      doc.text("INSCRIÇÃO: " + d.tempo, x0, y);
     }
     if (d.revezamento) {
       y += 4.4;
