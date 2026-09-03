@@ -1270,12 +1270,8 @@
           nadador. O app ficou com a primeira inscrição e tirou a repetida das
           raias, então o balizamento já sai certo.
           <br><br>Confira se as duas linhas eram mesmo da mesma pessoa. Se eram
-          duas pessoas de nome parecido, escreva o nome completo de cada uma na
-          planilha e envie de novo.`,
-        resolver: () => apenasTexto(`O balizamento já está montado sem o
-          repetido. Se as duas linhas eram de pessoas diferentes, isso só se
-          resolve na planilha, escrevendo o nome completo das duas. Marque como
-          resolvido quando tiver conferido.`),
+          duas pessoas de nome parecido, isso só se resolve na planilha,
+          escrevendo o nome completo das duas.`,
       },
       {
         id: "regulamento", titulo: "Inscrições contra o regulamento",
@@ -1283,11 +1279,10 @@
         explica: `A classe funcional destes atletas não disputa esta prova, pelo
           mapa de provas paralímpico. Eles <b>não ocupam raia</b>: saem numa
           faixa vermelha "NÃO PARTICIPAM DESTA PROVA" abaixo da prova, com o
-          motivo escrito.`,
-        resolver: () => apenasTexto(`Se a classe está errada na planilha,
-          corrija e envie de novo. Se está certa, a inscrição é que não podia
-          ter sido feita, e o balizamento já está tratando disso: eles não
-          entram nas raias.`),
+          motivo escrito.
+          <br><br>Se a classe está errada na planilha, corrija e envie de novo.
+          Se está certa, a inscrição é que não podia ter sido feita, e o
+          balizamento já está tratando disso.`,
       },
       {
         id: "semNome", titulo: "Linhas que ficaram de fora",
@@ -1314,10 +1309,9 @@
         nivel: "info", itens: cortes.filter((c) => c.gravidade === "info"),
         explica: `A classe destes atletas veio em branco ou ilegível, então o
           app não tem como conferir se eles podem nadar a prova. Eles saem numa
-          faixa azul abaixo da prova e <b>não ocupam raia</b>.`,
-        resolver: () => apenasTexto(`Preencha a classe na planilha de inscritos
-          e envie de novo. Sem a classe o app não tem como saber se a inscrição
-          é válida, e prefere não colocar o atleta numa raia por engano.`),
+          faixa azul abaixo da prova e <b>não ocupam raia</b>.
+          <br><br>Preencha a classe na planilha e envie de novo. Sem ela o app
+          prefere não colocar o atleta numa raia por engano.`,
       },
       {
         id: "provasVazias", titulo: "Provas do programa sem ninguém inscrito",
@@ -1328,10 +1322,8 @@
         explica: `A prova está no programa e sai no balizamento com a marca
           <i>"Sem inscritos"</i>, mantendo o número dela. Isso é de propósito:
           tirar a prova mudaria a numeração de todas as seguintes, e o programa
-          impresso já está na mão de todo mundo.`,
-        resolver: () => apenasTexto(`Não há o que resolver: a prova fica no
-          balizamento com o número dela e a marca de vazia, que é o certo para
-          quem está com o programa impresso na mão.`),
+          impresso já está na mão de todo mundo.
+          <br><br>Não há o que consertar: é assim que tem de sair.`,
       },
       {
         id: "juntar", titulo: "Provas pequenas que dá para juntar",
@@ -1352,10 +1344,8 @@
         nivel: "info", itens: avisos,
         explica: `Séries com menos gente que o mínimo dentro de uma prova
           grande, ou raias fora do padrão de preenchimento. O balizamento sai
-          assim mesmo: é só para você conferir.`,
-        resolver: () => apenasTexto(`Não há o que corrigir na planilha: é como a
-          divisão em séries ficou. Marque como resolvido quando tiver
-          conferido.`),
+          assim mesmo: é só para você conferir.
+          <br><br>Não há o que consertar: é como a divisão em séries ficou.`,
       },
     ];
   }
@@ -1391,10 +1381,13 @@
     const comItens = secoes.filter((s) => s.itens.length);
     comItens.forEach((s) => estado.ajustes.jaVistos.add(s.id));
 
+    // resolvido é o que sumiu sozinho; aceito é o que o árbitro leu e decidiu
+    // deixar como está. Os dois fecham; só os abertos travam a geração.
     const resolvidas = secoes.filter((s) =>
       estado.ajustes.jaVistos.has(s.id) && !s.itens.length);
-    const pendentesCriticas = comItens.filter((s) =>
-      s.nivel === "critico" && !estado.ajustes.aceitos.has(s.id));
+    const aceitas = comItens.filter((s) => estado.ajustes.aceitos.has(s.id));
+    const abertas = comItens.filter((s) => !estado.ajustes.aceitos.has(s.id));
+    const pendentesCriticas = abertas.filter((s) => s.nivel === "critico");
 
     const totCrit = comItens.filter((s) => s.nivel === "critico")
                             .reduce((t, s) => t + s.itens.length, 0);
@@ -1412,17 +1405,17 @@
         <div class="ficha"><b>${estado.provas.length}</b><span>provas montadas</span></div>
       </div>
       ${pendentesCriticas.length ? `<p class="nota">Resolva os blocos vermelhos
-        para liberar a geração dos arquivos. Em cada um, <b>resolver</b> abre o
-        conserto e <b>o que acontece</b> explica o que aquele caso vira nos
-        arquivos. Quando não houver conserto possível, o próprio bloco oferece
-        seguir assim mesmo.</p>` : ""}
-      ${resolvidas.map(secaoResolvidaHtml).join("")}
-      ${comItens.map(secaoHtml).join("")}
+        para liberar a geração. Onde há conserto possível aparece o botão
+        <b>resolver</b>; onde não há, <b>o que acontece</b> explica o caso e
+        oferece seguir assim mesmo ou enviar a planilha corrigida.</p>` : ""}
+      ${abertas.map(secaoHtml).join("")}
+      ${resolvidas.map((s) => secaoFechadaHtml(s, "resolvido")).join("")}
+      ${aceitas.map((s) => secaoFechadaHtml(s, "seguindo assim")).join("")}
       ${!comItens.length && !resolvidas.length
         ? '<p class="ok-vazio">Nenhum problema encontrado. O balizamento está pronto para gerar.</p>'
         : ""}`;
 
-    ligarSecoes(comItens);
+    ligarSecoes(abertas, resolvidas.concat(aceitas));
     const botao = $("#irGerar");
     if (botao) {
       botao.disabled = pendentesCriticas.length > 0;
@@ -1433,41 +1426,81 @@
     liberar("gerar", !pendentesCriticas.length);
   }
 
-  function secaoResolvidaHtml(s) {
-    const aceito = estado.ajustes.aceitos.has(s.id);
-    return `<section class="bloco resolvido">
-      <h3>${s.titulo} <span class="contador">${aceito ? "seguindo assim" : "resolvido"}</span></h3>
+  /* Um bloco fechado, verde, de uma linha só. É o que sobra depois que o
+     problema foi resolvido ou depois que o árbitro leu e decidiu seguir: a
+     lista inteira sumir de vez esconderia o que aconteceu, e continuar
+     mostrando tudo aberto polui a tela de coisa já tratada. */
+  function secaoFechadaHtml(s, motivo) {
+    return `<section class="bloco resolvido" data-fechada="${s.id}">
+      <h3>${s.titulo}
+        <span class="contador">${motivo}</span>
+        <span class="botoes-bloco">
+          <button type="button" class="info" data-reabrir="${s.id}">ver de novo</button>
+        </span></h3>
+      <div class="itens-fechados" id="reaberto-${s.id}" hidden></div>
     </section>`;
   }
 
   function secaoHtml(s) {
-    const aceito = estado.ajustes.aceitos.has(s.id);
-    return `<section class="bloco ${aceito ? "aceito" : s.nivel}" data-secao="${s.id}">
+    const temConserto = typeof s.resolver === "function";
+    return `<section class="bloco ${s.nivel}" data-secao="${s.id}">
       <h3>${s.titulo} <span class="contador">${s.itens.length}</span>
-        ${aceito ? '<span class="selo-aceito">você decidiu seguir assim</span>' : ""}
         <span class="botoes-bloco">
-          <button type="button" class="resolver" data-resolver="${s.id}">resolver</button>
+          ${temConserto
+            ? `<button type="button" class="resolver" data-resolver="${s.id}">resolver</button>`
+            : ""}
           <button type="button" class="info" data-info="${s.id}">o que acontece</button>
         </span></h3>
-      <div class="explicacao" id="explica-${s.id}" hidden><p>${s.explica}</p></div>
-      <div class="explicacao correcao" id="corrige-${s.id}" hidden></div>
-      <table class="tabela"><thead><tr><th>PROVA</th><th>ATLETA</th>
+      <div class="explicacao" id="explica-${s.id}" hidden>
+        <p>${s.explica}</p>
+        <div class="acoes" id="saidas-${s.id}"></div>
+      </div>
+      ${temConserto ? `<div class="explicacao correcao" id="corrige-${s.id}" hidden></div>` : ""}
+      ${tabelaDeItens(s.itens)}</section>`;
+  }
+
+  function tabelaDeItens(itens) {
+    return `<table class="tabela"><thead><tr><th>PROVA</th><th>ATLETA</th>
       <th>EQUIPE</th><th>DETALHE</th></tr></thead><tbody>${
-      s.itens.map((e) => `<tr>
+      itens.map((e) => `<tr>
         <td>${e.prova ? e.prova + "ª " + (e.titulo || "") : (e.titulo || "")}</td>
         <td>${CX(e.nome || "")}</td>
         <td class="apagado">${CX(e.equipe || "")}</td>
-        <td>${e.detalhe || ""}</td></tr>`).join("")}</tbody></table></section>`;
+        <td>${e.detalhe || ""}</td></tr>`).join("")}</tbody></table>`;
   }
 
-  function ligarSecoes(secoes) {
-    for (const s of secoes) {
+  function ligarSecoes(abertas, fechadas) {
+    for (const s of fechadas) {
+      const b = $(`[data-reabrir="${s.id}"]`);
+      const alvo = $("#reaberto-" + s.id);
+      if (!b || !alvo) continue;
+      b.onclick = () => {
+        const abrindo = alvo.hidden;
+        alvo.hidden = !abrindo;
+        b.textContent = abrindo ? "esconder" : "ver de novo";
+        if (!abrindo) return;
+        alvo.innerHTML = tabelaDeItens(s.itens) +
+          '<div class="acoes"></div>';
+        const acoes = $(".acoes", alvo);
+        acoes.innerHTML = `<button type="button" class="mini claro">
+          voltar a marcar como pendente</button>`;
+        $("button", acoes).onclick = () => {
+          estado.ajustes.aceitos.delete(s.id);
+          renderConferencia();
+          aviso("Bloco voltou para pendente.");
+        };
+      };
+    }
+
+    for (const s of abertas) {
       const bInfo = $(`[data-info="${s.id}"]`);
       const pInfo = $("#explica-" + s.id);
       if (bInfo && pInfo) {
         bInfo.onclick = () => {
-          pInfo.hidden = !pInfo.hidden;
-          bInfo.textContent = pInfo.hidden ? "o que acontece" : "fechar";
+          const abrindo = pInfo.hidden;
+          pInfo.hidden = !abrindo;
+          bInfo.textContent = abrindo ? "fechar" : "o que acontece";
+          if (abrindo) preencherSaidas(s);
         };
       }
       const bFix = $(`[data-resolver="${s.id}"]`);
@@ -1479,36 +1512,43 @@
         bFix.textContent = abrindo ? "fechar" : "resolver";
         if (!abrindo) return;
         pFix.innerHTML = "";
-        if (typeof s.resolver === "function") pFix.appendChild(s.resolver());
-        pFix.appendChild(botaoSeguirAssim(s));
+        pFix.appendChild(s.resolver());
       };
     }
   }
 
-  function apenasTexto(html) {
-    const p = document.createElement("p");
-    p.innerHTML = html;
-    return p;
+  /* As duas saídas que valem para qualquer bloco: seguir do jeito que está,
+     ou mandar a planilha corrigida e recomeçar a leitura. */
+  function preencherSaidas(s) {
+    const alvo = $("#saidas-" + s.id);
+    if (!alvo || alvo.dataset.pronto) return;
+    alvo.dataset.pronto = "1";
+    if (s.nivel === "critico") {
+      const seguir = document.createElement("button");
+      seguir.type = "button";
+      seguir.className = "botao claro";
+      seguir.textContent = "li e vou seguir assim mesmo";
+      seguir.onclick = () => {
+        estado.ajustes.aceitos.add(s.id);
+        renderConferencia();
+        aviso("Anotado. Este bloco não trava mais a geração.");
+      };
+      alvo.appendChild(seguir);
+    }
+    const outra = document.createElement("button");
+    outra.type = "button";
+    outra.className = "mini claro";
+    outra.textContent = "enviar a planilha corrigida";
+    outra.onclick = () => {
+      irPara("inscritos");
+      mostrarPainel("envio");
+      aviso("Envie a planilha corrigida; a leitura começa de novo.");
+    };
+    alvo.appendChild(outra);
   }
 
   /* Todo bloco pode ser encerrado por decisão do árbitro. É o que destranca a
      geração quando o problema não tem conserto dentro do app. */
-  function botaoSeguirAssim(s) {
-    const acoes = document.createElement("div");
-    acoes.className = "acoes";
-    const aceito = estado.ajustes.aceitos.has(s.id);
-    acoes.innerHTML = `<button type="button" class="${aceito ? "mini claro" : "botao claro"}">
-      ${aceito ? "voltar a marcar como pendente" : "li e vou seguir assim mesmo"}</button>`;
-    $("button", acoes).onclick = () => {
-      if (aceito) estado.ajustes.aceitos.delete(s.id);
-      else estado.ajustes.aceitos.add(s.id);
-      renderConferencia();
-      aviso(aceito ? "Bloco voltou para pendente."
-                   : "Anotado. Este bloco não trava mais a geração.");
-    };
-    return acoes;
-  }
-
   /* --- resolver: tirar do balizamento a prova que não está no programa --- */
   function resolverProvasFora(provasFora) {
     const caixa = document.createElement("div");
@@ -1776,6 +1816,88 @@
       </div>`;
   }
 
+  /* --- prévia dos documentos ---
+     O PDF vai para um iframe pelo próprio visualizador do navegador, e a
+     planilha vira uma tabela HTML. Nenhum dos dois precisa de biblioteca
+     nova, então a prévia funciona igual com o arquivo aberto por duplo
+     clique, sem internet. */
+  function montarSaida(qual) {
+    montar();
+    if (qual === "xlsx") {
+      const wb = S.gerarXlsx(estado.provas, estado.perfil,
+                             { erros: estado.erros, limites: estado.limites });
+      return { tipo: "planilha", wb };
+    }
+    if (qual === "pdf") {
+      return { tipo: "pdf", doc: S.gerarPdfBalizamento(estado.provas, estado.perfil),
+               nome: baseNome() + " - BALIZAMENTO.pdf" };
+    }
+    const { doc } = S.gerarPapeletas(estado.provas, estado.perfil);
+    return { tipo: "pdf", doc, nome: baseNome() + " - PAPELETAS.pdf" };
+  }
+
+  const ROTULO_SAIDA = {
+    xlsx: "Planilha do balizamento",
+    pdf: "PDF do balizamento",
+    papeletas: "Papeletas de raia",
+  };
+
+  function verPrevia(qual) {
+    const alvo = $("#previa");
+    if (!alvo) return;
+    if (alvo.dataset.qual === qual && !alvo.hidden) {
+      alvo.hidden = true;
+      alvo.dataset.qual = "";
+      marcarPrevia(null);
+      return;
+    }
+    alvo.dataset.qual = qual;
+    alvo.hidden = false;
+    marcarPrevia(qual);
+    alvo.innerHTML = `<div class="previa-topo">
+      <b>Prévia: ${ROTULO_SAIDA[qual]}</b>
+      <span class="apagado">é exatamente o que vai no arquivo</span>
+      <button type="button" class="mini claro" id="fecharPrevia">fechar</button>
+    </div><div class="previa-corpo"><p class="nota">Montando...</p></div>`;
+    ao("fecharPrevia", "click", () => {
+      alvo.hidden = true; alvo.dataset.qual = ""; marcarPrevia(null);
+    });
+
+    // deixa o navegador pintar o "montando" antes de travar no gerador
+    setTimeout(() => {
+      const corpo = $(".previa-corpo", alvo);
+      try {
+        const saida = montarSaida(qual);
+        if (saida.tipo === "pdf") {
+          // blob, e não data:. O Chrome recusa PDF em data: dentro de iframe,
+          // e um PDF de 100 KB viraria um atributo src gigante na página.
+          if (estado.urlPrevia) URL.revokeObjectURL(estado.urlPrevia);
+          estado.urlPrevia = URL.createObjectURL(saida.doc.output("blob"));
+          corpo.innerHTML = `<iframe title="prévia do ${ROTULO_SAIDA[qual]}"
+            src="${estado.urlPrevia}"></iframe>`;
+        } else {
+          const aba = saida.wb.SheetNames[0];
+          corpo.innerHTML = `<div class="scroll-x">${
+            XLSX.utils.sheet_to_html(saida.wb.Sheets[aba], { id: "previaPlanilha" })
+          }</div><p class="nota">Aba <b>${aba}</b>. O arquivo baixado traz
+            também ${saida.wb.SheetNames.slice(1).join(", ")}.</p>`;
+        }
+      } catch (e) {
+        corpo.innerHTML = `<p class="alerta">Não consegui montar a prévia:
+          ${(e && e.message) || e}</p>`;
+      }
+      mostrarResultado("previa");
+    }, 30);
+  }
+
+  function marcarPrevia(qual) {
+    $$("[data-previa]").forEach((b) => {
+      const ativo = b.dataset.previa === qual;
+      b.classList.toggle("ativo", ativo);
+      b.textContent = ativo ? "fechar prévia" : "Ver prévia";
+    });
+  }
+
   function baixar(blob, nome) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -1894,6 +2016,8 @@
       if (e.target.files[0]) carregarArquivo(e.target.files[0]);
     };
 
+    $$("[data-previa]").forEach((b) =>
+      (b.onclick = () => verPrevia(b.dataset.previa)));
     $("#btnXlsx").onclick = () => {
       montar();
       const wb = S.gerarXlsx(estado.provas, estado.perfil,

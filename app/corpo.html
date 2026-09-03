@@ -332,24 +332,38 @@
   <!-- ============ 5. GERAR ============ -->
   <section class="tela" data-tela="gerar" hidden>
     <h2>Gerar</h2>
-    <p class="sub">Os arquivos são montados no seu navegador e baixados direto
-      para o computador.</p>
+    <p class="sub">Os arquivos são montados aqui no seu computador. Veja a
+      prévia antes de baixar: é a mesma coisa que vai sair no arquivo.</p>
     <div id="resumoGerar"></div>
     <div class="grade-saidas">
-      <button type="button" class="saida" id="btnXlsx">
+      <div class="saida" data-saida="xlsx">
         <b>Planilha do balizamento</b>
         <span>Abas de balizamento, resumo, atletas e conferência. Editável no Excel.</span>
-      </button>
-      <button type="button" class="saida" id="btnPdf">
+        <div class="acoes">
+          <button type="button" class="botao" id="btnXlsx">Baixar</button>
+          <button type="button" class="mini claro" data-previa="xlsx">Ver prévia</button>
+        </div>
+      </div>
+      <div class="saida" data-saida="pdf">
         <b>PDF do balizamento</b>
         <span>Provas corridas, faixa de etapa e espaço para anotar o tempo.</span>
-      </button>
-      <button type="button" class="saida" id="btnPapeletas">
+        <div class="acoes">
+          <button type="button" class="botao" id="btnPdf">Baixar</button>
+          <button type="button" class="mini claro" data-previa="pdf">Ver prévia</button>
+        </div>
+      </div>
+      <div class="saida" data-saida="papeletas">
         <b>Papeletas de raia</b>
         <span>Quatro por folha A4, com prova, série, raia e quadros de tempo.</span>
-      </button>
+        <div class="acoes">
+          <button type="button" class="botao" id="btnPapeletas">Baixar</button>
+          <button type="button" class="mini claro" data-previa="papeletas">Ver prévia</button>
+        </div>
+      </div>
     </div>
+    <div id="previa" class="previa-doc" hidden></div>
   </section>
+
 </main>
 
 <div id="aviso" class="aviso"></div>

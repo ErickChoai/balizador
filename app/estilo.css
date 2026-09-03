@@ -547,16 +547,21 @@ body::after{
    Agora os cartões dividem a linha quando cabe, e só os que têm tabela
    larga ou lista em grade continuam ocupando a linha inteira.
    ===================================================================== */
-main{max-width:88rem;padding-top:2rem}
-#config{
-  display:grid;gap:.9rem;align-items:start;
-  grid-template-columns:repeat(auto-fit,minmax(27rem,1fr));
-}
-#config > .largo,#config > .acoes{grid-column:1 / -1}
+/* Uma coluna só. Em duas, o olho pula de um lado para o outro e a ordem
+   das perguntas se perde; o ganho de espaço não paga o preço. O espaço em
+   volta é ocupado pelos campos dentro de cada cartão, que se espalham na
+   largura, e pelo fundo que se move. */
+main{max-width:74rem;padding-top:2rem}
+#config{display:flex;flex-direction:column;gap:1rem}
 .cartao{box-shadow:0 1px 2px rgba(15,32,39,.04)}
-.tela > .cartao,.tela > #resultadoPrograma,.tela > #resumoArquivo{margin-bottom:1rem}
-.acoes{margin-top:0}
+.tela > .cartao,.tela > #resultadoPrograma,.tela > #resumoArquivo{margin-bottom:1.2rem}
+.acoes{margin-top:.2rem}
 .cartao .acoes{margin-top:.2rem}
+/* o bloco de botões de uma tela precisa de ar antes do que vem depois */
+.tela > .acoes{margin:1.4rem 0 2rem}
+.campos{gap:1rem}
+.campo{min-width:11rem}
+.campo.largo{min-width:20rem}
 
 /* as telas de formato e de conferência ganham respiro entre os blocos */
 #painelFormato > .cartao,#painelEnvio > .cartao{margin-bottom:1rem}
@@ -569,5 +574,38 @@ main{max-width:88rem;padding-top:2rem}
 
 @media (max-width:900px){
   main{max-width:100%}
-  #config{grid-template-columns:1fr}
+  .campo.largo{min-width:100%}
 }
+
+/* ---------- saídas e prévia dos documentos ---------- */
+.grade-saidas{grid-template-columns:repeat(auto-fit,minmax(19rem,1fr));gap:.9rem}
+.saida{cursor:default;gap:.35rem;padding:1.2rem 1.3rem;border-radius:12px}
+.saida:hover{background:var(--papel)}
+.saida .acoes{margin-top:.6rem;gap:.5rem}
+.saida .botao{padding:.5rem 1.1rem;font-size:.95rem}
+[data-previa].ativo{border-color:var(--agua);color:var(--agua);font-weight:600}
+
+.previa-doc{
+  margin-top:1.4rem;background:var(--papel);border:1px solid var(--linha);
+  border-radius:12px;overflow:hidden;
+}
+.previa-topo{
+  display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;
+  padding:.8rem 1.1rem;border-bottom:1px solid var(--linha);background:var(--papel2);
+}
+.previa-topo b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.05rem}
+.previa-topo .apagado{color:var(--suave);font-size:.9rem}
+.previa-topo button{margin-left:auto}
+.previa-corpo{padding:1rem 1.1rem}
+.previa-corpo iframe{
+  width:100%;height:min(78vh,62rem);border:1px solid var(--linha);
+  border-radius:8px;background:#fff;
+}
+#previaPlanilha{border-collapse:collapse;font-size:.82rem;background:#fff;color:#111}
+#previaPlanilha td{border:1px solid #d0d7da;padding:.25rem .5rem;white-space:nowrap}
+.previa-corpo .scroll-x{max-height:60vh;overflow:auto;border:1px solid var(--linha);
+  border-radius:8px}
+
+/* blocos fechados da conferência */
+.itens-fechados{padding:0 0 .6rem}
+.bloco.resolvido .contador{background:var(--bom-fraca);color:var(--bom);font-weight:600}
