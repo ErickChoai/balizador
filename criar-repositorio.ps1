@@ -37,11 +37,15 @@ if ($LASTEXITCODE -eq 0) {
 }
 
 Write-Host "ligando o GitHub Pages..." -ForegroundColor Cyan
-& gh api -X POST "repos/$conta/$Nome/pages" `
-    -f "source[branch]=main" -f "source[path]=/" 2>$null
+$corpo = '{"source":{"branch":"main","path":"/"}}'
+$corpo | & gh api -X POST "repos/$conta/$Nome/pages" --input - 2>$null | Out-Null
 if ($LASTEXITCODE -ne 0) {
-    & gh api -X PUT "repos/$conta/$Nome/pages" `
-        -f "source[branch]=main" -f "source[path]=/" 2>$null
+    # já estava ligado: só atualiza a origem
+    $corpo | & gh api -X PUT "repos/$conta/$Nome/pages" --input - 2>$null | Out-Null
+}
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "     não consegui ligar pela linha de comando." -ForegroundColor Yellow
+    Write-Host "     Ligue em Settings > Pages: Branch = main, pasta = / (root)."
 }
 
 Write-Host ""
