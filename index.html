@@ -120,6 +120,17 @@ main{max-width:70rem;margin:0 auto;padding:1.6rem clamp(1rem,4vw,2.5rem) 5rem}
 .campos{display:flex;gap:.7rem;flex-wrap:wrap}
 .campo{display:flex;flex-direction:column;gap:.25rem;font-size:.82rem;color:var(--suave)}
 .campo.largo{flex:1;min-width:16rem}
+textarea{
+  font-family:"Roboto Mono",ui-monospace,monospace;font-size:.8rem;line-height:1.5;
+  color:var(--tinta);background:var(--fundo);border:1px solid var(--linha);
+  border-radius:3px;padding:.55rem .65rem;width:100%;resize:vertical;
+}
+textarea:focus{outline:2px solid var(--agua);outline-offset:1px}
+.resumo-programa code{font-size:.78em}
+.aviso-leve{
+  background:var(--ambar-fraca);color:var(--ambar);border-radius:3px;
+  padding:.5rem .7rem;max-width:none;
+}
 input,select{
   font:inherit;font-size:.92rem;color:var(--tinta);background:var(--fundo);
   border:1px solid var(--linha);border-radius:3px;padding:.42rem .55rem;
@@ -179,6 +190,85 @@ input[type=number]{width:6rem}
 .zona:hover,.zona.sobre{border-color:var(--agua);background:var(--agua-fraca)}
 .zona strong{font-family:"Archivo",sans-serif;font-size:1.05rem}
 .zona span{color:var(--suave);font-size:.86rem}
+
+/* ---------- atalhos e blocos condicionais ---------- */
+.atalhos{
+  display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem;
+  font-size:.86rem;color:var(--suave);
+}
+.sub-bloco{
+  border-left:2px solid var(--agua);padding-left:.9rem;margin-left:.3rem;
+  display:flex;flex-direction:column;gap:.6rem;
+}
+
+/* ---------- campos pendentes ---------- */
+input.pendente,select.pendente,textarea.pendente{
+  border-color:var(--grave);background:var(--grave-fraca);
+}
+.faltando{
+  background:var(--grave-fraca);color:var(--grave);border-radius:4px;
+  padding:.7rem .9rem;font-size:.88rem;width:100%;
+}
+.faltando ul{margin:.3rem 0 0;padding-left:1.1rem;gap:.15rem}
+
+/* ---------- miniatura da planilha esperada ---------- */
+.planilha-exemplo{
+  margin-top:.8rem;border:1px solid var(--linha);border-radius:4px;
+  overflow:hidden;background:var(--papel);
+}
+.abas-exemplo{
+  display:flex;gap:.15rem;padding:.35rem .4rem 0;background:var(--papel2);
+  font-size:.72rem;
+}
+.abas-exemplo span{
+  padding:.25rem .6rem;border-radius:3px 3px 0 0;color:var(--suave);
+  background:var(--fundo);
+}
+.abas-exemplo .aba-ativa{
+  background:var(--papel);color:var(--tinta);font-weight:600;
+  box-shadow:0 -1px 0 var(--agua) inset;
+}
+.scroll-x{overflow-x:auto}
+.grade{border-collapse:collapse;font-size:.78rem;width:100%}
+.grade th,.grade td{
+  border:1px solid var(--linha);padding:.32rem .5rem;text-align:left;
+  white-space:nowrap;
+}
+.grade thead th{background:var(--papel2);font-weight:600;position:relative;
+  padding-top:1.1rem}
+.grade .col{
+  position:absolute;top:.05rem;left:.5rem;font-family:"Roboto Mono",monospace;
+  font-size:.6rem;font-weight:400;color:var(--suave);letter-spacing:.05em;
+}
+.grade .lin{
+  background:var(--papel2);color:var(--suave);text-align:center;width:2rem;
+  font-family:"Roboto Mono",monospace;font-size:.7rem;
+}
+.grade .vazia{background:repeating-linear-gradient(45deg,
+  transparent,transparent 4px,var(--papel2) 4px,var(--papel2) 8px);min-width:2.5rem}
+.legenda-exemplo{
+  padding:.55rem .7rem;margin:0;font-size:.8rem;color:var(--suave);
+  border-top:1px solid var(--linha);
+}
+
+/* ---------- especificação do formato ---------- */
+.especificacao{border-left:3px solid var(--agua)}
+.regras-formato{margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.35rem}
+.regras-formato li{font-size:.88rem;max-width:78ch}
+.regras-formato b{font-weight:600}
+.tabela .exigida{color:var(--grave);font-weight:600}
+
+/* ---------- recusa da planilha ---------- */
+.recusa{
+  background:var(--grave-fraca);border:1px solid var(--grave);
+  border-left:3px solid var(--grave);border-radius:4px;
+  padding:1rem 1.15rem;margin-bottom:1rem;
+  display:flex;flex-direction:column;gap:.6rem;
+}
+.recusa h3{color:var(--grave)}
+.recusa p{font-size:.9rem;max-width:74ch}
+.recusa.leve{background:var(--ambar-fraca);border-color:var(--ambar)}
+.recusa.leve h3{color:var(--ambar)}
 
 /* ---------- fichas e tabelas ---------- */
 .fichas{display:grid;gap:.6rem;margin-bottom:1rem;
@@ -266,7 +356,7 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
 </style>
 </head>
 <body>
-<header class="topo">
+﻿<header class="topo">
   <div class="marca">
     <span class="sigla">BZ</span>
     <div>
@@ -285,22 +375,77 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
 <main>
   <!-- ============ 1. COMPETIÇÃO ============ -->
   <section class="tela" data-tela="competicao">
-    <h2>Que competição é esta?</h2>
-    <p class="sub">A escolha define quais colunas a planilha precisa ter e quais
-      regras o app aplica.</p>
-    <div id="tipos" class="grade-tipos"></div>
+    <h2>Monte a sua competição</h2>
+    <p class="sub">Marque o que ela tem. Conforme você escolhe, o app já mostra
+      o formato exato de planilha que vai pedir.</p>
+
+    <div class="atalhos">
+      <span>Começar a partir de:</span>
+      <button type="button" class="mini claro" data-atalho="PARA">Paradesportiva (ParaJASC)</button>
+      <button type="button" class="mini claro" data-atalho="ESCOLAR">Escolar (JEPB)</button>
+      <button type="button" class="mini claro" data-atalho="ESCOLAR_PARA">Escolar com paradesporto</button>
+      <button type="button" class="mini claro" data-atalho="TEMPO">Clube por tempo</button>
+      <button type="button" class="mini claro" data-atalho="VAZIO">Do zero</button>
+    </div>
 
     <div id="perfisSalvos" class="perfis"></div>
 
-    <div id="config" hidden>
+    <div id="config">
       <div class="cartao">
         <h3>Identificação</h3>
         <div class="campos">
           <label class="campo largo">Nome da competição
             <input id="nomeComp" placeholder="JEPB 2026 — NATAÇÃO">
           </label>
-          <label class="campo">Como chamar a instituição
-            <input id="rotuloEquipe" placeholder="ESCOLA">
+        </div>
+      </div>
+
+      <div class="cartao">
+        <h3>O que cada atleta tem na planilha</h3>
+        <p class="nota">O nome é sempre obrigatório. O resto você escolhe aqui,
+          e é isso que o app vai exigir na hora de ler a planilha.</p>
+
+        <label class="campo largo">Como chamar a instituição do atleta
+          <select id="rotuloEquipe">
+            <option value="ESCOLA">ESCOLA — competição escolar</option>
+            <option value="COLÉGIO">COLÉGIO</option>
+            <option value="CIDADE">CIDADE — competição entre municípios</option>
+            <option value="EQUIPE">EQUIPE — clube ou associação</option>
+            <option value="CLUBE">CLUBE</option>
+          </select>
+        </label>
+
+        <label class="marcavel">
+          <input type="checkbox" id="temTempo">
+          <span><b>Tem tempo de inscrição.</b> Com tempo, o balizamento vira por
+            desempenho: os mais rápidos na última série e nas raias centrais.
+            Sem tempo, o app espalha os atletas da mesma instituição entre as séries.</span>
+        </label>
+
+        <label class="marcavel">
+          <input type="checkbox" id="temRevezamento">
+          <span><b>Tem provas de revezamento.</b> Os 4 nomes vão na mesma célula,
+            um por linha, e a equipe ocupa uma raia inteira.</span>
+        </label>
+
+        <label class="marcavel">
+          <input type="checkbox" id="temPara">
+          <span><b>Tem atletas do paradesporto.</b> Abre as colunas de condição
+            e classe.</span>
+        </label>
+
+        <div id="blocoPara" class="sub-bloco" hidden>
+          <label class="campo largo">Como a classe do atleta é informada
+            <select id="tipoClasse">
+              <option value="FUNCIONAL">Classe funcional S / SB / SM — ex.: S6/SB5/SM6</option>
+              <option value="CONDICAO">Tipo de condição — ex.: TEA, DI, DA, DOWN</option>
+            </select>
+          </label>
+          <p class="nota" id="notaClasse"></p>
+          <label class="marcavel">
+            <input type="checkbox" id="mostrarCategoria">
+            <span>Mostrar a categoria (A, B, C) numa coluna do balizamento —
+              útil quando categorias diferentes nadam juntas.</span>
           </label>
         </div>
       </div>
@@ -309,10 +454,11 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
         <h3>Piscina e séries</h3>
         <div class="campos">
           <label class="campo">Raias
-            <input id="raias" type="number" min="2" max="12" value="6">
+            <input id="raias" type="number" min="2" max="12" placeholder="6">
           </label>
           <label class="campo largo">Como distribuir as séries
             <select id="regraSerie">
+              <option value="">— escolha —</option>
               <option value="MENOS_SERIES">Menos séries possíveis, mínimo de metade das raias</option>
               <option value="INCOMPLETA_PRIMEIRO">Série incompleta primeiro (padrão ParaJASC)</option>
             </select>
@@ -329,16 +475,43 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
       </div>
 
       <div class="cartao">
+        <h3>Programa de provas</h3>
+        <p class="nota">É ele que define <b>a ordem e a numeração</b> das provas.
+          Sem programa, o app monta só as provas que têm inscritos e usa uma
+          ordem própria — o que quase nunca é a ordem oficial. Cole aqui o
+          programa, uma prova por linha; a numeração da frente é opcional.</p>
+        <p class="nota"><b>Como escrever cada linha:</b>
+          <code>distância + estilo + categoria + naipe</code>.
+          A numeração da frente é opcional — o app usa a ordem das linhas.
+          Estilos: LIVRE, COSTAS, PEITO, BORBOLETA, MEDLEY.
+          Naipe: FEMININO, MASCULINO ou MISTO.</p>
+        <textarea id="programa" rows="8" spellcheck="false"
+          placeholder="1ª – 25m LIVRE PARALÍMPICO &quot;A&quot; + &quot;B&quot; FEMININO&#10;2ª – 25m LIVRE PARALÍMPICO &quot;A&quot; + &quot;B&quot; MASCULINO&#10;3ª - 25m LIVRE PRÉ-MIRIM &quot;B&quot; FEMININO&#10;…&#10;21ª – 4x25m LIVRE PRÉ-MIRIM &quot;B&quot; FEMININO&#10;49ª - 4x25m LIVRE PRÉ-MIRIM &quot;B&quot; MISTO"></textarea>
+        <div id="resumoPrograma" class="resumo-programa"></div>
+      </div>
+
+      <div class="cartao especificacao">
+        <h3>A planilha que o app vai pedir</h3>
+        <p class="nota">Montada a partir do que você marcou acima. É exatamente
+          isto que ele vai exigir — e recusar, se vier diferente.</p>
+        <div id="previaFormato"></div>
+        <div class="acoes">
+          <button type="button" class="mini claro" id="btnModeloTopo">
+            Baixar planilha modelo</button>
+        </div>
+      </div>
+
+      <div class="cartao">
         <h3>Limite de provas por atleta</h3>
         <div class="campos">
           <label class="campo">Individuais
-            <input id="limiteInd" type="number" min="1" max="20" value="2">
+            <input id="limiteInd" type="number" min="1" max="20" placeholder="2">
           </label>
           <label class="campo">Revezamentos
             <input id="limiteRev" type="number" min="0" max="20" placeholder="sem limite">
           </label>
           <label class="campo" id="linhaPara">Individuais no paradesporto
-            <input id="limiteIndPara" type="number" min="1" max="20" value="3">
+            <input id="limiteIndPara" type="number" min="1" max="20" placeholder="3">
           </label>
         </div>
       </div>
@@ -378,7 +551,8 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
       </div>
 
       <div class="acoes">
-        <button type="button" class="botao" id="irInscritos">Continuar para os inscritos</button>
+        <div id="faltando" class="faltando" hidden></div>
+        <button type="button" class="botao" id="irInscritos" disabled>Continuar para os inscritos</button>
         <button type="button" class="mini claro" id="btnPerfilSalvar">Salvar perfil</button>
         <button type="button" class="mini claro" id="btnPerfilExportar">Exportar perfil</button>
         <label class="mini claro arquivo">Importar perfil
@@ -391,9 +565,36 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
   <!-- ============ 2. INSCRITOS ============ -->
   <section class="tela" data-tela="inscritos" hidden>
     <h2>Planilha de inscritos</h2>
-    <p class="sub">O app lê os formatos que você já recebe: startlist em blocos de
-      coluna (uma aba por categoria) ou uma linha por inscrição.
-      Nada é enviado para servidor nenhum — a leitura acontece no seu computador.</p>
+    <p class="sub">A planilha precisa estar no formato abaixo. Se não estiver,
+      o app recusa e diz o que faltou — prefiro isso a montar um balizamento
+      errado sem você perceber. Nada é enviado para servidor nenhum: a leitura
+      acontece no seu computador.</p>
+
+    <div class="cartao especificacao">
+      <h3>Formato exigido <span id="tipoAtual" class="opcional"></span></h3>
+      <ol class="regras-formato">
+        <li><b>Uma aba por categoria e naipe.</b> O nome da aba manda:
+          <code>MIRIM-FEM</code>, <code>MIRIM-MASC</code>,
+          <code>PRÉ-MIRIM "B"-FEM</code>. Sem o <code>-FEM</code> ou
+          <code>-MASC</code> a aba é recusada.</li>
+        <li><b>A primeira linha é o cabeçalho.</b> Nela vai o nome da prova e,
+          logo à direita, as colunas de apoio. Planilha sem cabeçalho é recusada.</li>
+        <li><b>Nome da prova:</b> distância e estilo — <code>50 LIVRE</code>,
+          <code>100 COSTAS</code>, <code>4x50 LIVRE</code>,
+          <code>4x50 LIVRE MISTO</code>. Estilos aceitos: LIVRE, COSTAS, PEITO,
+          BORBOLETA e MEDLEY.</li>
+        <li><b>Uma coluna em branco</b> separando um bloco de prova do próximo.</li>
+        <li><b>Revezamento:</b> os 4 nomes na mesma célula, um por linha
+          (Alt+Enter no Excel).</li>
+        <li><b>Prova sem ninguém:</b> escreva <code>SEM INSCRITOS</code> na
+          primeira linha do bloco.</li>
+      </ol>
+      <div id="colunasExigidas"></div>
+      <div class="acoes">
+        <button type="button" class="mini claro" id="btnModelo">
+          Baixar planilha modelo preenchida</button>
+      </div>
+    </div>
 
     <div id="zona" class="zona">
       <strong>Arraste a planilha aqui</strong>
@@ -1508,6 +1709,263 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return { categoria: cat.replace(/"/g, "").trim(), naipe };
   }
 
+  /* ---------------- conferência do formato da planilha ----------------
+     O app não adivinha: se a planilha não estiver no formato esperado,
+     ele recusa e diz exatamente o que faltou. Melhor não gerar nada do
+     que gerar um balizamento errado em silêncio.
+  --------------------------------------------------------------------- */
+  const CAMPOS_EXIGIDOS = {
+    PARA: ["equipe", "segmento", "classe"],
+    ESCOLAR: ["equipe"],
+    ESCOLAR_PARA: ["equipe"],
+    TEMPO: ["equipe"],
+  };
+  const ROTULO_CAMPO = {
+    equipe: "a coluna da instituição (CIDADE, ESCOLA, COLÉGIO ou EQUIPE)",
+    classe: "a coluna CLASSE, com a classificação funcional (S6, SB5, SM6)",
+    tempo: "a coluna TEMPO",
+    segmento: "o SEGMENTO (DF, DV, DI, DA, TEA-DOWN) — na coluna SEGMENTO " +
+              "ou no nome da aba, como DF-FEM",
+  };
+  const SEGMENTOS = ["DF", "DV", "DI", "DA", "TEA"];
+
+  // o segmento pode vir da coluna ou do nome da aba (DF-FEM, DV-MASC)
+  function segmentoNaAba(nomeAba) {
+    const u = norm(nomeAba);
+    return SEGMENTOS.some((s) => u.startsWith(s + "-") || u === s);
+  }
+
+  function conferirPlanilha(wb, perfil) {
+    const tipo = perfil.tipo || "ESCOLAR";
+    const ignorar = (perfil.ignorarAbas || []).map(norm);
+    const problemas = [];
+    const abasBoas = [];
+    const abasRuins = [];
+
+    for (const nomeAba of wb.SheetNames) {
+      if (ignorar.includes(norm(nomeAba))) continue;
+      const ws = wb.Sheets[nomeAba];
+      if (!ws || !ws["!ref"]) continue;
+      const grade = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: null });
+      const cab = (grade[0] || []).map((c) => String(c == null ? "" : c).trim());
+      const temConteudo = grade.slice(1).some((l) =>
+        (l || []).some((c) => c != null && String(c).trim()));
+      if (!cab.some((c) => c) && !temConteudo) continue;   // aba vazia: ignora
+
+      const blocos = cab.map((c, i) => ({ i, info: lerCabecalhoProva(c) }))
+                        .filter((b) => b.info);
+      if (!blocos.length) {
+        abasRuins.push({
+          aba: nomeAba,
+          motivo: cab.some((c) => c)
+            ? "a primeira linha não tem nenhum nome de prova reconhecível"
+            : "a primeira linha está vazia — sem cabeçalho não dá para saber o que é cada coluna",
+          achado: cab.filter((c) => c).slice(0, 6),
+        });
+        continue;
+      }
+
+      // quais colunas auxiliares existem em cada bloco
+      const faltando = new Set();
+      blocos.forEach((b, k) => {
+        const fim = k + 1 < blocos.length ? blocos[k + 1].i : cab.length;
+        const achou = { equipe: false, classe: false, tempo: false, segmento: false };
+        for (let c = b.i + 1; c < fim; c++) {
+          const t = norm(cab[c]);
+          if (["COLEGIO", "COLÉGIO", "CIDADE", "EQUIPE", "ESCOLA"].includes(t)) achou.equipe = true;
+          else if (t === "CLASSE") achou.classe = true;
+          else if (t === "TEMPO") achou.tempo = true;
+          else if (t === "SEGMENTO") achou.segmento = true;
+        }
+        for (const campo of (CAMPOS_EXIGIDOS[tipo] || [])) {
+          // no escolar com paradesporto a CLASSE só é exigida nas abas paralímpicas
+          if (campo === "classe" && tipo === "ESCOLAR_PARA" &&
+              !ehParalimpica(categoriaDaAba(nomeAba).categoria, perfil)) continue;
+          // o segmento vale se estiver na coluna OU no nome da aba
+          if (campo === "segmento" && segmentoNaAba(nomeAba)) continue;
+          if (!achou[campo]) faltando.add(campo);
+        }
+        if (tipo === "ESCOLAR_PARA" &&
+            ehParalimpica(categoriaDaAba(nomeAba).categoria, perfil) && !achou.classe) {
+          faltando.add("classe");
+        }
+      });
+
+      if (faltando.size) {
+        abasRuins.push({
+          aba: nomeAba,
+          motivo: "falta " + [...faltando].map((c) => ROTULO_CAMPO[c]).join(" e "),
+          achado: cab.filter((c) => c).slice(0, 8),
+        });
+      } else {
+        const { categoria, naipe } = categoriaDaAba(nomeAba);
+        if (!naipe) {
+          abasRuins.push({
+            aba: nomeAba,
+            motivo: 'o nome da aba não diz o naipe — use algo como "MIRIM-FEM" ou "MIRIM-MASC"',
+            achado: [],
+          });
+        } else {
+          abasBoas.push({ aba: nomeAba, categoria, naipe,
+                          provas: blocos.length });
+        }
+      }
+    }
+
+    if (!abasBoas.length && !abasRuins.length) {
+      problemas.push("a planilha não tem nenhuma aba com conteúdo.");
+    }
+    return {
+      ok: abasBoas.length > 0 && abasRuins.length === 0,
+      parcial: abasBoas.length > 0 && abasRuins.length > 0,
+      abasBoas, abasRuins, problemas,
+    };
+  }
+
+  /* ---------------- planilha modelo ---------------- */
+  function gerarModelo(perfil) {
+    const tipo = perfil.tipo || "ESCOLAR";
+    const wb = XLSX.utils.book_new();
+    const comClasse = tipo === "PARA" || tipo === "ESCOLAR_PARA";
+    const rotEq = perfil.rotuloEquipe ||
+                  (tipo === "PARA" ? "CIDADE" : "ESCOLA");
+
+    const abas = {
+      PARA: [["DF-FEM", ["50 LIVRE", "100 LIVRE", "100 COSTAS", "100 PEITO"]],
+             ["DF-MASC", ["50 LIVRE", "100 LIVRE", "100 COSTAS", "100 PEITO"]],
+             ["DV-FEM", ["50 LIVRE", "100 LIVRE", "100 COSTAS"]],
+             ["DI-MASC", ["100 LIVRE", "100 COSTAS", "100 PEITO"]]],
+      ESCOLAR: [['PRÉ-MIRIM "B"-FEM', ["25 LIVRE", "25 COSTAS", "25 PEITO", "4x25 LIVRE"]],
+                ['PRÉ-MIRIM "B"-MASC', ["25 LIVRE", "25 COSTAS", "25 PEITO", "4x25 LIVRE"]],
+                ["MIRIM-FEM", ["50 LIVRE", "50 COSTAS", "50 PEITO", "4x50 LIVRE"]],
+                ["MIRIM-MASC", ["50 LIVRE", "50 COSTAS", "50 PEITO", "4x50 LIVRE"]]],
+      ESCOLAR_PARA: [["MIRIM-FEM", ["50 LIVRE", "50 COSTAS"]],
+                     ["MIRIM-MASC", ["50 LIVRE", "50 COSTAS"]],
+                     ['PARAL "A"-FEM', ["25 LIVRE", "25 COSTAS"]],
+                     ['PARAL "A"-MASC', ["25 LIVRE", "25 COSTAS"]]],
+      TEMPO: [["INFANTIL-FEM", ["50 LIVRE", "100 LIVRE", "100 COSTAS"]],
+              ["INFANTIL-MASC", ["50 LIVRE", "100 LIVRE", "100 COSTAS"]],
+              ["JUVENIL-FEM", ["50 LIVRE", "100 LIVRE"]],
+              ["JUVENIL-MASC", ["50 LIVRE", "100 LIVRE"]]],
+    }[tipo];
+
+    const exemplo = {
+      PARA: [["MARIA EXEMPLO DA SILVA", "BLUMENAU", "DF", "S6/SB5/SM6", ""],
+             ["JOAO EXEMPLO SANTOS", "JOINVILLE", "DF", "S9/SB8/SM9", ""]],
+      ESCOLAR: [["MARIA EXEMPLO DA SILVA", "COLEGIO EXEMPLO", ""],
+                ["JOAO EXEMPLO SANTOS", "ESCOLA MODELO", ""]],
+      ESCOLAR_PARA: [["MARIA EXEMPLO DA SILVA", "COLEGIO EXEMPLO", "", ""],
+                     ["JOAO EXEMPLO SANTOS", "ESCOLA MODELO", "", ""]],
+      TEMPO: [["MARIA EXEMPLO DA SILVA", "CLUBE EXEMPLO", "31.20"],
+              ["JOAO EXEMPLO SANTOS", "EQUIPE MODELO", "29.85"]],
+    }[tipo];
+
+    for (const [nomeAba, provas] of abas) {
+      const paralimpica = tipo === "PARA" ||
+        (tipo === "ESCOLAR_PARA" && /PARAL/.test(norm(nomeAba)));
+      const aux = tipo === "PARA"
+        ? [rotEq, "SEGMENTO", "CLASSE", "TEMPO"]
+        : paralimpica ? [rotEq, "CLASSE", "TEMPO"] : [rotEq, "TEMPO"];
+      const larg = aux.length + 1;
+
+      const linhas = [[]];
+      let col = 1;
+      for (const prova of provas) {
+        linhas[0][col] = prova;
+        aux.forEach((a, k) => (linhas[0][col + 1 + k] = a));
+        col += larg + 1;
+      }
+      linhas[0][0] = "N°";
+      // duas linhas de exemplo no primeiro bloco
+      exemplo.forEach((ex, r) => {
+        const l = [];
+        l[0] = r + 1;
+        const vals = paralimpica || tipo === "PARA"
+          ? ex : [ex[0], ex[1], ex[ex.length - 1]];
+        vals.forEach((v, k) => (l[1 + k] = v));
+        linhas.push(l);
+      });
+      const ws = XLSX.utils.aoa_to_sheet(linhas);
+      ws["!cols"] = [{ wch: 5 }].concat(
+        Array(col).fill({ wch: 26 }));
+      XLSX.utils.book_append_sheet(wb, ws, nomeAba);
+    }
+
+    // aba de instruções
+    const guia = [
+      ["COMO PREENCHER"],
+      [],
+      ["1", "Uma aba por categoria e naipe. O nome da aba manda: MIRIM-FEM, MIRIM-MASC."],
+      ["2", "A primeira linha traz o nome da prova e, à direita dele, as colunas auxiliares."],
+      ["3", "Nome da prova: distância + estilo. Ex.: 50 LIVRE, 100 COSTAS, 4x50 LIVRE, 4x50 LIVRE MISTO."],
+      ["4", "Estilos aceitos: LIVRE, COSTAS, PEITO, BORBOLETA, MEDLEY."],
+      ["5", "Colunas auxiliares obrigatórias: " +
+            (CAMPOS_EXIGIDOS[tipo] || []).map((c) => ROTULO_CAMPO[c]).join(" e ") + "."],
+      ["6", "Deixe uma coluna em branco entre um bloco de prova e o próximo."],
+      ["7", "Revezamento: escreva os 4 nomes na mesma célula, um por linha (Alt+Enter)."],
+      ["8", "Prova sem ninguém: escreva SEM INSCRITOS na primeira linha do bloco."],
+      [],
+      ["NAO FACA"],
+      ["", "Não deixe a primeira linha sem cabeçalho — o app recusa a planilha."],
+      ["", "Não misture categorias diferentes na mesma aba."],
+      ["", "Não junte nome e escola na mesma célula."],
+    ];
+    const wsG = XLSX.utils.aoa_to_sheet(guia);
+    wsG["!cols"] = [{ wch: 5 }, { wch: 105 }];
+    XLSX.utils.book_append_sheet(wb, wsG, "COMO PREENCHER");
+    return wb;
+  }
+
+  /* ---------------- programa de provas ----------------
+     A ordem oficial das provas não sai dos inscritos: ela vem do programa.
+     Cada linha vira uma prova numerada, mesmo sem ninguém inscrito.
+  ------------------------------------------------------ */
+
+  // "1ª – 25m LIVRE PARALÍMPICO \"A\" + \"B\" FEMININO"
+  // "9ª - 50m LIVRE MIRIM FEMININO"      "4x25m LIVRE PRÉ-MIRIM \"B\" MISTO"
+  function lerLinhaPrograma(linha) {
+    let t = String(linha || "").trim();
+    if (!t) return null;
+    t = t.replace(/^\s*\d+\s*[ªº°]?\s*[-–—:.)]*\s*/, "");   // tira "12ª -"
+    const u = norm(t);
+    const m = u.match(/^(4X\s*\d+|\d+)\s*M?(?:ETROS)?\s+(LIVRE|COSTAS?|PEITO|BORBOLETA|MEDLEY)\s+(.*)$/);
+    if (!m) return null;
+    const distancia = m[1].replace(/\s+/g, "") + "M";
+    let estilo = m[2];
+    if (estilo.indexOf("COSTA") === 0) estilo = "COSTAS";
+
+    let resto = m[3].trim();
+    let naipe = "";
+    if (/\bMISTO\b/.test(resto)) { naipe = "MISTO"; resto = resto.replace(/\bMISTO\b/, ""); }
+    else if (/\bMASCULINO\b|\bMASC\b/.test(resto)) {
+      naipe = "MASC"; resto = resto.replace(/\bMASCULINO\b|\bMASC\b/, "");
+    } else if (/\bFEMININO\b|\bFEM\b/.test(resto)) {
+      naipe = "FEM"; resto = resto.replace(/\bFEMININO\b|\bFEM\b/, "");
+    } else return null;
+
+    const categoria = resto.replace(/\s+/g, " ").trim();
+    if (!categoria) return null;
+    // mantém o texto original da categoria para exibir bonito no título
+    const bruto = t.replace(/^\S+\s+\S+\s+/, "").replace(/\s*(MISTO|MASCULINO|FEMININO|MASC|FEM)\s*$/i, "").trim();
+    return { distancia, estilo, categoria, naipe, rotulo: bruto || categoria };
+  }
+
+  function lerPrograma(texto) {
+    const linhas = String(texto || "").split(/\r?\n/);
+    const provas = [], recusadas = [];
+    linhas.forEach((l, k) => {
+      if (!l.trim()) return;
+      const p = lerLinhaPrograma(l);
+      if (p) provas.push(p);
+      else recusadas.push({ linha: k + 1, texto: l.trim() });
+    });
+    return { provas, recusadas };
+  }
+
+  function chaveProva(distancia, estilo, categoria, naipe) {
+    return [distancia, estilo, chaveCategoria(categoria), naipe].join("|");
+  }
+
   /* ---------------- montagem do balizamento ---------------- */
 
   /**
@@ -1533,33 +1991,47 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       i.categoriaProva = grupoDe(i.categoria, i.distancia, i.estilo, perfil);
     }
 
-    // agrupa em provas
+    // agrupa em provas, com a chave já normalizada
     const mapa = new Map();
+    const rotulos = new Map();
     for (const i of inscricoes) {
-      const k = [i.distancia, i.estilo, i.categoriaProva, i.naipe].join("|");
-      if (!mapa.has(k)) mapa.set(k, []);
+      const k = chaveProva(i.distancia, i.estilo, i.categoriaProva, i.naipe);
+      if (!mapa.has(k)) {
+        mapa.set(k, []);
+        rotulos.set(k, [i.distancia, i.estilo, i.categoriaProva, i.naipe]);
+      }
       mapa.get(k).push(i);
     }
 
-    let chaves = [...mapa.keys()];
-    if (perfil.ordemProvas && perfil.ordemProvas.length) {
-      const pos = new Map(perfil.ordemProvas.map((c, k) => [c, k]));
-      chaves.sort((a, b) => {
-        const pa = pos.has(a) ? pos.get(a) : 9999;
-        const pb = pos.has(b) ? pos.get(b) : 9999;
-        return pa - pb || a.localeCompare(b);
-      });
-      for (const c of perfil.ordemProvas) if (!mapa.has(c)) mapa.set(c, []);
-      chaves = perfil.ordemProvas.concat(
-        chaves.filter((c) => !pos.has(c)));
+    // a ordem oficial vem do programa; sem programa, cai numa ordem natural
+    let sequencia;
+    const programa = perfil.programa || [];
+    if (programa.length) {
+      sequencia = programa.map((p) => ({
+        chave: chaveProva(p.distancia, p.estilo, p.categoria, p.naipe),
+        partes: [p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe],
+        doPrograma: true,
+      }));
+      const noPrograma = new Set(sequencia.map((s) => s.chave));
+      // quem tem inscrito mas não está no programa entra no fim, sinalizado
+      [...mapa.keys()]
+        .filter((k) => !noPrograma.has(k))
+        .sort((a, b) => ordemNatural(rotulos.get(a).join("|"),
+                                     rotulos.get(b).join("|")))
+        .forEach((k) => sequencia.push({
+          chave: k, partes: rotulos.get(k), doPrograma: false,
+        }));
     } else {
-      chaves.sort(ordemNatural);
+      sequencia = [...mapa.keys()]
+        .sort((a, b) => ordemNatural(rotulos.get(a).join("|"),
+                                     rotulos.get(b).join("|")))
+        .map((k) => ({ chave: k, partes: rotulos.get(k), doPrograma: false }));
     }
 
     const provas = [];
-    chaves.forEach((k, idx) => {
-      const [distancia, estilo, categoria, naipe] = k.split("|");
-      const itens = mapa.get(k) || [];
+    sequencia.forEach((seq, idx) => {
+      const [distancia, estilo, categoria, naipe] = seq.partes;
+      const itens = mapa.get(seq.chave) || [];
       const revez = /^4X/.test(distancia);
       const paral = ehParalimpica(categoria, perfil);
 
@@ -1588,8 +2060,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       });
 
       provas.push({
-        numero: idx + 1, chave: k, distancia, estilo, categoria, naipe,
+        numero: idx + 1, chave: seq.chave, distancia, estilo, categoria, naipe,
         titulo: tituloProva(distancia, estilo, categoria, naipe),
+        doPrograma: seq.doPrograma,
+        aviso: (programa.length && !seq.doPrograma)
+          ? "esta prova não consta no programa oficial — confira a inscrição"
+          : "",
         revezamento: revez, paralimpica: paral, nRaias: raias,
         series, cortados,
         total: nadam.length,
@@ -1664,6 +2140,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   const api = {
     lerCabecalhoProva, lerPlanilhaBlocos, lerPlanilhaLinhas, categoriaDaAba, chaveCategoria,
+    lerPrograma, lerLinhaPrograma, chaveProva, conferirPlanilha, gerarModelo,
     montarBalizamento, inscricoesPlanas, tituloProva, eventoRegras, COLUNAS_MODELO,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
@@ -2255,17 +2732,25 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   };
 
   /* ---------------- perfil ---------------- */
-  function perfilPadrao(tipo) {
-    const t = TIPOS[tipo];
+  function perfilPadrao() {
     return {
-      nome: "", tipo, raias: 6, regraSerie: t.regraSerie,
-      rotuloEquipe: t.rotuloEquipe, usarRegrasPara: t.usarRegrasPara,
-      mostrarCategoria: t.mostrarCategoria, categoriasPara: t.categoriasPara.slice(),
-      limiteInd: t.limiteInd, limiteRev: t.limiteRev,
-      limiteIndPara: 3, etapas: [], grupos: [], ordemProvas: [],
-      ignorarAbas: ["CASOS ESPECÍFICOS", "LEGENDAS"],
+      nome: "", raias: "", regraSerie: "",
+      rotuloEquipe: "ESCOLA",
+      temPara: false, tipoClasse: "FUNCIONAL", temTempo: false,
+      temRevezamento: false, mostrarCategoria: false, categoriasPara: [],
+      limiteInd: "", limiteRev: "", limiteIndPara: "",
+      etapas: [], grupos: [], programa: [], programaTexto: "",
+      ignorarAbas: ["CASOS ESPECÍFICOS", "LEGENDAS", "COMO PREENCHER"],
       dedupMisto: true,
     };
+  }
+
+  // o "tipo" continua existindo, mas agora é deduzido do que foi marcado
+  function tipoDe(p) {
+    if (p.temPara && p.tipoClasse === "FUNCIONAL") return "PARA";
+    if (p.temPara) return "ESCOLAR_PARA";
+    if (p.temTempo) return "TEMPO";
+    return "ESCOLAR";
   }
 
   function salvarPerfis(lista) {
@@ -2292,28 +2777,41 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   /* ---------------- tela 1: competição ---------------- */
-  function renderTipos() {
-    const alvo = $("#tipos");
-    alvo.innerHTML = "";
-    for (const [k, t] of Object.entries(TIPOS)) {
-      const b = document.createElement("button");
-      b.className = "cartao-tipo";
-      b.type = "button";
-      b.dataset.tipo = k;
-      b.innerHTML = `<strong>${t.rotulo}</strong><span>${t.descricao}</span>
-        <em>exige: ${t.exige.join(" · ")}</em>`;
-      b.onclick = () => escolherTipo(k);
-      alvo.appendChild(b);
-    }
-  }
+  const ATALHOS = {
+    PARA: { temPara: true, tipoClasse: "FUNCIONAL", rotuloEquipe: "CIDADE",
+            temTempo: false, temRevezamento: false, mostrarCategoria: false,
+            regraSerie: B.INCOMPLETA_PRIMEIRO, limiteInd: 5, limiteRev: null,
+            limiteIndPara: 5, categoriasPara: ["DF", "DV", "DI", "DA", "TEA"] },
+    ESCOLAR: { temPara: false, rotuloEquipe: "ESCOLA", temTempo: false,
+               temRevezamento: true, mostrarCategoria: false,
+               regraSerie: B.MENOS_SERIES, limiteInd: 2, limiteRev: 2,
+               limiteIndPara: 3, categoriasPara: [] },
+    ESCOLAR_PARA: { temPara: true, tipoClasse: "CONDICAO", rotuloEquipe: "ESCOLA",
+                    temTempo: false, temRevezamento: true, mostrarCategoria: true,
+                    regraSerie: B.MENOS_SERIES, limiteInd: 2, limiteRev: 2,
+                    limiteIndPara: 3, categoriasPara: ["PARAL"] },
+    TEMPO: { temPara: false, rotuloEquipe: "EQUIPE", temTempo: true,
+             temRevezamento: true, mostrarCategoria: false,
+             regraSerie: B.MENOS_SERIES, limiteInd: 5, limiteRev: 2,
+             limiteIndPara: 5, categoriasPara: [] },
+    VAZIO: { temPara: false, rotuloEquipe: "ESCOLA", temTempo: false,
+             temRevezamento: false, mostrarCategoria: false,
+             regraSerie: "", limiteInd: "", limiteRev: "",
+             limiteIndPara: "", raias: "", categoriasPara: [] },
+  };
 
-  function escolherTipo(tipo) {
-    const nomeAtual = estado.perfil ? estado.perfil.nome : "";
-    estado.perfil = perfilPadrao(tipo);
-    estado.perfil.nome = nomeAtual;
-    $$(".cartao-tipo").forEach((b) =>
-      b.classList.toggle("marcado", b.dataset.tipo === tipo));
-    $("#config").hidden = false;
+  function aplicarAtalho(chave) {
+    const nome = estado.perfil ? estado.perfil.nome : "";
+    const prog = estado.perfil ? estado.perfil.programaTexto : "";
+    estado.perfil = Object.assign(perfilPadrao(), ATALHOS[chave] || ATALHOS.VAZIO);
+    estado.perfil.nome = nome;
+    estado.perfil.programaTexto = prog || "";
+    if (chave === "ESCOLAR_PARA") {
+      estado.perfil.grupos = [{
+        rotulo: 'PARALÍMPICO "A" + "B"',
+        categorias: ['PARAL "A"', 'PARAL "B"'], distancias: ["25M"], estilos: [],
+      }];
+    }
     preencherConfig();
   }
 
@@ -2326,15 +2824,190 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $("#limiteRev").value = p.limiteRev == null ? "" : p.limiteRev;
     $("#limiteIndPara").value = p.limiteIndPara;
     $("#rotuloEquipe").value = p.rotuloEquipe;
+    $("#temTempo").checked = !!p.temTempo;
+    $("#temRevezamento").checked = !!p.temRevezamento;
+    $("#temPara").checked = !!p.temPara;
+    $("#tipoClasse").value = p.tipoClasse || "FUNCIONAL";
+    $("#mostrarCategoria").checked = !!p.mostrarCategoria;
     $("#dedupMisto").checked = p.dedupMisto;
-    $("#linhaPara").hidden = !(p.categoriasPara && p.categoriasPara.length);
+    $("#programa").value = p.programaTexto || "";
+    atualizarDependentes();
     atualizarPreviaRaias();
+    atualizarPrograma();
     renderEtapas();
     renderGrupos();
   }
 
+  function atualizarDependentes() {
+    const para = $("#temPara").checked;
+    $("#blocoPara").hidden = !para;
+    $("#linhaPara").hidden = !para;
+    $("#notaClasse").textContent = $("#tipoClasse").value === "FUNCIONAL"
+      ? "Com a classe funcional, o app confere cada inscrição contra o mapa de "
+        + "provas paralímpico e corta quem não pode nadar aquela prova."
+      : "Com o tipo de condição, o app apenas registra a classe no balizamento "
+        + "e nas papeletas. Não há mapa de provas para validar.";
+    renderPreviaFormato();
+  }
+
+  /* ---- exemplo visual: uma miniatura da planilha esperada ---- */
+  function exemploVisual(p) {
+    const eq = p.rotuloEquipe || "EQUIPE";
+    const para = p.temPara;
+    const funcional = para && p.tipoClasse === "FUNCIONAL";
+    const cols = ["50 LIVRE", eq];
+    if (funcional) cols.push("SEGMENTO", "CLASSE");
+    else if (para) cols.push("CLASSE");
+    cols.push("TEMPO");
+
+    const ex1 = ["MARIA EXEMPLO DA SILVA", eq === "CIDADE" ? "BLUMENAU" : "COLÉGIO EXEMPLO"];
+    const ex2 = ["JOÃO EXEMPLO SANTOS", eq === "CIDADE" ? "JOINVILLE" : "ESCOLA MODELO"];
+    if (funcional) { ex1.push("DF", "S6/SB5/SM6"); ex2.push("DF", "S9/SB8/SM9"); }
+    else if (para) { ex1.push("TEA"); ex2.push("DI"); }
+    ex1.push(p.temTempo ? "31.20" : "");
+    ex2.push(p.temTempo ? "29.85" : "");
+
+    const letra = (i) => String.fromCharCode(66 + i);   // B, C, D...
+    const aba = funcional ? "DF-FEM" : para ? 'PARAL "A"-FEM' : "MIRIM-FEM";
+
+    const th = cols.map((c, i) =>
+      `<th><span class="col">${letra(i)}</span>${c}</th>`).join("") +
+      `<th class="vazia"><span class="col">${letra(cols.length)}</span></th>` +
+      `<th><span class="col">${letra(cols.length + 1)}</span>100 COSTAS</th>`;
+    const linha = (vals, n) => `<tr><td class="lin">${n}</td>` +
+      vals.map((v) => `<td>${v}</td>`).join("") +
+      `<td class="vazia"></td><td>${n === 1 ? "MARIA EXEMPLO DA SILVA" : "JOÃO EXEMPLO SANTOS"}</td></tr>`;
+
+    return `
+      <div class="planilha-exemplo">
+        <div class="abas-exemplo"><span class="aba-ativa">${aba}</span>
+          <span>${aba.replace("-FEM", "-MASC")}</span><span>…</span></div>
+        <div class="scroll-x">
+          <table class="grade">
+            <thead><tr><th class="lin"></th>${th}</tr></thead>
+            <tbody>${linha(ex1, 1)}${linha(ex2, 2)}</tbody>
+          </table>
+        </div>
+        <p class="legenda-exemplo">A <b>linha 1</b> é o cabeçalho. A coluna
+          <b>${letra(cols.length)}</b> fica em branco para separar um bloco de
+          prova do próximo.${p.temRevezamento
+            ? " Num bloco de revezamento (<b>4x50 LIVRE</b>), os 4 nomes vão na mesma célula, um por linha."
+            : ""}</p>
+      </div>`;
+  }
+
+  /* mostra, em tempo real, a planilha que será exigida */
+  function renderPreviaFormato() {
+    const p = lerConfig();
+    const eq = p.rotuloEquipe;
+    const linhas = [["NOME DA PROVA", "obrigatória",
+                     "o cabeçalho do bloco: <code>50 LIVRE</code>, <code>4x50 LIVRE MISTO</code>"],
+                    [eq, "obrigatória", "a instituição que o atleta representa"]];
+    if (p.temPara && p.tipoClasse === "FUNCIONAL") {
+      linhas.push(["SEGMENTO", "obrigatória",
+                   "DF, DV, DI, DA ou TEA-DOWN — pode vir no nome da aba, como <code>DF-FEM</code>"]);
+      linhas.push(["CLASSE", "obrigatória", "a classe funcional: <code>S6/SB5/SM6</code>"]);
+    } else if (p.temPara) {
+      linhas.push(["CLASSE", "obrigatória nas abas paralímpicas",
+                   "o tipo de condição: <code>TEA</code>, <code>DI</code>, <code>DA</code>, <code>DOWN</code>"]);
+    }
+    linhas.push(["TEMPO", p.temTempo ? "obrigatória" : "opcional",
+                 p.temTempo ? "o tempo de inscrição: <code>31.20</code> ou <code>1:02.35</code>"
+                            : "se deixar em branco, o app espalha as equipes entre as séries"]);
+
+    const abasEx = p.temPara && p.tipoClasse === "FUNCIONAL"
+      ? ["DF-FEM", "DF-MASC", "DV-FEM", "DI-MASC"]
+      : p.temPara ? ["MIRIM-FEM", "MIRIM-MASC", 'PARAL "A"-FEM', 'PARAL "A"-MASC']
+      : ["MIRIM-FEM", "MIRIM-MASC", "INFANTIL-FEM", "INFANTIL-MASC"];
+
+    $("#previaFormato").innerHTML = `
+      <p class="nota"><b>Uma aba por categoria e naipe.</b> O nome da aba manda —
+        sem <code>-FEM</code> ou <code>-MASC</code> no fim, a aba é recusada.
+        Exemplo: ${abasEx.map((x) => `<code>${x}</code>`).join(" · ")}</p>
+      <table class="tabela"><thead><tr><th>COLUNA</th><th>SITUAÇÃO</th>
+      <th>O QUE VAI NELA</th></tr></thead><tbody>${
+        linhas.map(([c, s, d]) => `<tr><td><code>${c}</code></td>
+          <td class="${s.startsWith("obrig") ? "exigida" : "apagado"}">${s}</td>
+          <td>${d}</td></tr>`).join("")}</tbody></table>
+      <p class="nota">Prova sem ninguém: escreva <code>SEM INSCRITOS</code> na
+        primeira linha do bloco.</p>
+      ${exemploVisual(p)}`;
+    validarConfig();
+  }
+
+  /* ---- nada de defaults escondidos: o que falta bloqueia o avanço ---- */
+  const OBRIGATORIOS = [
+    ["nomeComp", "o nome da competição"],
+    ["raias", "quantas raias tem a piscina"],
+    ["regraSerie", "como distribuir as séries"],
+    ["limiteInd", "o limite de provas individuais por atleta"],
+    ["programa", "o programa de provas"],
+  ];
+
+  function validarConfig() {
+    const faltando = [];
+    for (const [id, rotulo] of OBRIGATORIOS) {
+      const el = $("#" + id);
+      if (!el) continue;
+      const vazio = !String(el.value || "").trim();
+      el.classList.toggle("pendente", vazio);
+      if (vazio) faltando.push(rotulo);
+    }
+    if ($("#temPara").checked && !String($("#limiteIndPara").value).trim()) {
+      $("#limiteIndPara").classList.add("pendente");
+      faltando.push("o limite de provas do paradesporto");
+    } else {
+      $("#limiteIndPara").classList.remove("pendente");
+    }
+
+    const alvo = $("#faltando");
+    const botao = $("#irInscritos");
+    if (faltando.length) {
+      alvo.hidden = false;
+      alvo.innerHTML = `<b>Falta preencher antes de seguir:</b>
+        <ul>${faltando.map((f) => `<li>${f}</li>`).join("")}</ul>`;
+      botao.disabled = true;
+    } else {
+      alvo.hidden = true;
+      botao.disabled = false;
+    }
+    return !faltando.length;
+  }
+
+  function atualizarPrograma() {
+    const texto = $("#programa").value;
+    const r = D.lerPrograma(texto);
+    estado.perfil.programaTexto = texto;
+    estado.perfil.programa = r.provas;
+    const alvo = $("#resumoPrograma");
+    if (!texto.trim()) {
+      alvo.innerHTML = `<p class="nota aviso-leve">Sem programa: as provas serão
+        numeradas na ordem que o app deduzir, e provas sem inscritos não
+        aparecerão.</p>`;
+      return;
+    }
+    const recusa = r.recusadas.length
+      ? `<p class="alerta">${r.recusadas.length} linha(s) não reconhecida(s):
+         ${r.recusadas.slice(0, 4).map((x) =>
+           `<code>linha ${x.linha}: ${x.texto.slice(0, 60)}</code>`).join(" ")}</p>`
+      : "";
+    alvo.innerHTML = `
+      <p class="nota"><b>${r.provas.length} provas</b> reconhecidas.
+        As três primeiras: ${r.provas.slice(0, 3).map((p) =>
+          `<code>${p.distancia.toLowerCase()} ${p.estilo} ${p.rotulo} ` +
+          `${{ FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" }[p.naipe]}</code>`
+        ).join(" · ")}</p>${recusa}`;
+  }
+
   function atualizarPreviaRaias() {
-    const n = parseInt($("#raias").value, 10) || 6;
+    const bruto = String($("#raias").value || "").trim();
+    if (!bruto) {
+      $("#previaRaias").textContent = "—";
+      $("#previaMinimo").textContent = "—";
+      $("#previaSeries").textContent = "informe as raias para ver";
+      return;
+    }
+    const n = parseInt(bruto, 10) || 6;
     $("#previaRaias").textContent = B.ordemRaias(n).join(" · ");
     $("#previaMinimo").textContent = B.minimoPorSerie(n);
     const exemplos = [7, 13, 20, 41].map((x) =>
@@ -2345,14 +3018,29 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function lerConfig() {
     const p = estado.perfil;
     p.nome = $("#nomeComp").value.trim();
-    p.raias = parseInt($("#raias").value, 10) || 6;
+    p.raias = parseInt($("#raias").value, 10) || 6;   // 6 só como fallback interno
     p.regraSerie = $("#regraSerie").value;
     p.limiteInd = parseInt($("#limiteInd").value, 10) || 0;
     const lr = $("#limiteRev").value.trim();
     p.limiteRev = lr === "" ? null : parseInt(lr, 10);
     p.limiteIndPara = parseInt($("#limiteIndPara").value, 10) || 3;
     p.rotuloEquipe = $("#rotuloEquipe").value.trim().toUpperCase() || "EQUIPE";
+    p.temTempo = $("#temTempo").checked;
+    p.temRevezamento = $("#temRevezamento").checked;
+    p.temPara = $("#temPara").checked;
+    p.tipoClasse = $("#tipoClasse").value;
+    p.mostrarCategoria = $("#mostrarCategoria").checked;
     p.dedupMisto = $("#dedupMisto").checked;
+    p.programaTexto = $("#programa").value;
+    p.programa = D.lerPrograma(p.programaTexto).provas;
+    // derivados, usados pelo motor
+    p.tipo = tipoDe(p);
+    p.usarRegrasPara = p.temPara && p.tipoClasse === "FUNCIONAL";
+    if (p.temPara && !p.categoriasPara.length) {
+      p.categoriasPara = p.usarRegrasPara
+        ? ["DF", "DV", "DI", "DA", "TEA"] : ["PARAL"];
+    }
+    if (!p.temPara) p.categoriasPara = [];
     return p;
   }
 
@@ -2412,11 +3100,85 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   /* ---------------- tela 2: inscritos ---------------- */
+  const COLUNAS_POR_TIPO = {
+    PARA: [
+      ["NOME DA PROVA", "obrigatória", "o próprio cabeçalho do bloco: 50 LIVRE"],
+      ["CIDADE", "obrigatória", "a cidade que o atleta representa"],
+      ["SEGMENTO", "obrigatória", "DF, DV, DI, DA ou TEA-DOWN — pode vir no nome da aba (DF-FEM)"],
+      ["CLASSE", "obrigatória", "a classificação funcional: S6/SB5/SM6"],
+      ["TEMPO", "opcional", "se preenchida, o balizamento passa a ser por desempenho"],
+      ["EXCESSÃO", "opcional", "códigos de adaptação, copiados para o balizamento"],
+    ],
+    ESCOLAR: [
+      ["NOME DA PROVA", "obrigatória", "o próprio cabeçalho do bloco: 25 LIVRE"],
+      ["ESCOLA", "obrigatória", "aceita também COLÉGIO, EQUIPE ou CIDADE"],
+      ["TEMPO", "opcional", "se preenchida, o balizamento passa a ser por desempenho"],
+    ],
+    ESCOLAR_PARA: [
+      ["NOME DA PROVA", "obrigatória", "o próprio cabeçalho do bloco"],
+      ["ESCOLA", "obrigatória", "aceita também COLÉGIO, EQUIPE ou CIDADE"],
+      ["CLASSE", "obrigatória nas paralímpicas", "TEA, DI, DA, DOWN, DF-S6…"],
+      ["TEMPO", "opcional", "se preenchida, o balizamento passa a ser por desempenho"],
+    ],
+    TEMPO: [
+      ["NOME DA PROVA", "obrigatória", "o próprio cabeçalho do bloco"],
+      ["EQUIPE", "obrigatória", "aceita também CLUBE, ESCOLA ou CIDADE"],
+      ["TEMPO", "recomendada", "sem ela o app espalha as equipes em vez de balizar por tempo"],
+    ],
+  };
+
+  function renderEspecificacao() {
+    const tipo = estado.perfil ? estado.perfil.tipo : "ESCOLAR";
+    $("#tipoAtual").textContent = TIPOS[tipo] ? TIPOS[tipo].rotulo : "";
+    const linhas = COLUNAS_POR_TIPO[tipo] || COLUNAS_POR_TIPO.ESCOLAR;
+    $("#colunasExigidas").innerHTML = `
+      <table class="tabela"><thead><tr><th>COLUNA</th><th>SITUAÇÃO</th>
+      <th>O QUE VAI NELA</th></tr></thead><tbody>${
+        linhas.map(([c, s, d]) => `<tr>
+          <td><code>${c}</code></td>
+          <td class="${s.startsWith("obrig") ? "exigida" : "apagado"}">${s}</td>
+          <td>${d}</td></tr>`).join("")}</tbody></table>`;
+  }
+
+  function listaAbasRuins(abas, problemas) {
+    if (!abas.length && !problemas.length) return "";
+    return `<table class="tabela"><thead><tr><th>ABA</th><th>PROBLEMA</th>
+      <th>O QUE ACHEI NA PRIMEIRA LINHA</th></tr></thead><tbody>${
+      abas.map((a) => `<tr><td><b>${a.aba}</b></td><td>${a.motivo}</td>
+        <td class="apagado">${a.achado.length
+          ? a.achado.map((x) => `<code>${x}</code>`).join(" ")
+          : "(nada)"}</td></tr>`).join("")
+      }${problemas.map((p) => `<tr><td>—</td><td colspan="2">${p}</td></tr>`).join("")
+      }</tbody></table>`;
+  }
+
   async function carregarArquivo(file) {
     lerConfig();
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: "array", cellDates: false });
     const ignorar = estado.perfil.ignorarAbas;
+
+    // antes de qualquer coisa: a planilha está no formato esperado?
+    const conf = D.conferirPlanilha(wb, estado.perfil);
+    if (!conf.ok && !conf.parcial) {
+      estado.inscricoes = [];
+      estado.provas = [];
+      liberar("conferencia", false);
+      liberar("gerar", false);
+      $("#irConferencia").disabled = true;
+      $("#resumoArquivo").innerHTML = `
+        <div class="recusa">
+          <h3>Não posso usar esta planilha</h3>
+          <p>Ela não está no formato que o app entende. Prefiro recusar a
+             montar um balizamento errado sem você perceber.</p>
+          ${listaAbasRuins(conf.abasRuins, conf.problemas)}
+          <p class="nota"><b>É assim que ela precisa ser:</b></p>
+          ${exemploVisual(estado.perfil)}
+          <p class="nota">Se preferir, baixe a planilha modelo no botão acima:
+             ela já vem com os cabeçalhos certos.</p>
+        </div>`;
+      return;
+    }
 
     let r = D.lerPlanilhaBlocos(wb, { ignorar });
     let formato = "blocos";
@@ -2425,10 +3187,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       formato = "linhas";
     }
     if (!r.inscricoes.length) {
-      $("#resumoArquivo").innerHTML =
-        `<p class="alerta">Não consegui identificar inscrições nesta planilha.
-         Confira se a primeira linha traz os nomes das provas
-         (ex.: <code>50 LIVRE</code>) ou use o modelo do app.</p>`;
+      $("#resumoArquivo").innerHTML = `
+        <div class="recusa"><h3>Nenhuma inscrição encontrada</h3>
+        <p>Os cabeçalhos foram reconhecidos, mas não há nomes de atleta
+           abaixo deles.</p></div>`;
       return;
     }
 
@@ -2455,7 +3217,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       (s, i) => s + (i.atletas ? i.atletas.length : 1), 0);
     const comTempo = inscricoes.filter((i) => i.tempo != null).length;
 
-    $("#resumoArquivo").innerHTML = `
+    const alertaParcial = conf.parcial ? `
+      <div class="recusa leve">
+        <h3>${conf.abasRuins.length} aba(s) foram ignoradas</h3>
+        <p>O resto foi lido normalmente, mas confira se estas deveriam entrar:</p>
+        ${listaAbasRuins(conf.abasRuins, [])}
+      </div>` : "";
+
+    $("#resumoArquivo").innerHTML = alertaParcial + `
       <div class="fichas">
         <div class="ficha"><b>${atletas}</b><span>atletas</span></div>
         <div class="ficha"><b>${ind}</b><span>inscrições individuais</span></div>
@@ -2536,16 +3305,26 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         });
       }
     }
+    const foraDoPrograma = estado.provas
+      .filter((p) => p.aviso && p.series.length)
+      .map((p) => ({
+        prova: p.numero, titulo: p.titulo, nome: "", equipe: "",
+        detalhe: `${p.atletas} atleta(s) inscritos — ${p.aviso}`,
+      }));
+    const semInscritos = estado.provas.filter((p) => !p.series.length).length;
     const totCrit = criticos.length + estado.limites.length +
-                    cortes.filter((c) => c.gravidade === "critico").length;
+                    cortes.filter((c) => c.gravidade === "critico").length +
+                    foraDoPrograma.length;
 
     $("#painelConferencia").innerHTML = `
       <div class="fichas">
         <div class="ficha ${totCrit ? "ruim" : "bom"}"><b>${totCrit}</b><span>problemas críticos</span></div>
         <div class="ficha"><b>${avisos.length}</b><span>avisos de raia</span></div>
         <div class="ficha"><b>${cortes.filter((c) => c.gravidade === "info").length}</b><span>sem classe definida</span></div>
-        <div class="ficha"><b>${estado.provas.length}</b><span>provas montadas</span></div>
+        <div class="ficha"><b>${estado.provas.length}</b><span>provas montadas${
+          semInscritos ? `, ${semInscritos} sem inscritos` : ""}</span></div>
       </div>
+      ${bloco("Provas fora do programa oficial", foraDoPrograma, "critico")}
       ${bloco("Atletas acima do limite de provas", estado.limites.map((a) => ({
         prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
         detalhe: `${a.quantidade} provas (máximo ${a.limite}): ${a.provas.join(", ")}`,
@@ -2599,14 +3378,32 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return (estado.perfil.nome || "BALIZAMENTO").replace(/[\\/:*?"<>|]/g, "").trim();
   }
 
+  function baixarModelo() {
+    const p = lerConfig();
+    const wb = D.gerarModelo(p);
+    const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    baixar(new Blob([out], { type: "application/octet-stream" }),
+           "MODELO - " + (p.nome || "BALIZADOR") + ".xlsx");
+  }
+
   /* ---------------- ligações ---------------- */
   function ligar() {
-    renderTipos();
+    estado.perfil = perfilPadrao();
+    $$("[data-atalho]").forEach((b) =>
+      (b.onclick = () => aplicarAtalho(b.dataset.atalho)));
     $$(".passo").forEach((p) => (p.onclick = () => {
       if (!p.classList.contains("bloqueado")) irPara(p.dataset.passo);
     }));
     $("#raias").oninput = atualizarPreviaRaias;
     $("#regraSerie").oninput = atualizarPreviaRaias;
+    $("#programa").oninput = atualizarPrograma;
+    ["temPara", "tipoClasse", "temTempo", "temRevezamento", "rotuloEquipe",
+     "mostrarCategoria"].forEach((id) => {
+      const el = $("#" + id);
+      el.addEventListener("change", atualizarDependentes);
+    });
+    $("#btnModeloTopo").onclick = () => baixarModelo();
+    preencherConfig();
     $("#addEtapa").onclick = () => {
       const n = estado.perfil.etapas.length + 1;
       estado.perfil.etapas.push({ nome: n + "ª ETAPA", dia: "", periodo: "", de: 1, ate: 99 });
@@ -2616,7 +3413,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       estado.perfil.grupos.push({ rotulo: "", categorias: [], distancias: [], estilos: [] });
       renderGrupos();
     };
-    $("#irInscritos").onclick = () => { lerConfig(); irPara("inscritos"); };
+    $("#irInscritos").onclick = () => {
+      if (!validarConfig()) return;
+      lerConfig(); renderEspecificacao(); irPara("inscritos");
+    };
+    ["nomeComp", "raias", "regraSerie", "limiteInd", "limiteIndPara", "programa"]
+      .forEach((id) => $("#" + id).addEventListener("input", validarConfig));
+    $("#regraSerie").addEventListener("change", validarConfig);
+    $("#btnModelo").onclick = () => baixarModelo();
     $("#irConferencia").onclick = () => irPara("conferencia");
     $("#irGerar").onclick = () => irPara("gerar");
 
@@ -2669,15 +3473,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (!f) return;
       try {
         const p = JSON.parse(await f.text());
-        estado.perfil = Object.assign(perfilPadrao(p.tipo || "ESCOLAR"), p);
-        $$(".cartao-tipo").forEach((b) =>
-          b.classList.toggle("marcado", b.dataset.tipo === estado.perfil.tipo));
-        $("#config").hidden = false;
+        estado.perfil = Object.assign(perfilPadrao(), p);
         preencherConfig();
         aviso("Perfil carregado.");
       } catch (err) { alert("Não consegui ler este arquivo de perfil."); }
     };
     renderPerfisSalvos();
+    renderEspecificacao();
   }
 
   function renderPerfisSalvos() {
@@ -2688,11 +3490,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       `<button type="button" class="mini claro" data-k="${k}">${p.nome}</button>`).join(" ");
     $$("button", alvo).forEach((b) => {
       b.onclick = () => {
-        estado.perfil = Object.assign(perfilPadrao(lista[b.dataset.k].tipo),
-                                      lista[b.dataset.k]);
-        $$(".cartao-tipo").forEach((x) =>
-          x.classList.toggle("marcado", x.dataset.tipo === estado.perfil.tipo));
-        $("#config").hidden = false;
+        estado.perfil = Object.assign(perfilPadrao(), lista[b.dataset.k]);
         preencherConfig();
       };
     });

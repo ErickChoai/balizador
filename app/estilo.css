@@ -111,6 +111,17 @@ main{max-width:70rem;margin:0 auto;padding:1.6rem clamp(1rem,4vw,2.5rem) 5rem}
 .campos{display:flex;gap:.7rem;flex-wrap:wrap}
 .campo{display:flex;flex-direction:column;gap:.25rem;font-size:.82rem;color:var(--suave)}
 .campo.largo{flex:1;min-width:16rem}
+textarea{
+  font-family:"Roboto Mono",ui-monospace,monospace;font-size:.8rem;line-height:1.5;
+  color:var(--tinta);background:var(--fundo);border:1px solid var(--linha);
+  border-radius:3px;padding:.55rem .65rem;width:100%;resize:vertical;
+}
+textarea:focus{outline:2px solid var(--agua);outline-offset:1px}
+.resumo-programa code{font-size:.78em}
+.aviso-leve{
+  background:var(--ambar-fraca);color:var(--ambar);border-radius:3px;
+  padding:.5rem .7rem;max-width:none;
+}
 input,select{
   font:inherit;font-size:.92rem;color:var(--tinta);background:var(--fundo);
   border:1px solid var(--linha);border-radius:3px;padding:.42rem .55rem;
@@ -170,6 +181,85 @@ input[type=number]{width:6rem}
 .zona:hover,.zona.sobre{border-color:var(--agua);background:var(--agua-fraca)}
 .zona strong{font-family:"Archivo",sans-serif;font-size:1.05rem}
 .zona span{color:var(--suave);font-size:.86rem}
+
+/* ---------- atalhos e blocos condicionais ---------- */
+.atalhos{
+  display:flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem;
+  font-size:.86rem;color:var(--suave);
+}
+.sub-bloco{
+  border-left:2px solid var(--agua);padding-left:.9rem;margin-left:.3rem;
+  display:flex;flex-direction:column;gap:.6rem;
+}
+
+/* ---------- campos pendentes ---------- */
+input.pendente,select.pendente,textarea.pendente{
+  border-color:var(--grave);background:var(--grave-fraca);
+}
+.faltando{
+  background:var(--grave-fraca);color:var(--grave);border-radius:4px;
+  padding:.7rem .9rem;font-size:.88rem;width:100%;
+}
+.faltando ul{margin:.3rem 0 0;padding-left:1.1rem;gap:.15rem}
+
+/* ---------- miniatura da planilha esperada ---------- */
+.planilha-exemplo{
+  margin-top:.8rem;border:1px solid var(--linha);border-radius:4px;
+  overflow:hidden;background:var(--papel);
+}
+.abas-exemplo{
+  display:flex;gap:.15rem;padding:.35rem .4rem 0;background:var(--papel2);
+  font-size:.72rem;
+}
+.abas-exemplo span{
+  padding:.25rem .6rem;border-radius:3px 3px 0 0;color:var(--suave);
+  background:var(--fundo);
+}
+.abas-exemplo .aba-ativa{
+  background:var(--papel);color:var(--tinta);font-weight:600;
+  box-shadow:0 -1px 0 var(--agua) inset;
+}
+.scroll-x{overflow-x:auto}
+.grade{border-collapse:collapse;font-size:.78rem;width:100%}
+.grade th,.grade td{
+  border:1px solid var(--linha);padding:.32rem .5rem;text-align:left;
+  white-space:nowrap;
+}
+.grade thead th{background:var(--papel2);font-weight:600;position:relative;
+  padding-top:1.1rem}
+.grade .col{
+  position:absolute;top:.05rem;left:.5rem;font-family:"Roboto Mono",monospace;
+  font-size:.6rem;font-weight:400;color:var(--suave);letter-spacing:.05em;
+}
+.grade .lin{
+  background:var(--papel2);color:var(--suave);text-align:center;width:2rem;
+  font-family:"Roboto Mono",monospace;font-size:.7rem;
+}
+.grade .vazia{background:repeating-linear-gradient(45deg,
+  transparent,transparent 4px,var(--papel2) 4px,var(--papel2) 8px);min-width:2.5rem}
+.legenda-exemplo{
+  padding:.55rem .7rem;margin:0;font-size:.8rem;color:var(--suave);
+  border-top:1px solid var(--linha);
+}
+
+/* ---------- especificação do formato ---------- */
+.especificacao{border-left:3px solid var(--agua)}
+.regras-formato{margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.35rem}
+.regras-formato li{font-size:.88rem;max-width:78ch}
+.regras-formato b{font-weight:600}
+.tabela .exigida{color:var(--grave);font-weight:600}
+
+/* ---------- recusa da planilha ---------- */
+.recusa{
+  background:var(--grave-fraca);border:1px solid var(--grave);
+  border-left:3px solid var(--grave);border-radius:4px;
+  padding:1rem 1.15rem;margin-bottom:1rem;
+  display:flex;flex-direction:column;gap:.6rem;
+}
+.recusa h3{color:var(--grave)}
+.recusa p{font-size:.9rem;max-width:74ch}
+.recusa.leve{background:var(--ambar-fraca);border-color:var(--ambar)}
+.recusa.leve h3{color:var(--ambar)}
 
 /* ---------- fichas e tabelas ---------- */
 .fichas{display:grid;gap:.6rem;margin-bottom:1rem;

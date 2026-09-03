@@ -190,6 +190,263 @@
     return { categoria: cat.replace(/"/g, "").trim(), naipe };
   }
 
+  /* ---------------- conferência do formato da planilha ----------------
+     O app não adivinha: se a planilha não estiver no formato esperado,
+     ele recusa e diz exatamente o que faltou. Melhor não gerar nada do
+     que gerar um balizamento errado em silêncio.
+  --------------------------------------------------------------------- */
+  const CAMPOS_EXIGIDOS = {
+    PARA: ["equipe", "segmento", "classe"],
+    ESCOLAR: ["equipe"],
+    ESCOLAR_PARA: ["equipe"],
+    TEMPO: ["equipe"],
+  };
+  const ROTULO_CAMPO = {
+    equipe: "a coluna da instituição (CIDADE, ESCOLA, COLÉGIO ou EQUIPE)",
+    classe: "a coluna CLASSE, com a classificação funcional (S6, SB5, SM6)",
+    tempo: "a coluna TEMPO",
+    segmento: "o SEGMENTO (DF, DV, DI, DA, TEA-DOWN) — na coluna SEGMENTO " +
+              "ou no nome da aba, como DF-FEM",
+  };
+  const SEGMENTOS = ["DF", "DV", "DI", "DA", "TEA"];
+
+  // o segmento pode vir da coluna ou do nome da aba (DF-FEM, DV-MASC)
+  function segmentoNaAba(nomeAba) {
+    const u = norm(nomeAba);
+    return SEGMENTOS.some((s) => u.startsWith(s + "-") || u === s);
+  }
+
+  function conferirPlanilha(wb, perfil) {
+    const tipo = perfil.tipo || "ESCOLAR";
+    const ignorar = (perfil.ignorarAbas || []).map(norm);
+    const problemas = [];
+    const abasBoas = [];
+    const abasRuins = [];
+
+    for (const nomeAba of wb.SheetNames) {
+      if (ignorar.includes(norm(nomeAba))) continue;
+      const ws = wb.Sheets[nomeAba];
+      if (!ws || !ws["!ref"]) continue;
+      const grade = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: null });
+      const cab = (grade[0] || []).map((c) => String(c == null ? "" : c).trim());
+      const temConteudo = grade.slice(1).some((l) =>
+        (l || []).some((c) => c != null && String(c).trim()));
+      if (!cab.some((c) => c) && !temConteudo) continue;   // aba vazia: ignora
+
+      const blocos = cab.map((c, i) => ({ i, info: lerCabecalhoProva(c) }))
+                        .filter((b) => b.info);
+      if (!blocos.length) {
+        abasRuins.push({
+          aba: nomeAba,
+          motivo: cab.some((c) => c)
+            ? "a primeira linha não tem nenhum nome de prova reconhecível"
+            : "a primeira linha está vazia — sem cabeçalho não dá para saber o que é cada coluna",
+          achado: cab.filter((c) => c).slice(0, 6),
+        });
+        continue;
+      }
+
+      // quais colunas auxiliares existem em cada bloco
+      const faltando = new Set();
+      blocos.forEach((b, k) => {
+        const fim = k + 1 < blocos.length ? blocos[k + 1].i : cab.length;
+        const achou = { equipe: false, classe: false, tempo: false, segmento: false };
+        for (let c = b.i + 1; c < fim; c++) {
+          const t = norm(cab[c]);
+          if (["COLEGIO", "COLÉGIO", "CIDADE", "EQUIPE", "ESCOLA"].includes(t)) achou.equipe = true;
+          else if (t === "CLASSE") achou.classe = true;
+          else if (t === "TEMPO") achou.tempo = true;
+          else if (t === "SEGMENTO") achou.segmento = true;
+        }
+        for (const campo of (CAMPOS_EXIGIDOS[tipo] || [])) {
+          // no escolar com paradesporto a CLASSE só é exigida nas abas paralímpicas
+          if (campo === "classe" && tipo === "ESCOLAR_PARA" &&
+              !ehParalimpica(categoriaDaAba(nomeAba).categoria, perfil)) continue;
+          // o segmento vale se estiver na coluna OU no nome da aba
+          if (campo === "segmento" && segmentoNaAba(nomeAba)) continue;
+          if (!achou[campo]) faltando.add(campo);
+        }
+        if (tipo === "ESCOLAR_PARA" &&
+            ehParalimpica(categoriaDaAba(nomeAba).categoria, perfil) && !achou.classe) {
+          faltando.add("classe");
+        }
+      });
+
+      if (faltando.size) {
+        abasRuins.push({
+          aba: nomeAba,
+          motivo: "falta " + [...faltando].map((c) => ROTULO_CAMPO[c]).join(" e "),
+          achado: cab.filter((c) => c).slice(0, 8),
+        });
+      } else {
+        const { categoria, naipe } = categoriaDaAba(nomeAba);
+        if (!naipe) {
+          abasRuins.push({
+            aba: nomeAba,
+            motivo: 'o nome da aba não diz o naipe — use algo como "MIRIM-FEM" ou "MIRIM-MASC"',
+            achado: [],
+          });
+        } else {
+          abasBoas.push({ aba: nomeAba, categoria, naipe,
+                          provas: blocos.length });
+        }
+      }
+    }
+
+    if (!abasBoas.length && !abasRuins.length) {
+      problemas.push("a planilha não tem nenhuma aba com conteúdo.");
+    }
+    return {
+      ok: abasBoas.length > 0 && abasRuins.length === 0,
+      parcial: abasBoas.length > 0 && abasRuins.length > 0,
+      abasBoas, abasRuins, problemas,
+    };
+  }
+
+  /* ---------------- planilha modelo ---------------- */
+  function gerarModelo(perfil) {
+    const tipo = perfil.tipo || "ESCOLAR";
+    const wb = XLSX.utils.book_new();
+    const comClasse = tipo === "PARA" || tipo === "ESCOLAR_PARA";
+    const rotEq = perfil.rotuloEquipe ||
+                  (tipo === "PARA" ? "CIDADE" : "ESCOLA");
+
+    const abas = {
+      PARA: [["DF-FEM", ["50 LIVRE", "100 LIVRE", "100 COSTAS", "100 PEITO"]],
+             ["DF-MASC", ["50 LIVRE", "100 LIVRE", "100 COSTAS", "100 PEITO"]],
+             ["DV-FEM", ["50 LIVRE", "100 LIVRE", "100 COSTAS"]],
+             ["DI-MASC", ["100 LIVRE", "100 COSTAS", "100 PEITO"]]],
+      ESCOLAR: [['PRÉ-MIRIM "B"-FEM', ["25 LIVRE", "25 COSTAS", "25 PEITO", "4x25 LIVRE"]],
+                ['PRÉ-MIRIM "B"-MASC', ["25 LIVRE", "25 COSTAS", "25 PEITO", "4x25 LIVRE"]],
+                ["MIRIM-FEM", ["50 LIVRE", "50 COSTAS", "50 PEITO", "4x50 LIVRE"]],
+                ["MIRIM-MASC", ["50 LIVRE", "50 COSTAS", "50 PEITO", "4x50 LIVRE"]]],
+      ESCOLAR_PARA: [["MIRIM-FEM", ["50 LIVRE", "50 COSTAS"]],
+                     ["MIRIM-MASC", ["50 LIVRE", "50 COSTAS"]],
+                     ['PARAL "A"-FEM', ["25 LIVRE", "25 COSTAS"]],
+                     ['PARAL "A"-MASC', ["25 LIVRE", "25 COSTAS"]]],
+      TEMPO: [["INFANTIL-FEM", ["50 LIVRE", "100 LIVRE", "100 COSTAS"]],
+              ["INFANTIL-MASC", ["50 LIVRE", "100 LIVRE", "100 COSTAS"]],
+              ["JUVENIL-FEM", ["50 LIVRE", "100 LIVRE"]],
+              ["JUVENIL-MASC", ["50 LIVRE", "100 LIVRE"]]],
+    }[tipo];
+
+    const exemplo = {
+      PARA: [["MARIA EXEMPLO DA SILVA", "BLUMENAU", "DF", "S6/SB5/SM6", ""],
+             ["JOAO EXEMPLO SANTOS", "JOINVILLE", "DF", "S9/SB8/SM9", ""]],
+      ESCOLAR: [["MARIA EXEMPLO DA SILVA", "COLEGIO EXEMPLO", ""],
+                ["JOAO EXEMPLO SANTOS", "ESCOLA MODELO", ""]],
+      ESCOLAR_PARA: [["MARIA EXEMPLO DA SILVA", "COLEGIO EXEMPLO", "", ""],
+                     ["JOAO EXEMPLO SANTOS", "ESCOLA MODELO", "", ""]],
+      TEMPO: [["MARIA EXEMPLO DA SILVA", "CLUBE EXEMPLO", "31.20"],
+              ["JOAO EXEMPLO SANTOS", "EQUIPE MODELO", "29.85"]],
+    }[tipo];
+
+    for (const [nomeAba, provas] of abas) {
+      const paralimpica = tipo === "PARA" ||
+        (tipo === "ESCOLAR_PARA" && /PARAL/.test(norm(nomeAba)));
+      const aux = tipo === "PARA"
+        ? [rotEq, "SEGMENTO", "CLASSE", "TEMPO"]
+        : paralimpica ? [rotEq, "CLASSE", "TEMPO"] : [rotEq, "TEMPO"];
+      const larg = aux.length + 1;
+
+      const linhas = [[]];
+      let col = 1;
+      for (const prova of provas) {
+        linhas[0][col] = prova;
+        aux.forEach((a, k) => (linhas[0][col + 1 + k] = a));
+        col += larg + 1;
+      }
+      linhas[0][0] = "N°";
+      // duas linhas de exemplo no primeiro bloco
+      exemplo.forEach((ex, r) => {
+        const l = [];
+        l[0] = r + 1;
+        const vals = paralimpica || tipo === "PARA"
+          ? ex : [ex[0], ex[1], ex[ex.length - 1]];
+        vals.forEach((v, k) => (l[1 + k] = v));
+        linhas.push(l);
+      });
+      const ws = XLSX.utils.aoa_to_sheet(linhas);
+      ws["!cols"] = [{ wch: 5 }].concat(
+        Array(col).fill({ wch: 26 }));
+      XLSX.utils.book_append_sheet(wb, ws, nomeAba);
+    }
+
+    // aba de instruções
+    const guia = [
+      ["COMO PREENCHER"],
+      [],
+      ["1", "Uma aba por categoria e naipe. O nome da aba manda: MIRIM-FEM, MIRIM-MASC."],
+      ["2", "A primeira linha traz o nome da prova e, à direita dele, as colunas auxiliares."],
+      ["3", "Nome da prova: distância + estilo. Ex.: 50 LIVRE, 100 COSTAS, 4x50 LIVRE, 4x50 LIVRE MISTO."],
+      ["4", "Estilos aceitos: LIVRE, COSTAS, PEITO, BORBOLETA, MEDLEY."],
+      ["5", "Colunas auxiliares obrigatórias: " +
+            (CAMPOS_EXIGIDOS[tipo] || []).map((c) => ROTULO_CAMPO[c]).join(" e ") + "."],
+      ["6", "Deixe uma coluna em branco entre um bloco de prova e o próximo."],
+      ["7", "Revezamento: escreva os 4 nomes na mesma célula, um por linha (Alt+Enter)."],
+      ["8", "Prova sem ninguém: escreva SEM INSCRITOS na primeira linha do bloco."],
+      [],
+      ["NAO FACA"],
+      ["", "Não deixe a primeira linha sem cabeçalho — o app recusa a planilha."],
+      ["", "Não misture categorias diferentes na mesma aba."],
+      ["", "Não junte nome e escola na mesma célula."],
+    ];
+    const wsG = XLSX.utils.aoa_to_sheet(guia);
+    wsG["!cols"] = [{ wch: 5 }, { wch: 105 }];
+    XLSX.utils.book_append_sheet(wb, wsG, "COMO PREENCHER");
+    return wb;
+  }
+
+  /* ---------------- programa de provas ----------------
+     A ordem oficial das provas não sai dos inscritos: ela vem do programa.
+     Cada linha vira uma prova numerada, mesmo sem ninguém inscrito.
+  ------------------------------------------------------ */
+
+  // "1ª – 25m LIVRE PARALÍMPICO \"A\" + \"B\" FEMININO"
+  // "9ª - 50m LIVRE MIRIM FEMININO"      "4x25m LIVRE PRÉ-MIRIM \"B\" MISTO"
+  function lerLinhaPrograma(linha) {
+    let t = String(linha || "").trim();
+    if (!t) return null;
+    t = t.replace(/^\s*\d+\s*[ªº°]?\s*[-–—:.)]*\s*/, "");   // tira "12ª -"
+    const u = norm(t);
+    const m = u.match(/^(4X\s*\d+|\d+)\s*M?(?:ETROS)?\s+(LIVRE|COSTAS?|PEITO|BORBOLETA|MEDLEY)\s+(.*)$/);
+    if (!m) return null;
+    const distancia = m[1].replace(/\s+/g, "") + "M";
+    let estilo = m[2];
+    if (estilo.indexOf("COSTA") === 0) estilo = "COSTAS";
+
+    let resto = m[3].trim();
+    let naipe = "";
+    if (/\bMISTO\b/.test(resto)) { naipe = "MISTO"; resto = resto.replace(/\bMISTO\b/, ""); }
+    else if (/\bMASCULINO\b|\bMASC\b/.test(resto)) {
+      naipe = "MASC"; resto = resto.replace(/\bMASCULINO\b|\bMASC\b/, "");
+    } else if (/\bFEMININO\b|\bFEM\b/.test(resto)) {
+      naipe = "FEM"; resto = resto.replace(/\bFEMININO\b|\bFEM\b/, "");
+    } else return null;
+
+    const categoria = resto.replace(/\s+/g, " ").trim();
+    if (!categoria) return null;
+    // mantém o texto original da categoria para exibir bonito no título
+    const bruto = t.replace(/^\S+\s+\S+\s+/, "").replace(/\s*(MISTO|MASCULINO|FEMININO|MASC|FEM)\s*$/i, "").trim();
+    return { distancia, estilo, categoria, naipe, rotulo: bruto || categoria };
+  }
+
+  function lerPrograma(texto) {
+    const linhas = String(texto || "").split(/\r?\n/);
+    const provas = [], recusadas = [];
+    linhas.forEach((l, k) => {
+      if (!l.trim()) return;
+      const p = lerLinhaPrograma(l);
+      if (p) provas.push(p);
+      else recusadas.push({ linha: k + 1, texto: l.trim() });
+    });
+    return { provas, recusadas };
+  }
+
+  function chaveProva(distancia, estilo, categoria, naipe) {
+    return [distancia, estilo, chaveCategoria(categoria), naipe].join("|");
+  }
+
   /* ---------------- montagem do balizamento ---------------- */
 
   /**
@@ -215,33 +472,47 @@
       i.categoriaProva = grupoDe(i.categoria, i.distancia, i.estilo, perfil);
     }
 
-    // agrupa em provas
+    // agrupa em provas, com a chave já normalizada
     const mapa = new Map();
+    const rotulos = new Map();
     for (const i of inscricoes) {
-      const k = [i.distancia, i.estilo, i.categoriaProva, i.naipe].join("|");
-      if (!mapa.has(k)) mapa.set(k, []);
+      const k = chaveProva(i.distancia, i.estilo, i.categoriaProva, i.naipe);
+      if (!mapa.has(k)) {
+        mapa.set(k, []);
+        rotulos.set(k, [i.distancia, i.estilo, i.categoriaProva, i.naipe]);
+      }
       mapa.get(k).push(i);
     }
 
-    let chaves = [...mapa.keys()];
-    if (perfil.ordemProvas && perfil.ordemProvas.length) {
-      const pos = new Map(perfil.ordemProvas.map((c, k) => [c, k]));
-      chaves.sort((a, b) => {
-        const pa = pos.has(a) ? pos.get(a) : 9999;
-        const pb = pos.has(b) ? pos.get(b) : 9999;
-        return pa - pb || a.localeCompare(b);
-      });
-      for (const c of perfil.ordemProvas) if (!mapa.has(c)) mapa.set(c, []);
-      chaves = perfil.ordemProvas.concat(
-        chaves.filter((c) => !pos.has(c)));
+    // a ordem oficial vem do programa; sem programa, cai numa ordem natural
+    let sequencia;
+    const programa = perfil.programa || [];
+    if (programa.length) {
+      sequencia = programa.map((p) => ({
+        chave: chaveProva(p.distancia, p.estilo, p.categoria, p.naipe),
+        partes: [p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe],
+        doPrograma: true,
+      }));
+      const noPrograma = new Set(sequencia.map((s) => s.chave));
+      // quem tem inscrito mas não está no programa entra no fim, sinalizado
+      [...mapa.keys()]
+        .filter((k) => !noPrograma.has(k))
+        .sort((a, b) => ordemNatural(rotulos.get(a).join("|"),
+                                     rotulos.get(b).join("|")))
+        .forEach((k) => sequencia.push({
+          chave: k, partes: rotulos.get(k), doPrograma: false,
+        }));
     } else {
-      chaves.sort(ordemNatural);
+      sequencia = [...mapa.keys()]
+        .sort((a, b) => ordemNatural(rotulos.get(a).join("|"),
+                                     rotulos.get(b).join("|")))
+        .map((k) => ({ chave: k, partes: rotulos.get(k), doPrograma: false }));
     }
 
     const provas = [];
-    chaves.forEach((k, idx) => {
-      const [distancia, estilo, categoria, naipe] = k.split("|");
-      const itens = mapa.get(k) || [];
+    sequencia.forEach((seq, idx) => {
+      const [distancia, estilo, categoria, naipe] = seq.partes;
+      const itens = mapa.get(seq.chave) || [];
       const revez = /^4X/.test(distancia);
       const paral = ehParalimpica(categoria, perfil);
 
@@ -270,8 +541,12 @@
       });
 
       provas.push({
-        numero: idx + 1, chave: k, distancia, estilo, categoria, naipe,
+        numero: idx + 1, chave: seq.chave, distancia, estilo, categoria, naipe,
         titulo: tituloProva(distancia, estilo, categoria, naipe),
+        doPrograma: seq.doPrograma,
+        aviso: (programa.length && !seq.doPrograma)
+          ? "esta prova não consta no programa oficial — confira a inscrição"
+          : "",
         revezamento: revez, paralimpica: paral, nRaias: raias,
         series, cortados,
         total: nadam.length,
@@ -346,6 +621,7 @@
 
   const api = {
     lerCabecalhoProva, lerPlanilhaBlocos, lerPlanilhaLinhas, categoriaDaAba, chaveCategoria,
+    lerPrograma, lerLinhaPrograma, chaveProva, conferirPlanilha, gerarModelo,
     montarBalizamento, inscricoesPlanas, tituloProva, eventoRegras, COLUNAS_MODELO,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
