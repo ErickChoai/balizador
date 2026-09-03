@@ -132,16 +132,6 @@
         <div id="resumoPrograma" class="resumo-programa"></div>
       </div>
 
-      <div class="cartao especificacao">
-        <h3>A planilha que o app vai pedir</h3>
-        <p class="nota">Montada a partir do que você marcou acima. É exatamente
-          isto que ele vai exigir — e recusar, se vier diferente.</p>
-        <div id="previaFormato"></div>
-        <div class="acoes">
-          <button type="button" class="mini claro" id="btnModeloTopo">
-            Baixar planilha modelo</button>
-        </div>
-      </div>
 
       <div class="cartao">
         <h3>Limite de provas por atleta</h3>
@@ -206,11 +196,13 @@
 
   <!-- ============ 2. INSCRITOS ============ -->
   <section class="tela" data-tela="inscritos" hidden>
-    <h2>Planilha de inscritos</h2>
-    <p class="sub">A planilha precisa estar no formato abaixo. Se não estiver,
-      o app recusa e diz o que faltou — prefiro isso a montar um balizamento
-      errado sem você perceber. Nada é enviado para servidor nenhum: a leitura
-      acontece no seu computador.</p>
+
+    <!-- 2a. o formato exigido -->
+    <div id="painelFormato">
+    <h2>Como a planilha precisa ser</h2>
+    <p class="sub">Antes de enviar, veja o formato. É exatamente este que o app
+      vai ler — e recusar, se vier diferente. Prefiro isso a montar um
+      balizamento errado sem você perceber.</p>
 
     <div class="cartao especificacao">
       <h3>Formato exigido <span id="tipoAtual" class="opcional"></span></h3>
@@ -232,11 +224,25 @@
           primeira linha do bloco.</li>
       </ol>
       <div id="colunasExigidas"></div>
+      <div id="exemploFormato"></div>
       <div class="acoes">
         <button type="button" class="mini claro" id="btnModelo">
           Baixar planilha modelo preenchida</button>
       </div>
     </div>
+
+    <div class="acoes">
+      <button type="button" class="botao" id="btnEntendi">
+        Entendi como a planilha precisa ser</button>
+    </div>
+    </div>
+
+    <!-- 2b. o envio -->
+    <div id="painelEnvio" hidden>
+    <h2>Envie a planilha</h2>
+    <p class="sub">Nada é enviado para servidor nenhum: a leitura acontece no
+      seu computador.
+      <button type="button" class="link" id="verFormato">ver o formato de novo</button></p>
 
     <div id="zona" class="zona">
       <strong>Arraste a planilha aqui</strong>
@@ -248,6 +254,7 @@
 
     <div class="acoes">
       <button type="button" class="botao" id="irConferencia" disabled>Ver a conferência</button>
+    </div>
     </div>
   </section>
 

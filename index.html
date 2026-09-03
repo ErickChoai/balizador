@@ -178,6 +178,12 @@ input[type=number]{width:6rem}
 }
 .mini:hover{color:var(--tinta);border-color:var(--agua)}
 .mini.claro{background:var(--papel)}
+.link{
+  background:none;border:0;padding:0;font:inherit;font-size:.9rem;
+  color:var(--agua);cursor:pointer;text-decoration:underline;
+  text-underline-offset:2px;
+}
+.link:hover{color:var(--tinta)}
 .arquivo{display:inline-flex;align-items:center}
 
 /* ---------- zona de arquivo ---------- */
@@ -490,16 +496,6 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
         <div id="resumoPrograma" class="resumo-programa"></div>
       </div>
 
-      <div class="cartao especificacao">
-        <h3>A planilha que o app vai pedir</h3>
-        <p class="nota">Montada a partir do que você marcou acima. É exatamente
-          isto que ele vai exigir — e recusar, se vier diferente.</p>
-        <div id="previaFormato"></div>
-        <div class="acoes">
-          <button type="button" class="mini claro" id="btnModeloTopo">
-            Baixar planilha modelo</button>
-        </div>
-      </div>
 
       <div class="cartao">
         <h3>Limite de provas por atleta</h3>
@@ -564,11 +560,13 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
 
   <!-- ============ 2. INSCRITOS ============ -->
   <section class="tela" data-tela="inscritos" hidden>
-    <h2>Planilha de inscritos</h2>
-    <p class="sub">A planilha precisa estar no formato abaixo. Se não estiver,
-      o app recusa e diz o que faltou — prefiro isso a montar um balizamento
-      errado sem você perceber. Nada é enviado para servidor nenhum: a leitura
-      acontece no seu computador.</p>
+
+    <!-- 2a. o formato exigido -->
+    <div id="painelFormato">
+    <h2>Como a planilha precisa ser</h2>
+    <p class="sub">Antes de enviar, veja o formato. É exatamente este que o app
+      vai ler — e recusar, se vier diferente. Prefiro isso a montar um
+      balizamento errado sem você perceber.</p>
 
     <div class="cartao especificacao">
       <h3>Formato exigido <span id="tipoAtual" class="opcional"></span></h3>
@@ -590,11 +588,25 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
           primeira linha do bloco.</li>
       </ol>
       <div id="colunasExigidas"></div>
+      <div id="exemploFormato"></div>
       <div class="acoes">
         <button type="button" class="mini claro" id="btnModelo">
           Baixar planilha modelo preenchida</button>
       </div>
     </div>
+
+    <div class="acoes">
+      <button type="button" class="botao" id="btnEntendi">
+        Entendi como a planilha precisa ser</button>
+    </div>
+    </div>
+
+    <!-- 2b. o envio -->
+    <div id="painelEnvio" hidden>
+    <h2>Envie a planilha</h2>
+    <p class="sub">Nada é enviado para servidor nenhum: a leitura acontece no
+      seu computador.
+      <button type="button" class="link" id="verFormato">ver o formato de novo</button></p>
 
     <div id="zona" class="zona">
       <strong>Arraste a planilha aqui</strong>
@@ -606,6 +618,7 @@ code{font-family:"Roboto Mono",monospace;font-size:.85em;
 
     <div class="acoes">
       <button type="button" class="botao" id="irConferencia" disabled>Ver a conferência</button>
+    </div>
     </div>
   </section>
 
@@ -2766,8 +2779,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function irPara(passo) {
     $$(".passo").forEach((p) => p.classList.toggle("ativo", p.dataset.passo === passo));
     $$(".tela").forEach((t) => (t.hidden = t.dataset.tela !== passo));
+    if (passo === "inscritos") mostrarPainel("formato");
     if (passo === "conferencia") renderConferencia();
     if (passo === "gerar") renderGerar();
+    window.scrollTo(0, 0);
+  }
+
+  function mostrarPainel(qual) {
+    renderEspecificacao();
+    $("#painelFormato").hidden = qual !== "formato";
+    $("#painelEnvio").hidden = qual !== "envio";
     window.scrollTo(0, 0);
   }
 
@@ -2920,7 +2941,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       : p.temPara ? ["MIRIM-FEM", "MIRIM-MASC", 'PARAL "A"-FEM', 'PARAL "A"-MASC']
       : ["MIRIM-FEM", "MIRIM-MASC", "INFANTIL-FEM", "INFANTIL-MASC"];
 
-    $("#previaFormato").innerHTML = `
+    html("previaFormato", `
       <p class="nota"><b>Uma aba por categoria e naipe.</b> O nome da aba manda —
         sem <code>-FEM</code> ou <code>-MASC</code> no fim, a aba é recusada.
         Exemplo: ${abasEx.map((x) => `<code>${x}</code>`).join(" · ")}</p>
@@ -2931,7 +2952,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <td>${d}</td></tr>`).join("")}</tbody></table>
       <p class="nota">Prova sem ninguém: escreva <code>SEM INSCRITOS</code> na
         primeira linha do bloco.</p>
-      ${exemploVisual(p)}`;
+      ${exemploVisual(p)}`);
     validarConfig();
   }
 
@@ -3131,13 +3152,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const tipo = estado.perfil ? estado.perfil.tipo : "ESCOLAR";
     $("#tipoAtual").textContent = TIPOS[tipo] ? TIPOS[tipo].rotulo : "";
     const linhas = COLUNAS_POR_TIPO[tipo] || COLUNAS_POR_TIPO.ESCOLAR;
-    $("#colunasExigidas").innerHTML = `
+    html("colunasExigidas", `
       <table class="tabela"><thead><tr><th>COLUNA</th><th>SITUAÇÃO</th>
       <th>O QUE VAI NELA</th></tr></thead><tbody>${
         linhas.map(([c, s, d]) => `<tr>
           <td><code>${c}</code></td>
           <td class="${s.startsWith("obrig") ? "exigida" : "apagado"}">${s}</td>
-          <td>${d}</td></tr>`).join("")}</tbody></table>`;
+          <td>${d}</td></tr>`).join("")}</tbody></table>`);
+    html("exemploFormato", exemploVisual(estado.perfil));
   }
 
   function listaAbasRuins(abas, problemas) {
@@ -3174,9 +3196,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           ${listaAbasRuins(conf.abasRuins, conf.problemas)}
           <p class="nota"><b>É assim que ela precisa ser:</b></p>
           ${exemploVisual(estado.perfil)}
-          <p class="nota">Se preferir, baixe a planilha modelo no botão acima:
-             ela já vem com os cabeçalhos certos.</p>
+          <p class="nota">Corrija a planilha e envie de novo, ou baixe a
+             planilha modelo — ela já vem com os cabeçalhos certos.</p>
+          <div class="acoes">
+            <button type="button" class="mini claro" id="btnModeloRecusa">Baixar planilha modelo</button>
+            <button type="button" class="mini claro" id="btnVoltarFormato">Rever o formato completo</button>
+          </div>
         </div>`;
+      $("#btnModeloRecusa").onclick = () => baixarModelo();
+      $("#btnVoltarFormato").onclick = () => mostrarPainel("formato");
       return;
     }
 
@@ -3387,6 +3415,19 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
   /* ---------------- ligações ---------------- */
+  // liga um manipulador sem quebrar tudo se o elemento nao existir
+  function html(id, conteudo) {
+    const el = $("#" + id);
+    if (el) el.innerHTML = conteudo;
+    return !!el;
+  }
+
+  function ao(id, evento, fn) {
+    const el = $("#" + id);
+    if (el) el.addEventListener(evento, fn);
+    else console.warn("elemento ausente: #" + id);
+  }
+
   function ligar() {
     estado.perfil = perfilPadrao();
     $$("[data-atalho]").forEach((b) =>
@@ -3402,7 +3443,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const el = $("#" + id);
       el.addEventListener("change", atualizarDependentes);
     });
-    $("#btnModeloTopo").onclick = () => baixarModelo();
     preencherConfig();
     $("#addEtapa").onclick = () => {
       const n = estado.perfil.etapas.length + 1;
@@ -3421,6 +3461,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       .forEach((id) => $("#" + id).addEventListener("input", validarConfig));
     $("#regraSerie").addEventListener("change", validarConfig);
     $("#btnModelo").onclick = () => baixarModelo();
+    $("#btnEntendi").onclick = () => mostrarPainel("envio");
+    $("#verFormato").onclick = () => mostrarPainel("formato");
     $("#irConferencia").onclick = () => irPara("conferencia");
     $("#irGerar").onclick = () => irPara("gerar");
 

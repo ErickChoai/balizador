@@ -87,8 +87,16 @@
   function irPara(passo) {
     $$(".passo").forEach((p) => p.classList.toggle("ativo", p.dataset.passo === passo));
     $$(".tela").forEach((t) => (t.hidden = t.dataset.tela !== passo));
+    if (passo === "inscritos") mostrarPainel("formato");
     if (passo === "conferencia") renderConferencia();
     if (passo === "gerar") renderGerar();
+    window.scrollTo(0, 0);
+  }
+
+  function mostrarPainel(qual) {
+    renderEspecificacao();
+    $("#painelFormato").hidden = qual !== "formato";
+    $("#painelEnvio").hidden = qual !== "envio";
     window.scrollTo(0, 0);
   }
 
@@ -241,7 +249,7 @@
       : p.temPara ? ["MIRIM-FEM", "MIRIM-MASC", 'PARAL "A"-FEM', 'PARAL "A"-MASC']
       : ["MIRIM-FEM", "MIRIM-MASC", "INFANTIL-FEM", "INFANTIL-MASC"];
 
-    $("#previaFormato").innerHTML = `
+    html("previaFormato", `
       <p class="nota"><b>Uma aba por categoria e naipe.</b> O nome da aba manda —
         sem <code>-FEM</code> ou <code>-MASC</code> no fim, a aba é recusada.
         Exemplo: ${abasEx.map((x) => `<code>${x}</code>`).join(" · ")}</p>
@@ -252,7 +260,7 @@
           <td>${d}</td></tr>`).join("")}</tbody></table>
       <p class="nota">Prova sem ninguém: escreva <code>SEM INSCRITOS</code> na
         primeira linha do bloco.</p>
-      ${exemploVisual(p)}`;
+      ${exemploVisual(p)}`);
     validarConfig();
   }
 
@@ -452,13 +460,14 @@
     const tipo = estado.perfil ? estado.perfil.tipo : "ESCOLAR";
     $("#tipoAtual").textContent = TIPOS[tipo] ? TIPOS[tipo].rotulo : "";
     const linhas = COLUNAS_POR_TIPO[tipo] || COLUNAS_POR_TIPO.ESCOLAR;
-    $("#colunasExigidas").innerHTML = `
+    html("colunasExigidas", `
       <table class="tabela"><thead><tr><th>COLUNA</th><th>SITUAÇÃO</th>
       <th>O QUE VAI NELA</th></tr></thead><tbody>${
         linhas.map(([c, s, d]) => `<tr>
           <td><code>${c}</code></td>
           <td class="${s.startsWith("obrig") ? "exigida" : "apagado"}">${s}</td>
-          <td>${d}</td></tr>`).join("")}</tbody></table>`;
+          <td>${d}</td></tr>`).join("")}</tbody></table>`);
+    html("exemploFormato", exemploVisual(estado.perfil));
   }
 
   function listaAbasRuins(abas, problemas) {
@@ -495,9 +504,15 @@
           ${listaAbasRuins(conf.abasRuins, conf.problemas)}
           <p class="nota"><b>É assim que ela precisa ser:</b></p>
           ${exemploVisual(estado.perfil)}
-          <p class="nota">Se preferir, baixe a planilha modelo no botão acima:
-             ela já vem com os cabeçalhos certos.</p>
+          <p class="nota">Corrija a planilha e envie de novo, ou baixe a
+             planilha modelo — ela já vem com os cabeçalhos certos.</p>
+          <div class="acoes">
+            <button type="button" class="mini claro" id="btnModeloRecusa">Baixar planilha modelo</button>
+            <button type="button" class="mini claro" id="btnVoltarFormato">Rever o formato completo</button>
+          </div>
         </div>`;
+      $("#btnModeloRecusa").onclick = () => baixarModelo();
+      $("#btnVoltarFormato").onclick = () => mostrarPainel("formato");
       return;
     }
 
@@ -708,6 +723,19 @@
   }
 
   /* ---------------- ligações ---------------- */
+  // liga um manipulador sem quebrar tudo se o elemento nao existir
+  function html(id, conteudo) {
+    const el = $("#" + id);
+    if (el) el.innerHTML = conteudo;
+    return !!el;
+  }
+
+  function ao(id, evento, fn) {
+    const el = $("#" + id);
+    if (el) el.addEventListener(evento, fn);
+    else console.warn("elemento ausente: #" + id);
+  }
+
   function ligar() {
     estado.perfil = perfilPadrao();
     $$("[data-atalho]").forEach((b) =>
@@ -723,7 +751,6 @@
       const el = $("#" + id);
       el.addEventListener("change", atualizarDependentes);
     });
-    $("#btnModeloTopo").onclick = () => baixarModelo();
     preencherConfig();
     $("#addEtapa").onclick = () => {
       const n = estado.perfil.etapas.length + 1;
@@ -742,6 +769,8 @@
       .forEach((id) => $("#" + id).addEventListener("input", validarConfig));
     $("#regraSerie").addEventListener("change", validarConfig);
     $("#btnModelo").onclick = () => baixarModelo();
+    $("#btnEntendi").onclick = () => mostrarPainel("envio");
+    $("#verFormato").onclick = () => mostrarPainel("formato");
     $("#irConferencia").onclick = () => irPara("conferencia");
     $("#irGerar").onclick = () => irPara("gerar");
 
