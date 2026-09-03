@@ -26,8 +26,9 @@ const FONTES =
   '<link rel="preconnect" href="https://fonts.googleapis.com">' +
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?' +
-  'family=Archivo:wght@500;600;700&family=Asap:wght@400;500;600&' +
-  'family=Roboto+Mono:wght@400;500&display=swap">';
+  'family=Bricolage+Grotesque:opsz,wght@12..96,600..800&' +
+  'family=Instrument+Sans:wght@400..600&' +
+  'family=JetBrains+Mono:wght@400..500&display=swap">';
 
 const html = `<!doctype html>
 <html lang="pt-BR">
