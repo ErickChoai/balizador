@@ -478,6 +478,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
   padding:.1rem .4rem;border-radius:2px;
 }
 .marcavel.bloqueada{opacity:.42;cursor:not-allowed}
+.acoes-marcar{display:flex;gap:1rem;margin-top:.35rem}
 .correcao textarea{font-size:.9rem}
 
 /* =====================================================================

@@ -13,6 +13,12 @@
 
   const norm = B.normalizar;
 
+  // Uma chave de categoria só no app inteiro, a do núcleo. Quando existiam
+  // duas, uma que tirava o hífen e outra que não, PRÉ-MIRIM "B" e PRE MIRIM B
+  // caíam na mesma prova e mesmo assim o atleta era acusado de estar em duas
+  // categorias ao mesmo tempo.
+  const chaveCategoria = B.chaveDeCategoria;
+
   /* ---------------- reconhecimento de cabeçalhos ---------------- */
 
   // "25 BORBOLETA", "4x50 LIVRE MISTO", "50 METROS COSTAS", "100M PEITO"
@@ -51,6 +57,7 @@
     const ignorar = (opts.ignorar || []).map(norm);
     const inscricoes = [];
     const abas = [];
+    const descartadas = [];
 
     for (const nomeAba of wb.SheetNames) {
       if (ignorar.includes(norm(nomeAba))) continue;
@@ -82,27 +89,42 @@
           else if (["EXCESSAO", "EXCESSÃO", "EXCECAO", "EXCEÇÃO"].includes(t)) {
             b.aux.excecao = c;
           } else if (t === "SEGMENTO") b.aux.segmento = c;
+          else if (ROTULOS_LISTA.nascimento.includes(t)) b.aux.nascimento = c;
         }
       });
 
       const info = { aba: nomeAba, provas: blocos.map((b) => b.info), linhas: 0 };
+      const cat = categoriaDaAba(nomeAba);
       for (let r = 1; r < grade.length; r++) {
         const linha = grade[r] || [];
         for (const b of blocos) {
           const bruto = linha[b.col];
-          if (bruto == null || !String(bruto).trim()) continue;
-          const txt = String(bruto).trim();
+          const cel = (c) => c == null ? ""
+            : String(linha[c] == null ? "" : linha[c]).trim();
+          const equipe = cel(b.aux.equipe);
+          const txt = bruto == null ? "" : String(bruto).trim();
+          if (!txt) {
+            // linha com a instituição preenchida e sem nome nenhum ao lado:
+            // no formato em lista isso já era apontado, aqui sumia calado
+            if (equipe || cel(b.aux.tempo)) {
+              descartadas.push({ aba: nomeAba, linha: r + 1, equipe,
+                prova: tituloProva(b.info.distancia, b.info.estilo,
+                                   cat.categoria, cat.naipe || b.info.naipe || ""),
+                motivo: "tem a instituição preenchida mas não tem o nome do atleta" });
+            }
+            continue;
+          }
           if (norm(txt) === "SEM INSCRITOS") continue;
-          const equipe = b.aux.equipe != null ? (linha[b.aux.equipe] || "") : "";
-          const classe = b.aux.classe != null ? (linha[b.aux.classe] || "") : "";
+          const classe = cel(b.aux.classe);
           const tempo = b.aux.tempo != null ? B.lerTempo(linha[b.aux.tempo]) : null;
-          const segmento = b.aux.segmento != null ? (linha[b.aux.segmento] || "") : "";
-          const excecao = b.aux.excecao != null ? (linha[b.aux.excecao] || "") : "";
+          const segmento = cel(b.aux.segmento);
+          const excecao = cel(b.aux.excecao);
 
           const base = {
-            aba: nomeAba, linha: r + 1, equipe: String(equipe).trim(),
-            classe: String(classe).trim(), tempo,
-            segmento: String(segmento).trim(), excecao: String(excecao).trim(),
+            aba: nomeAba, linha: r + 1, equipe,
+            classe, tempo, tempoTexto: cel(b.aux.tempo),
+            nascimento: cel(b.aux.nascimento),
+            segmento, excecao,
             distancia: b.info.distancia, estilo: b.info.estilo,
             misto: b.info.misto, revezamento: b.info.revezamento,
           };
@@ -120,7 +142,7 @@
       }
       abas.push(info);
     }
-    return { inscricoes, abas };
+    return { inscricoes, abas, descartadas };
   }
 
   /* ---------------- leitura de uma planilha em lista ----------------
@@ -148,6 +170,10 @@
     tempo: ["TEMPO", "MELHOR TEMPO", "TEMPO DE INSCRICAO", "T INSCRICAO"],
     categoria: ["CATEGORIA", "CAT"],
     excecao: ["EXCESSAO", "EXCECAO", "OBS", "OBSERVACAO", "OBSERVACOES"],
+    // opcional em qualquer competição: é ela que deixa o app conferir se o
+    // atleta está na categoria de idade certa
+    nascimento: ["NASCIMENTO", "DATA DE NASCIMENTO", "DATA NASCIMENTO",
+                 "DT NASCIMENTO", "NASC", "ANO", "ANO DE NASCIMENTO"],
   };
 
   /**
@@ -226,6 +252,7 @@
     const inscricoes = [];
     const abas = [];
     const descartadas = [];
+    const repetidas = [];
 
     for (const nomeAba of wb.SheetNames) {
       if (ignorar.includes(norm(nomeAba))) continue;
@@ -236,6 +263,7 @@
 
       const info = { aba: nomeAba, provas: [], linhas: 0 };
       let bloco = null;
+      const cabecalhosVistos = new Map();
       for (let r = 0; r < grade.length; r++) {
         const linha = grade[r] || [];
         const idx = indicePrimeiraCelula(linha);
@@ -245,6 +273,16 @@
         if (cab) {
           bloco = blocoDaLista(cab, linha, idx);
           info.provas.push(cab);
+          // o mesmo cabeçalho duas vezes junta os dois blocos numa prova só.
+          // Às vezes é de propósito, às vezes é bloco copiado e não trocado
+          const k = chaveProva(cab.distancia, cab.estilo, cab.categoria, cab.naipe);
+          if (cabecalhosVistos.has(k)) {
+            repetidas.push({
+              aba: nomeAba, linha: r + 1, antes: cabecalhosVistos.get(k),
+              prova: tituloProva(cab.distancia, cab.estilo,
+                                 cab.rotulo || cab.categoria, cab.naipe),
+            });
+          } else cabecalhosVistos.set(k, r + 1);
           continue;
         }
         if (!bloco) continue;                        // ainda não começou nenhuma prova
@@ -260,6 +298,10 @@
           aba: nomeAba, linha: r + 1, equipe,
           classe: val(bloco.aux.classe), segmento: val(bloco.aux.segmento),
           excecao: val(bloco.aux.excecao),
+          nascimento: val(bloco.aux.nascimento),
+          // o tempo como veio escrito, para a conferência poder mostrar a
+          // leitura ao lado do que estava na planilha
+          tempoTexto: val(bloco.aux.tempo),
           tempo: bloco.aux.tempo != null ? B.lerTempo(linha[bloco.aux.tempo]) : null,
           categoria: val(bloco.aux.categoria) || bloco.info.categoria,
           naipe: bloco.info.naipe,
@@ -296,7 +338,7 @@
       }
       if (info.provas.length) abas.push(info);
     }
-    return { inscricoes, abas, descartadas };
+    return { inscricoes, abas, descartadas, repetidas };
   }
 
   /* ---------------- modelo canônico (uma linha por inscrição) ------- */
@@ -311,6 +353,8 @@
     segmento: ["SEGMENTO"],
     classe: ["CLASSE", "CLASSIFICACAO", "CLASSIFICAÇÃO"],
     tempo: ["TEMPO", "TEMPO DE INSCRICAO", "MELHOR TEMPO"],
+    nascimento: ["NASCIMENTO", "DATA DE NASCIMENTO", "DATA NASCIMENTO",
+                 "DT NASCIMENTO", "NASC", "ANO", "ANO DE NASCIMENTO"],
   };
 
   function lerPlanilhaLinhas(wb, opts) {
@@ -348,6 +392,8 @@
         segmento: mapa.segmento ? String(l[mapa.segmento] || "").trim() : "",
         classe: mapa.classe ? String(l[mapa.classe] || "").trim() : "",
         tempo: mapa.tempo ? B.lerTempo(l[mapa.tempo]) : null,
+        tempoTexto: mapa.tempo ? String(l[mapa.tempo] || "").trim() : "",
+        nascimento: mapa.nascimento ? String(l[mapa.nascimento] || "").trim() : "",
         distancia: dist, estilo, misto, revezamento: revez, atletas: null,
       });
     });
@@ -589,7 +635,7 @@
       const revez = /^\d+X/.test(String(dist).toUpperCase());
       const paral = comClasse &&
         (funcional || ehParalimpica(categoria, perfil));
-      const aux = [rotEq];
+      const aux = [rotEq, "NASCIMENTO"];
       if (funcional) aux.push("SEGMENTO");
       if (paral) aux.push("CLASSE");
       aux.push("TEMPO");
@@ -609,6 +655,7 @@
         exemploNomes.forEach(([nome, equipe], j) => {
           if (!revez) nome = fem ? NOMES_EXEMPLO.FEM[j] : NOMES_EXEMPLO.MASC[j];
           const l = [revez ? equipe : nome, equipe];
+          l.push(revez ? "" : (j === 0 ? "22/09/2012" : "04/03/2013"));
           if (funcional) l.push("DF");
           if (paral) l.push(funcional ? "S6/SB5/SM6" : "TEA");
           l.push(perfil.temTempo ? "31.20" : "");
@@ -620,7 +667,7 @@
 
     const ws = XLSX.utils.aoa_to_sheet(linhas);
     ws["!cols"] = [{ wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 14 },
-                   { wch: 12 }, { wch: 3 }, { wch: 14 }];
+                   { wch: 14 }, { wch: 12 }, { wch: 3 }, { wch: 14 }];
     XLSX.utils.book_append_sheet(wb, ws, "INSCRIÇÕES");
     XLSX.utils.book_append_sheet(wb, guiaDoModelo(perfil, rotEq, funcional, comClasse),
                                  "COMO PREENCHER");
@@ -640,6 +687,11 @@
       ["2", "Ao lado do cabeçalho vão os nomes das colunas de apoio: " +
             [rotEq].concat(funcional ? ["SEGMENTO"] : [])
                    .concat(comClasse ? ["CLASSE"] : []).concat(["TEMPO"]).join(", ") + "."],
+      ["", "A ordem delas não importa."],
+      [],
+      ["NASCIMENTO", "Não é obrigatória, mas é a coluna que deixa o app conferir se o"],
+      ["", "atleta está na categoria de idade certa. Sem ela, ninguém confere isso."],
+      ["", "Pode ser 22/09/2012 ou só 2012."],
       [],
       ["3", "Embaixo do cabeçalho, um atleta por linha. Acabou a prova, deixe"],
       ["", "uma linha em branco e comece a próxima."],
@@ -1137,12 +1189,36 @@
     sequencia.forEach((seq, idx) => {
       const [distancia, estilo, categoria, naipe] = seq.partes;
       const itens = mapa.get(seq.chave) || [];
-      const revez = /^4X/.test(distancia);
+      const revez = /^\d+X/.test(distancia);
       const paral = ehParalimpica(categoria, perfil);
+
+      /* Atleta repetido na mesma prova: fica a primeira inscrição e a
+         repetida sai das raias. Sem isto ele ocupava duas raias e ainda
+         aparecia duas vezes na papeleta.
+         Revezamento não entra: duas equipes da mesma escola na mesma prova
+         são duas equipes de verdade, e quem cuida disso é a conferência. */
+      const repetidos = [];
+      let unicos = itens;
+      if (!revez) {
+        const vistos = new Map();
+        unicos = [];
+        for (const i of itens) {
+          const k = B.chaveAtleta(i);
+          if (vistos.has(k)) {
+            repetidos.push(Object.assign({}, i, {
+              motivo: "já estava inscrito nesta prova" +
+                      (vistos.get(k) ? ", na linha " + vistos.get(k) : ""),
+            }));
+            continue;
+          }
+          vistos.set(k, i.linha || 0);
+          unicos.push(i);
+        }
+      }
 
       // elegibilidade por classe funcional
       const nadam = [], cortados = [];
-      for (const i of itens) {
+      for (const i of unicos) {
         if (paral && perfil.usarRegrasPara) {
           const ev = eventoRegras(distancia, estilo);
           const seg = i.segmento || perfil.segmentoPadrao || "";
@@ -1168,11 +1244,15 @@
         numero: idx + 1, chave: seq.chave, distancia, estilo, categoria, naipe,
         titulo: tituloProva(distancia, estilo, categoria, naipe),
         doPrograma: seq.doPrograma,
+        // fica sempre, para a conferência saber do que está falando. Já o
+        // aviso é o que sai impresso em vermelho, e some quando o árbitro
+        // diz que leu e vai seguir assim mesmo.
+        foraDoPrograma: !!(programa.length && !seq.doPrograma),
         aviso: (programa.length && !seq.doPrograma)
           ? "esta prova não consta no programa oficial; confira a inscrição"
           : "",
         revezamento: revez, paralimpica: paral, nRaias: raias,
-        series, cortados,
+        series, cortados, repetidos,
         total: nadam.length,
         atletas: series.reduce((s, se) => s + se.linhas.reduce(
           (t, l) => t + (l.item.atletas ? l.item.atletas.length : 1), 0), 0),
@@ -1193,10 +1273,6 @@
            ["FEM", "MASC", "MISTO"].indexOf(pb[3]);
   }
 
-  // Compara categorias ignorando aspas e pontuação: PARAL "A" == PARAL A
-  function chaveCategoria(t) {
-    return norm(t).replace(/["'“”‘’.\-–—]/g, "").replace(/\s+/g, " ").trim();
-  }
 
   function grupoDe(categoria, distancia, estilo, perfil) {
     const c = chaveCategoria(categoria);
@@ -1341,6 +1417,10 @@
               nome, equipe: it.equipe, categoria: it.categoria,
               classe: it.classe, tituloProva: p.titulo, prova: p.numero,
               serie: s.numero, raia: l.raia, revezamento: p.revezamento,
+              naipe: p.naipe, distancia: p.distancia,
+              segmento: it.segmento, nascimento: it.nascimento,
+              tempo: it.tempo, tempoTexto: it.tempoTexto,
+              semLista: !!it.semLista, aba: it.aba, linha: it.linha,
             });
           }
         }

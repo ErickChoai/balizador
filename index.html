@@ -487,6 +487,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
   padding:.1rem .4rem;border-radius:2px;
 }
 .marcavel.bloqueada{opacity:.42;cursor:not-allowed}
+.acoes-marcar{display:flex;gap:1rem;margin-top:.35rem}
 .correcao textarea{font-size:.9rem}
 
 /* =====================================================================
@@ -867,6 +868,9 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
           </label>
           <label class="campo" id="linhaPara">Individuais no paradesporto
             <input id="limiteIndPara" type="number" min="1" max="20" placeholder="3">
+          </label>
+          <label class="campo"><span class="rotulo">Atletas de cada instituição na mesma prova <span class="opcional">opcional</span></span>
+            <input id="limiteEquipe" type="number" min="1" max="50" placeholder="sem limite">
           </label>
         </div>
         <p class="nota">Quem passar do limite sai destacado na conferência e no
@@ -1860,6 +1864,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           });
         }
         for (const l of s.linhas) {
+          // em revezamento a linha é a equipe, não o atleta: duas equipes da
+          // mesma escola na mesma prova não são a mesma pessoa duas vezes.
+          // Quem cuida desse caso é conferirRevezamentos.
+          if (p.revezamento) continue;
           const k = normalizar(nomeDe(l.item)) + "|" + normalizar(equipeDe(l.item));
           if (vistos.has(k)) {
             erros.push({
@@ -1882,6 +1890,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const limiteDe = opts.limiteDe || (() => limiteInd);
     const porAtleta = new Map();
     for (const i of inscricoes) {
+      // revezamento inscrito só com a equipe: quem aparece na linha é a
+      // escola, não um atleta. Contá-la faria a escola passar do limite de
+      // revezamentos sozinha, sem ter inscrito ninguém duas vezes.
+      if (i.semLista) continue;
       const k = normalizar(i.nome) + "|" + normalizar(i.equipe);
       if (!porAtleta.has(k)) porAtleta.set(k, { ind: [], rev: [], ref: i });
       (i.revezamento ? porAtleta.get(k).rev : porAtleta.get(k).ind).push(i);
@@ -1909,9 +1921,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return achados;
   }
 
-  // Compara categorias ignorando aspas e pontuação: PARAL "A" == PARAL A
+  /* Compara categorias ignorando aspas, pontos e hífens:
+       PARAL "A" == PARAL A        PRÉ-MIRIM "B" == PRE MIRIM B
+     Esta é a única chave de categoria do app. Quando existiam duas, uma que
+     tirava o hífen e outra que não, PRÉ-MIRIM "B" e PRE MIRIM B caíam na
+     mesma prova e mesmo assim o atleta era acusado de estar em duas
+     categorias. */
   function chaveDeCategoria(t) {
-    return normalizar(t).replace(/["'“”‘’.]/g, "").replace(/\s+/g, " ").trim();
+    return normalizar(t).replace(/["'“”‘’.]/g, "")
+      .replace(/[-–—]/g, " ")     // vira espaço, não some: PRÉ-MIRIM = PRE MIRIM
+      .replace(/\s+/g, " ").trim();
   }
 
   /**
@@ -1923,6 +1942,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   function conferirCategorias(inscricoes) {
     const porAtleta = new Map();
     for (const i of inscricoes) {
+      // a categoria de uma linha de revezamento é a da equipe, não a do
+      // nadador. Contá-la faria todo mundo que nada o revezamento da escola
+      // ser acusado de estar em duas categorias de idade ao mesmo tempo.
+      if (i.revezamento) continue;
       const cat = chaveDeCategoria(i.categoria);
       if (!cat) continue;
       const k = normalizar(i.nome) + "|" + normalizar(i.equipe);
@@ -1946,29 +1969,509 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return achados;
   }
 
+  /* ---------------- revezamentos ----------------
+     A célula do revezamento é o lugar onde mais se erra sem que nada apite:
+     três nomes onde deviam ser quatro, o mesmo nadador escrito duas vezes,
+     um misto com quatro meninas. Nada disso muda a raia, então só uma
+     conferência de propósito encontra.
+  ------------------------------------------------ */
+
+  /**
+   * opts: { sexoDe(nome, equipe) -> "FEM" | "MASC" | "" }
+   * O sexo não vem da planilha: sai das provas individuais do próprio atleta,
+   * e por isso o misto só é conferido quando os quatro são conhecidos.
+   */
+  function conferirRevezamentos(provas, opts) {
+    opts = opts || {};
+    const sexoDe = opts.sexoDe || (() => "");
+    const achados = [];
+    for (const p of provas) {
+      if (!p.revezamento) continue;
+      const equipes = new Map();
+      for (const s of p.series) {
+        for (const l of s.linhas) {
+          const it = l.item;
+          const ke = normalizar(it.equipe);
+          if (!equipes.has(ke)) equipes.set(ke, { rotulo: it.equipe, n: 0 });
+          equipes.get(ke).n++;
+          const nomes = (it.atletas || []).filter((n) => String(n).trim());
+          if (it.semLista || !nomes.length) continue;
+
+          if (nomes.length !== 4) {
+            achados.push({
+              tipo: nomes.length < 4 ? "REVEZAMENTO INCOMPLETO"
+                                     : "REVEZAMENTO COM GENTE DEMAIS",
+              gravidade: nomes.length < 4 ? "critico" : "aviso",
+              prova: p.numero, titulo: p.titulo, nome: "", equipe: it.equipe,
+              detalhe: `${nomes.length} nome(s) na célula, o revezamento tem 4`,
+              item: it,
+            });
+          }
+          const vistos = new Map();
+          for (const n of nomes) {
+            const k = normalizar(n);
+            if (vistos.has(k)) {
+              achados.push({
+                tipo: "NADADOR REPETIDO NO REVEZAMENTO", gravidade: "critico",
+                prova: p.numero, titulo: p.titulo, nome: n, equipe: it.equipe,
+                detalhe: "escrito duas vezes na mesma equipe", item: it,
+              });
+            } else vistos.set(k, true);
+          }
+          if (p.naipe === "MISTO" && nomes.length === 4) {
+            const sexos = nomes.map((n) => sexoDe(n, it.equipe));
+            if (sexos.every((s) => s === "FEM" || s === "MASC")) {
+              const f = sexos.filter((s) => s === "FEM").length;
+              if (f !== 2) {
+                achados.push({
+                  tipo: "MISTO FORA DE DOIS E DOIS", gravidade: "aviso",
+                  prova: p.numero, titulo: p.titulo, nome: "", equipe: it.equipe,
+                  detalhe: `${f} do feminino e ${4 - f} do masculino, ` +
+                           "pelas provas individuais deles", item: it,
+                });
+              }
+            }
+          }
+        }
+      }
+      for (const [, v] of equipes) {
+        if (v.n < 2) continue;
+        achados.push({
+          tipo: "DUAS EQUIPES DA MESMA INSTITUIÇÃO", gravidade: "aviso",
+          prova: p.numero, titulo: p.titulo, nome: "", equipe: v.rotulo,
+          detalhe: `${v.n} equipes desta instituição nesta prova`,
+        });
+      }
+    }
+    return achados;
+  }
+
+  /** Quantos atletas cada instituição pode inscrever na mesma prova. */
+  function conferirPorEquipe(provas, limite) {
+    if (!limite || limite < 1) return [];
+    const achados = [];
+    for (const p of provas) {
+      if (p.revezamento) continue;
+      const equipes = new Map();
+      for (const s of p.series) {
+        for (const l of s.linhas) {
+          const k = normalizar(l.item.equipe);
+          if (!k) continue;
+          if (!equipes.has(k)) equipes.set(k, { rotulo: l.item.equipe, nomes: [] });
+          equipes.get(k).nomes.push(l.item.nome);
+        }
+      }
+      for (const [, v] of equipes) {
+        if (v.nomes.length <= limite) continue;
+        achados.push({
+          tipo: "ACIMA DO LIMITE POR EQUIPE", gravidade: "critico",
+          prova: p.numero, titulo: p.titulo, nome: "", equipe: v.rotulo,
+          detalhe: `${v.nomes.length} atletas, o limite é ${limite}: ` +
+                   v.nomes.join(", "),
+        });
+      }
+    }
+    return achados;
+  }
+
+  /* ---------------- a mesma pessoa em linhas diferentes ----------------
+     Todo o resto do app conta atleta por nome mais equipe. Quando a mesma
+     pessoa aparece escrita de dois jeitos, ou em duas equipes, ela vira duas
+     pessoas: o limite de provas deixa de valer e a duplicidade some. Estas
+     conferências existem para isso não passar calado.
+  ---------------------------------------------------------------------- */
+
+  function chaveAtleta(i) {
+    return normalizar(i.nome) + "|" + normalizar(i.equipe);
+  }
+
+  function agrupar(inscricoes, chave) {
+    const m = new Map();
+    for (const i of inscricoes) {
+      const k = chave(i);
+      if (k == null) continue;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(i);
+    }
+    return m;
+  }
+
+  /** O mesmo nome em duas equipes. Pode ser xará, pode ser a mesma pessoa. */
+  function conferirMesmoNome(inscricoes) {
+    const porNome = agrupar(inscricoes.filter((i) => !i.revezamento && !i.semLista),
+                            (i) => normalizar(i.nome) || null);
+    const achados = [];
+    for (const [, lista] of porNome) {
+      const equipes = new Map();
+      for (const i of lista) {
+        const k = normalizar(i.equipe);
+        if (!equipes.has(k)) equipes.set(k, { rotulo: i.equipe, provas: [] });
+        equipes.get(k).provas.push(i.tituloProva);
+      }
+      if (equipes.size < 2) continue;
+      const v = [...equipes.values()];
+      achados.push({
+        tipo: "MESMO NOME EM DUAS EQUIPES", gravidade: "aviso",
+        nome: lista[0].nome, equipe: v.map((x) => x.rotulo).join(" e "),
+        quantidade: v.length,
+        provas: v.map((x) => x.rotulo + ": " + x.provas.join(", ")),
+      });
+    }
+    achados.sort((a, b) => cmpTexto(a.nome, b.nome));
+    return achados;
+  }
+
+  /** O mesmo atleta com classe funcional ou segmento diferente entre provas. */
+  function conferirClasses(inscricoes) {
+    const porAtleta = agrupar(inscricoes.filter((i) => !i.revezamento), chaveAtleta);
+    const achados = [];
+    for (const [, lista] of porAtleta) {
+      for (const campo of ["classe", "segmento"]) {
+        const vistos = new Map();
+        for (const i of lista) {
+          const v = String(i[campo] == null ? "" : i[campo]).trim();
+          if (!v) continue;
+          const k = normalizar(v);
+          if (!vistos.has(k)) vistos.set(k, { rotulo: v, provas: [] });
+          vistos.get(k).provas.push(i.tituloProva);
+        }
+        if (vistos.size < 2) continue;
+        const v = [...vistos.values()];
+        achados.push({
+          tipo: campo === "classe" ? "CLASSE DIFERENTE ENTRE AS PROVAS"
+                                   : "SEGMENTO DIFERENTE ENTRE AS PROVAS",
+          gravidade: "critico", campo,
+          nome: lista[0].nome, equipe: lista[0].equipe, quantidade: v.length,
+          valores: v.map((x) => x.rotulo),
+          provasPorValor: v.map((x) => x.provas.join(", ")),
+          provas: v.map((x) => x.rotulo + ": " + x.provas.join(", ")),
+        });
+      }
+    }
+    achados.sort((a, b) => cmpTexto(a.nome, b.nome));
+    return achados;
+  }
+
+  /** O mesmo atleta inscrito no feminino e no masculino. */
+  function conferirNaipes(inscricoes) {
+    const porAtleta = agrupar(
+      inscricoes.filter((i) => !i.revezamento &&
+                        (i.naipe === "FEM" || i.naipe === "MASC")), chaveAtleta);
+    const achados = [];
+    for (const [, lista] of porAtleta) {
+      const naipes = new Map();
+      for (const i of lista) {
+        if (!naipes.has(i.naipe)) naipes.set(i.naipe, []);
+        naipes.get(i.naipe).push(i.tituloProva);
+      }
+      if (naipes.size < 2) continue;
+      achados.push({
+        tipo: "ATLETA NOS DOIS NAIPES", gravidade: "critico",
+        nome: lista[0].nome, equipe: lista[0].equipe, quantidade: naipes.size,
+        naipes: [...naipes.keys()],
+        provas: [...naipes.entries()].map(([n, p]) =>
+          (n === "FEM" ? "FEMININO" : "MASCULINO") + ": " + p.join(", ")),
+      });
+    }
+    achados.sort((a, b) => cmpTexto(a.nome, b.nome));
+    return achados;
+  }
+
+  /* ---------------- nomes quase iguais ---------------- */
+
+  function distancia(a, b) {
+    if (a === b) return 0;
+    if (Math.abs(a.length - b.length) > 2) return 99;
+    const linha = Array.from({ length: b.length + 1 }, (_, i) => i);
+    for (let i = 1; i <= a.length; i++) {
+      let ant = linha[0];
+      linha[0] = i;
+      for (let j = 1; j <= b.length; j++) {
+        const tmp = linha[j];
+        linha[j] = Math.min(linha[j] + 1, linha[j - 1] + 1,
+                            ant + (a[i - 1] === b[j - 1] ? 0 : 1));
+        ant = tmp;
+      }
+    }
+    return linha[b.length];
+  }
+
+  /* Duas escritas do mesmo nome. Vale a abreviação palavra por palavra,
+     COL EXEMPLO e COLÉGIO EXEMPLO, o nome que ganhou um pedaço no fim,
+     JOÃO DA SILVA e JOÃO DA SILVA JUNIOR, e o erro de digitação de uma ou
+     duas letras em nome comprido. */
+  function pareceOMesmo(a, b) {
+    const x = normalizar(a), y = normalizar(b);
+    if (!x || !y || x === y) return "";
+    const px = x.split(" "), py = y.split(" ");
+    const menor = Math.min(px.length, py.length);
+    let iguais = true;
+    for (let i = 0; i < menor; i++) {
+      if (px[i] === py[i]) continue;
+      const c = px[i].length <= py[i].length ? px[i] : py[i];
+      const g = px[i].length <= py[i].length ? py[i] : px[i];
+      if (c.length >= 3 && g.indexOf(c) === 0) continue;
+      iguais = false;
+      break;
+    }
+    if (iguais && px.length !== py.length) return "um tem palavras a mais";
+    if (iguais && px.length === py.length) return "palavra abreviada";
+    // erro de digitação: quanto mais curto o nome, menos folga, senão
+    // "JOSE" e "JOAO" virariam a mesma pessoa
+    const menorTexto = Math.min(x.length, y.length);
+    const d = distancia(x, y);
+    if (menorTexto >= 9 && d <= 2) return "diferença de duas letras";
+    if (menorTexto >= 6 && d <= 1) return "diferença de uma letra";
+    return "";
+  }
+
+  /** Nomes quase iguais na mesma equipe, e equipes quase iguais. */
+  function conferirParecidos(inscricoes) {
+    const achados = [];
+    const equipes = new Map();
+    const porEquipe = new Map();
+    for (const i of inscricoes) {
+      const ke = normalizar(i.equipe);
+      if (ke && !equipes.has(ke)) equipes.set(ke, i.equipe);
+      if (i.revezamento || i.semLista) continue;
+      if (!porEquipe.has(ke)) porEquipe.set(ke, new Map());
+      const kn = normalizar(i.nome);
+      const mapa = porEquipe.get(ke);
+      if (!mapa.has(kn)) mapa.set(kn, { rotulo: i.nome, provas: [] });
+      mapa.get(kn).provas.push(i.tituloProva);
+    }
+
+    const lista = [...equipes.entries()];
+    for (let i = 0; i < lista.length; i++) {
+      for (let j = i + 1; j < lista.length; j++) {
+        const motivo = pareceOMesmo(lista[i][1], lista[j][1]);
+        if (!motivo) continue;
+        achados.push({
+          tipo: "EQUIPES QUASE IGUAIS", gravidade: "aviso", motivo,
+          nome: "", equipe: lista[i][1] + " e " + lista[j][1], quantidade: 2,
+          provas: [lista[i][1], lista[j][1]],
+        });
+      }
+    }
+
+    for (const [, mapa] of porEquipe) {
+      const nomes = [...mapa.values()];
+      for (let i = 0; i < nomes.length; i++) {
+        for (let j = i + 1; j < nomes.length; j++) {
+          const motivo = pareceOMesmo(nomes[i].rotulo, nomes[j].rotulo);
+          if (!motivo) continue;
+          achados.push({
+            tipo: "NOMES QUASE IGUAIS", gravidade: "aviso", motivo,
+            nome: nomes[i].rotulo + " e " + nomes[j].rotulo,
+            equipe: "", quantidade: 2,
+            provas: [nomes[i].rotulo + ": " + nomes[i].provas.join(", "),
+                     nomes[j].rotulo + ": " + nomes[j].provas.join(", ")],
+          });
+        }
+      }
+    }
+    return achados;
+  }
+
+  /* ---------------- idade e categoria ----------------
+     Sem o regulamento na mão o app não sabe que ano nasce quem é mirim. O
+     que ele sabe é o que está na planilha: se numa categoria quase todo mundo
+     nasceu em 2012 e 2013, quem nasceu em 2008 está no lugar errado. A conta
+     é essa, e o bloco diz de onde ela saiu.
+  ---------------------------------------------------- */
+
+  function anoDeNascimento(v) {
+    if (v == null || v === "") return null;
+    if (v instanceof Date) return v.getFullYear();
+    const t = String(v).trim();
+    let m = t.match(/(\d{4})\s*$/) || t.match(/^(\d{4})/);
+    if (m) {
+      const ano = parseInt(m[1], 10);
+      return ano >= 1900 && ano <= 2100 ? ano : null;
+    }
+    m = t.match(/\b(\d{2})\b\s*$/);   // 22/09/12
+    if (m) {
+      const n = parseInt(m[1], 10);
+      return n > 30 ? 1900 + n : 2000 + n;
+    }
+    return null;
+  }
+
+  function mediana(v) {
+    const s = v.slice().sort((a, b) => a - b);
+    const meio = Math.floor(s.length / 2);
+    return s.length % 2 ? s[meio] : Math.round((s[meio - 1] + s[meio]) / 2);
+  }
+
+  /** opts: { folga } anos de distância da mediana que ainda passam. */
+  function conferirIdades(inscricoes, opts) {
+    const folga = (opts && opts.folga) || 2;
+    const porCategoria = agrupar(
+      inscricoes.filter((i) => !i.revezamento && !i.semLista &&
+                        anoDeNascimento(i.nascimento) != null),
+      (i) => chaveDeCategoria(i.categoria) || null);
+    const achados = [];
+    for (const [, lista] of porCategoria) {
+      const anos = lista.map((i) => anoDeNascimento(i.nascimento));
+      if (anos.length < 4) continue;          // gente de menos para ter maioria
+      const centro = mediana(anos);
+      const dentro = anos.filter((a) => Math.abs(a - centro) <= folga);
+      if (dentro.length < anos.length * 0.6) continue;   // categoria bagunçada
+      const faixa = [...new Set(dentro)].sort((a, b) => a - b);
+      for (const i of lista) {
+        const ano = anoDeNascimento(i.nascimento);
+        if (Math.abs(ano - centro) <= folga) continue;
+        achados.push({
+          tipo: "IDADE FORA DA CATEGORIA", gravidade: "aviso",
+          nome: i.nome, equipe: i.equipe, categoria: i.categoria,
+          ano, faixa: faixa[0] + (faixa.length > 1 ? " a " + faixa[faixa.length - 1] : ""),
+          quantidade: 1, provas: [i.tituloProva],
+        });
+      }
+    }
+    achados.sort((a, b) => cmpTexto(a.nome, b.nome));
+    return achados;
+  }
+
+  /** O mesmo atleta com duas datas de nascimento diferentes. */
+  function conferirNascimentos(inscricoes) {
+    const porAtleta = agrupar(inscricoes.filter((i) => !i.revezamento), chaveAtleta);
+    const achados = [];
+    for (const [, lista] of porAtleta) {
+      const anos = new Map();
+      for (const i of lista) {
+        const a = anoDeNascimento(i.nascimento);
+        if (a == null) continue;
+        if (!anos.has(a)) anos.set(a, []);
+        anos.get(a).push(i.tituloProva);
+      }
+      if (anos.size < 2) continue;
+      achados.push({
+        tipo: "DUAS DATAS DE NASCIMENTO", gravidade: "critico",
+        nome: lista[0].nome, equipe: lista[0].equipe, quantidade: anos.size,
+        valores: [...anos.keys()].map(String),
+        provas: [...anos.entries()].map(([a, p]) => a + ": " + p.join(", ")),
+      });
+    }
+    return achados;
+  }
+
   /* ---------------- tempo ---------------- */
 
-  // Aceita "1:02.35", "62.35", "1:02:35", "00:31,20"
+  /**
+   * Aceita as formas em que o tempo aparece nas planilhas de verdade:
+   *
+   *   1:02.35   1:02:35   1.02.35   1'02"35     ->  62,35 s
+   *   62.35     62,35     0:31.20                ->  como está escrito
+   *   1:02                                       ->  1 minuto e 2 segundos
+   *
+   * Três grupos de números só podem ser minuto, segundo e centésimo, venham
+   * separados por dois pontos, por ponto ou pelo apóstrofo da natação. Com
+   * dois grupos o separador é que decide: ":" separa minuto de segundo, "."
+   * separa segundo de centésimo. Com um grupo só, são segundos.
+   *
+   * Nada de adivinhar o resto: "1.02" continua sendo 1,02 segundo e "0:00:31"
+   * continua sendo 0,31. Quem aponta esses dois é a conferência de tempo
+   * impossível, que mostra a leitura ao lado da alternativa e deixa o árbitro
+   * escolher, em vez de trocar o tempo dele por conta própria.
+   */
   function lerTempo(v) {
     if (v == null || v === "") return null;
     if (typeof v === "number") return isFinite(v) && v > 0 ? v : null;
-    const t = String(v).trim().replace(",", ".");
+    let t = String(v).trim();
     if (!t || /^[-–—?]+$/.test(t)) return null;
     // 99:99.99 é como os programas de natação escrevem "sem tempo". Lido ao pé
     // da letra viraria uma marca de 100 minutos, e o atleta cairia na série
     // errada em vez de ir para as primeiras, junto com quem não tem tempo.
-    if (/^9{1,2}:9{2}(\.9{1,2})?$/.test(t)) return null;
-    const partes = t.split(":").map((x) => x.trim());
+    if (/^9{1,2}[:.,]9{2}([:.,]9{1,2})?$/.test(t)) return null;
+    // 1'02"35 é 1:02.35 escrito do jeito antigo
+    t = t.replace(/[’']/g, ":").replace(/[”"]/g, ".").replace(/,/g, ".");
+    if (/[^0-9:.\s]/.test(t)) return null;
+    const partes = t.split(/[:.]/).map((x) => x.trim()).filter((x) => x !== "");
+    if (!partes.length || partes.some((x) => !/^\d+$/.test(x))) return null;
     let seg = 0;
-    try {
-      if (partes.length === 1) seg = parseFloat(partes[0]);
-      else if (partes.length === 2) seg = parseInt(partes[0], 10) * 60 + parseFloat(partes[1]);
-      else if (partes.length === 3) {
-        seg = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10) +
-              parseFloat("0." + partes[2].replace(".", ""));
-      } else return null;
-    } catch (e) { return null; }
+    if (partes.length === 1) seg = parseFloat(partes[0]);
+    else if (partes.length === 2) {
+      seg = t.indexOf(":") >= 0
+        ? parseInt(partes[0], 10) * 60 + parseFloat(partes[1])
+        : parseFloat(partes[0] + "." + partes[1]);
+    } else if (partes.length === 3) {
+      seg = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10) +
+            parseFloat("0." + partes[2]);
+    } else return null;
     return isFinite(seg) && seg > 0 ? seg : null;
+  }
+
+  /* ---------------- tempo que não pode estar certo ----------------
+     Um tempo de revezamento com a marca de um atleta só, ou o ponto que
+     alguém esqueceu de digitar, põem o nadador na raia central da última
+     série. O app não conserta sozinho: ele mede a velocidade que aquele
+     tempo daria e, quando o número é impossível, mostra o caso.
+  ------------------------------------------------------------------- */
+
+  // O recorde mundial dos 50m livre dá 2,39 m/s. Acima de 2,6 não existe.
+  const VELOCIDADE_MAXIMA = 2.6;
+  // Folgado de propósito: um 25m de classe baixa passa de dois minutos.
+  const VELOCIDADE_MINIMA = 0.15;
+
+  // "50M" -> 50   "4X50M" -> 200   "100" -> 100
+  function metrosDaProva(distancia) {
+    const m = String(distancia == null ? "" : distancia).toUpperCase()
+      .replace(/\s+/g, "").match(/^(?:(\d+)X)?(\d+)M?$/);
+    if (!m) return 0;
+    return (m[1] ? parseInt(m[1], 10) : 1) * parseInt(m[2], 10);
+  }
+
+  /** null se o tempo cabe na prova; senão { tipo, metros, piso, teto }. */
+  function tempoSuspeito(segundos, distancia) {
+    if (segundos == null || !isFinite(segundos) || segundos <= 0) return null;
+    const metros = metrosDaProva(distancia);
+    if (!metros) return null;
+    const piso = metros / VELOCIDADE_MAXIMA;
+    const teto = metros / VELOCIDADE_MINIMA;
+    if (segundos < piso) return { tipo: "RAPIDO", metros, piso, teto };
+    if (segundos > teto) return { tipo: "LENTO", metros, piso, teto };
+    return null;
+  }
+
+  /**
+   * Outras leituras possíveis do que está escrito, ficando só com as que dão
+   * um tempo plausível para a distância. É o que vira o botão da conferência.
+   */
+  function alternativasDeTempo(texto, distancia) {
+    const t = String(texto == null ? "" : texto).trim()
+      .replace(/[’']/g, ":").replace(/[”"]/g, ".").replace(/,/g, ".");
+    if (!t || /[^0-9:.\s]/.test(t)) return [];
+    const partes = t.split(/[:.]/).map((x) => x.trim()).filter((x) => x !== "");
+    if (partes.some((x) => !/^\d+$/.test(x))) return [];
+    const saida = [];
+    const põe = (seg, como) => {
+      if (seg == null || !isFinite(seg) || seg <= 0) return;
+      if (tempoSuspeito(seg, distancia)) return;
+      if (saida.some((x) => Math.abs(x.segundos - seg) < 0.005)) return;
+      saida.push({ segundos: seg, como });
+    };
+    if (partes.length === 3) {
+      // 0:00:31 é como o Excel escreve 31 segundos numa célula de hora
+      põe(parseInt(partes[0], 10) * 3600 + parseInt(partes[1], 10) * 60 +
+          parseFloat(partes[2]), "hora, minuto e segundo");
+    }
+    if (partes.length === 2 && t.indexOf(":") < 0) {
+      // 1.02 pode ser 1 minuto e 2 segundos escrito com ponto
+      põe(parseInt(partes[0], 10) * 60 + parseFloat(partes[1]),
+          "minuto e segundo");
+    }
+    if (partes.length === 1 && partes[0].length >= 3) {
+      // 3120 é 31.20 sem o ponto
+      const n = partes[0];
+      põe(parseFloat(n.slice(0, -2) + "." + n.slice(-2)), "com o ponto no lugar");
+      if (n.length >= 5) {
+        põe(parseInt(n.slice(0, n.length - 4), 10) * 60 +
+            parseFloat(n.slice(-4, -2) + "." + n.slice(-2)),
+            "minuto, segundo e centésimo");
+      }
+    }
+    return saida;
   }
 
   function formatarTempo(seg) {
@@ -1986,6 +2489,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     REGRAS_PARA, PREFIXO_PROVA, parseClasses, segmentoEfetivo, classificar,
     faixaTexto, normalizar, validar, conferirLimites, conferirCategorias,
     lerTempo, formatarTempo,
+    chaveDeCategoria, chaveAtleta, metrosDaProva,
+    tempoSuspeito, alternativasDeTempo, anoDeNascimento, pareceOMesmo,
+    conferirRevezamentos, conferirPorEquipe, conferirMesmoNome, conferirClasses,
+    conferirNaipes, conferirParecidos, conferirIdades, conferirNascimentos,
   };
 
   if (typeof module !== "undefined" && module.exports) module.exports = api;
@@ -2006,6 +2513,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
                       "EXCESSÃO", "EXCECAO", "EXCEÇÃO", "SEGMENTO"];
 
   const norm = B.normalizar;
+
+  // Uma chave de categoria só no app inteiro, a do núcleo. Quando existiam
+  // duas, uma que tirava o hífen e outra que não, PRÉ-MIRIM "B" e PRE MIRIM B
+  // caíam na mesma prova e mesmo assim o atleta era acusado de estar em duas
+  // categorias ao mesmo tempo.
+  const chaveCategoria = B.chaveDeCategoria;
 
   /* ---------------- reconhecimento de cabeçalhos ---------------- */
 
@@ -2045,6 +2558,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const ignorar = (opts.ignorar || []).map(norm);
     const inscricoes = [];
     const abas = [];
+    const descartadas = [];
 
     for (const nomeAba of wb.SheetNames) {
       if (ignorar.includes(norm(nomeAba))) continue;
@@ -2076,27 +2590,42 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           else if (["EXCESSAO", "EXCESSÃO", "EXCECAO", "EXCEÇÃO"].includes(t)) {
             b.aux.excecao = c;
           } else if (t === "SEGMENTO") b.aux.segmento = c;
+          else if (ROTULOS_LISTA.nascimento.includes(t)) b.aux.nascimento = c;
         }
       });
 
       const info = { aba: nomeAba, provas: blocos.map((b) => b.info), linhas: 0 };
+      const cat = categoriaDaAba(nomeAba);
       for (let r = 1; r < grade.length; r++) {
         const linha = grade[r] || [];
         for (const b of blocos) {
           const bruto = linha[b.col];
-          if (bruto == null || !String(bruto).trim()) continue;
-          const txt = String(bruto).trim();
+          const cel = (c) => c == null ? ""
+            : String(linha[c] == null ? "" : linha[c]).trim();
+          const equipe = cel(b.aux.equipe);
+          const txt = bruto == null ? "" : String(bruto).trim();
+          if (!txt) {
+            // linha com a instituição preenchida e sem nome nenhum ao lado:
+            // no formato em lista isso já era apontado, aqui sumia calado
+            if (equipe || cel(b.aux.tempo)) {
+              descartadas.push({ aba: nomeAba, linha: r + 1, equipe,
+                prova: tituloProva(b.info.distancia, b.info.estilo,
+                                   cat.categoria, cat.naipe || b.info.naipe || ""),
+                motivo: "tem a instituição preenchida mas não tem o nome do atleta" });
+            }
+            continue;
+          }
           if (norm(txt) === "SEM INSCRITOS") continue;
-          const equipe = b.aux.equipe != null ? (linha[b.aux.equipe] || "") : "";
-          const classe = b.aux.classe != null ? (linha[b.aux.classe] || "") : "";
+          const classe = cel(b.aux.classe);
           const tempo = b.aux.tempo != null ? B.lerTempo(linha[b.aux.tempo]) : null;
-          const segmento = b.aux.segmento != null ? (linha[b.aux.segmento] || "") : "";
-          const excecao = b.aux.excecao != null ? (linha[b.aux.excecao] || "") : "";
+          const segmento = cel(b.aux.segmento);
+          const excecao = cel(b.aux.excecao);
 
           const base = {
-            aba: nomeAba, linha: r + 1, equipe: String(equipe).trim(),
-            classe: String(classe).trim(), tempo,
-            segmento: String(segmento).trim(), excecao: String(excecao).trim(),
+            aba: nomeAba, linha: r + 1, equipe,
+            classe, tempo, tempoTexto: cel(b.aux.tempo),
+            nascimento: cel(b.aux.nascimento),
+            segmento, excecao,
             distancia: b.info.distancia, estilo: b.info.estilo,
             misto: b.info.misto, revezamento: b.info.revezamento,
           };
@@ -2114,7 +2643,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       }
       abas.push(info);
     }
-    return { inscricoes, abas };
+    return { inscricoes, abas, descartadas };
   }
 
   /* ---------------- leitura de uma planilha em lista ----------------
@@ -2142,6 +2671,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     tempo: ["TEMPO", "MELHOR TEMPO", "TEMPO DE INSCRICAO", "T INSCRICAO"],
     categoria: ["CATEGORIA", "CAT"],
     excecao: ["EXCESSAO", "EXCECAO", "OBS", "OBSERVACAO", "OBSERVACOES"],
+    // opcional em qualquer competição: é ela que deixa o app conferir se o
+    // atleta está na categoria de idade certa
+    nascimento: ["NASCIMENTO", "DATA DE NASCIMENTO", "DATA NASCIMENTO",
+                 "DT NASCIMENTO", "NASC", "ANO", "ANO DE NASCIMENTO"],
   };
 
   /**
@@ -2220,6 +2753,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const inscricoes = [];
     const abas = [];
     const descartadas = [];
+    const repetidas = [];
 
     for (const nomeAba of wb.SheetNames) {
       if (ignorar.includes(norm(nomeAba))) continue;
@@ -2230,6 +2764,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
       const info = { aba: nomeAba, provas: [], linhas: 0 };
       let bloco = null;
+      const cabecalhosVistos = new Map();
       for (let r = 0; r < grade.length; r++) {
         const linha = grade[r] || [];
         const idx = indicePrimeiraCelula(linha);
@@ -2239,6 +2774,16 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         if (cab) {
           bloco = blocoDaLista(cab, linha, idx);
           info.provas.push(cab);
+          // o mesmo cabeçalho duas vezes junta os dois blocos numa prova só.
+          // Às vezes é de propósito, às vezes é bloco copiado e não trocado
+          const k = chaveProva(cab.distancia, cab.estilo, cab.categoria, cab.naipe);
+          if (cabecalhosVistos.has(k)) {
+            repetidas.push({
+              aba: nomeAba, linha: r + 1, antes: cabecalhosVistos.get(k),
+              prova: tituloProva(cab.distancia, cab.estilo,
+                                 cab.rotulo || cab.categoria, cab.naipe),
+            });
+          } else cabecalhosVistos.set(k, r + 1);
           continue;
         }
         if (!bloco) continue;                        // ainda não começou nenhuma prova
@@ -2254,6 +2799,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           aba: nomeAba, linha: r + 1, equipe,
           classe: val(bloco.aux.classe), segmento: val(bloco.aux.segmento),
           excecao: val(bloco.aux.excecao),
+          nascimento: val(bloco.aux.nascimento),
+          // o tempo como veio escrito, para a conferência poder mostrar a
+          // leitura ao lado do que estava na planilha
+          tempoTexto: val(bloco.aux.tempo),
           tempo: bloco.aux.tempo != null ? B.lerTempo(linha[bloco.aux.tempo]) : null,
           categoria: val(bloco.aux.categoria) || bloco.info.categoria,
           naipe: bloco.info.naipe,
@@ -2290,7 +2839,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       }
       if (info.provas.length) abas.push(info);
     }
-    return { inscricoes, abas, descartadas };
+    return { inscricoes, abas, descartadas, repetidas };
   }
 
   /* ---------------- modelo canônico (uma linha por inscrição) ------- */
@@ -2305,6 +2854,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     segmento: ["SEGMENTO"],
     classe: ["CLASSE", "CLASSIFICACAO", "CLASSIFICAÇÃO"],
     tempo: ["TEMPO", "TEMPO DE INSCRICAO", "MELHOR TEMPO"],
+    nascimento: ["NASCIMENTO", "DATA DE NASCIMENTO", "DATA NASCIMENTO",
+                 "DT NASCIMENTO", "NASC", "ANO", "ANO DE NASCIMENTO"],
   };
 
   function lerPlanilhaLinhas(wb, opts) {
@@ -2342,6 +2893,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         segmento: mapa.segmento ? String(l[mapa.segmento] || "").trim() : "",
         classe: mapa.classe ? String(l[mapa.classe] || "").trim() : "",
         tempo: mapa.tempo ? B.lerTempo(l[mapa.tempo]) : null,
+        tempoTexto: mapa.tempo ? String(l[mapa.tempo] || "").trim() : "",
+        nascimento: mapa.nascimento ? String(l[mapa.nascimento] || "").trim() : "",
         distancia: dist, estilo, misto, revezamento: revez, atletas: null,
       });
     });
@@ -2583,7 +3136,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const revez = /^\d+X/.test(String(dist).toUpperCase());
       const paral = comClasse &&
         (funcional || ehParalimpica(categoria, perfil));
-      const aux = [rotEq];
+      const aux = [rotEq, "NASCIMENTO"];
       if (funcional) aux.push("SEGMENTO");
       if (paral) aux.push("CLASSE");
       aux.push("TEMPO");
@@ -2603,6 +3156,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         exemploNomes.forEach(([nome, equipe], j) => {
           if (!revez) nome = fem ? NOMES_EXEMPLO.FEM[j] : NOMES_EXEMPLO.MASC[j];
           const l = [revez ? equipe : nome, equipe];
+          l.push(revez ? "" : (j === 0 ? "22/09/2012" : "04/03/2013"));
           if (funcional) l.push("DF");
           if (paral) l.push(funcional ? "S6/SB5/SM6" : "TEA");
           l.push(perfil.temTempo ? "31.20" : "");
@@ -2614,7 +3168,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
     const ws = XLSX.utils.aoa_to_sheet(linhas);
     ws["!cols"] = [{ wch: 34 }, { wch: 26 }, { wch: 14 }, { wch: 14 },
-                   { wch: 12 }, { wch: 3 }, { wch: 14 }];
+                   { wch: 14 }, { wch: 12 }, { wch: 3 }, { wch: 14 }];
     XLSX.utils.book_append_sheet(wb, ws, "INSCRIÇÕES");
     XLSX.utils.book_append_sheet(wb, guiaDoModelo(perfil, rotEq, funcional, comClasse),
                                  "COMO PREENCHER");
@@ -2634,6 +3188,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       ["2", "Ao lado do cabeçalho vão os nomes das colunas de apoio: " +
             [rotEq].concat(funcional ? ["SEGMENTO"] : [])
                    .concat(comClasse ? ["CLASSE"] : []).concat(["TEMPO"]).join(", ") + "."],
+      ["", "A ordem delas não importa."],
+      [],
+      ["NASCIMENTO", "Não é obrigatória, mas é a coluna que deixa o app conferir se o"],
+      ["", "atleta está na categoria de idade certa. Sem ela, ninguém confere isso."],
+      ["", "Pode ser 22/09/2012 ou só 2012."],
       [],
       ["3", "Embaixo do cabeçalho, um atleta por linha. Acabou a prova, deixe"],
       ["", "uma linha em branco e comece a próxima."],
@@ -3131,12 +3690,36 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     sequencia.forEach((seq, idx) => {
       const [distancia, estilo, categoria, naipe] = seq.partes;
       const itens = mapa.get(seq.chave) || [];
-      const revez = /^4X/.test(distancia);
+      const revez = /^\d+X/.test(distancia);
       const paral = ehParalimpica(categoria, perfil);
+
+      /* Atleta repetido na mesma prova: fica a primeira inscrição e a
+         repetida sai das raias. Sem isto ele ocupava duas raias e ainda
+         aparecia duas vezes na papeleta.
+         Revezamento não entra: duas equipes da mesma escola na mesma prova
+         são duas equipes de verdade, e quem cuida disso é a conferência. */
+      const repetidos = [];
+      let unicos = itens;
+      if (!revez) {
+        const vistos = new Map();
+        unicos = [];
+        for (const i of itens) {
+          const k = B.chaveAtleta(i);
+          if (vistos.has(k)) {
+            repetidos.push(Object.assign({}, i, {
+              motivo: "já estava inscrito nesta prova" +
+                      (vistos.get(k) ? ", na linha " + vistos.get(k) : ""),
+            }));
+            continue;
+          }
+          vistos.set(k, i.linha || 0);
+          unicos.push(i);
+        }
+      }
 
       // elegibilidade por classe funcional
       const nadam = [], cortados = [];
-      for (const i of itens) {
+      for (const i of unicos) {
         if (paral && perfil.usarRegrasPara) {
           const ev = eventoRegras(distancia, estilo);
           const seg = i.segmento || perfil.segmentoPadrao || "";
@@ -3162,11 +3745,15 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         numero: idx + 1, chave: seq.chave, distancia, estilo, categoria, naipe,
         titulo: tituloProva(distancia, estilo, categoria, naipe),
         doPrograma: seq.doPrograma,
+        // fica sempre, para a conferência saber do que está falando. Já o
+        // aviso é o que sai impresso em vermelho, e some quando o árbitro
+        // diz que leu e vai seguir assim mesmo.
+        foraDoPrograma: !!(programa.length && !seq.doPrograma),
         aviso: (programa.length && !seq.doPrograma)
           ? "esta prova não consta no programa oficial; confira a inscrição"
           : "",
         revezamento: revez, paralimpica: paral, nRaias: raias,
-        series, cortados,
+        series, cortados, repetidos,
         total: nadam.length,
         atletas: series.reduce((s, se) => s + se.linhas.reduce(
           (t, l) => t + (l.item.atletas ? l.item.atletas.length : 1), 0), 0),
@@ -3187,10 +3774,6 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
            ["FEM", "MASC", "MISTO"].indexOf(pb[3]);
   }
 
-  // Compara categorias ignorando aspas e pontuação: PARAL "A" == PARAL A
-  function chaveCategoria(t) {
-    return norm(t).replace(/["'“”‘’.\-–—]/g, "").replace(/\s+/g, " ").trim();
-  }
 
   function grupoDe(categoria, distancia, estilo, perfil) {
     const c = chaveCategoria(categoria);
@@ -3335,6 +3918,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
               nome, equipe: it.equipe, categoria: it.categoria,
               classe: it.classe, tituloProva: p.titulo, prova: p.numero,
               serie: s.numero, raia: l.raia, revezamento: p.revezamento,
+              naipe: p.naipe, distancia: p.distancia,
+              segmento: it.segmento, nascimento: it.nascimento,
+              tempo: it.tempo, tempoTexto: it.tempoTexto,
+              semLista: !!it.semLista, aba: it.aba, linha: it.linha,
             });
           }
         }
@@ -4479,7 +5066,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   const estado = {
     perfil: null, inscricoes: [], abas: [], provas: [], erros: [], limites: [],
-    categorias: [], descartadas: [], arquivo: null,
+    categorias: [], descartadas: [], arquivo: null, planas: [],
+    // o que cada conferência achou na última montagem
+    tempos: [], naipes: [], classes: [], mesmoNome: [], parecidos: [],
+    idades: [], nascimentos: [], porEquipe: [], revezamentos: [],
+    provasRepetidas: [],
     // correções feitas na tela da conferência, sem mexer na planilha:
     // provas tiradas de quem passou do limite, e nomes que faltavam
     ajustes: novosAjustes(),
@@ -4493,7 +5084,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
      que ele leu e decidiu deixar como estão. */
   function novosAjustes() {
     return { removidas: new Set(), nomes: {}, aceitos: new Set(),
-             jaVistos: new Set() };
+             jaVistos: new Set(), tempos: {}, classes: {}, listas: {} };
   }
 
   /* ---------------- perfil ---------------- */
@@ -4505,7 +5096,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       rotuloEquipe: "EQUIPE",
       temPara: false, tipoClasse: "FUNCIONAL", temTempo: false,
       temRevezamento: false, mostrarCategoria: false, categoriasPara: [],
-      limiteInd: "", limiteRev: "", limiteIndPara: "",
+      limiteInd: "", limiteRev: "", limiteIndPara: "", limiteEquipe: "",
       etapas: [], grupos: [], programa: [], programaTexto: "", programaArquivo: "",
       ignorarAbas: ["CASOS ESPECÍFICOS", "LEGENDAS", "COMO PREENCHER"],
       dedupMisto: true,
@@ -4672,6 +5263,22 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return et;
   }
 
+  /* Etapa que volta depois de já ter terminado: 1ª, 2ª, 1ª de novo. Cada
+     volta vira uma faixa nova no PDF, com o mesmo nome, e o árbitro acaba
+     com duas "1ª ETAPA" separadas em vez de uma. */
+  function etapasForaDeOrdem(provas) {
+    const et = etapasDoPrograma(provas);
+    const vistas = new Map();
+    const saida = [];
+    for (const e of et) {
+      const k = B.normalizar(e.nome);
+      if (vistas.has(k)) {
+        saida.push({ nome: e.nome, de: e.de, ate: e.ate, antes: vistas.get(k) });
+      } else vistas.set(k, e.de + " a " + e.ate);
+    }
+    return saida;
+  }
+
   // copia o programa lido para dentro do perfil que está sendo montado
   function adotarPrograma() {
     const prog = estado.programa;
@@ -4808,12 +5415,30 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       return;
     }
 
+    const voltas = etapasForaDeOrdem(r.provas);
+    const trocadas = r.provas.filter((p, i) => p.numero != null && p.numero !== i + 1);
+
     html("resultadoPrograma", `${fichas}
       <p class="nota">Lido de <b>${r.arquivo}</b>, aba <b>${r.aba}</b>,
         formato ${r.formato === "colunas"
           ? "de colunas separadas" : "de prova escrita por extenso"}.
         ${et.length ? `As etapas já foram montadas a partir da coluna ETAPA;
           você pode ajustá-las na próxima tela.` : ""}</p>
+      ${voltas.length ? `<div class="recusa leve">
+        <h3>A coluna ETAPA volta atrás</h3>
+        <p>${voltas.map((v) => `<b>${v.nome}</b> aparece de novo nas provas
+          ${v.de} a ${v.ate}, depois de já ter terminado nas ${v.antes}`)
+          .join("; ")}. Cada volta vira uma faixa separada no PDF, com o mesmo
+          nome. Se as provas eram para estar juntas, junte as linhas na
+          planilha; se são sessões diferentes mesmo, dê nomes diferentes.</p>
+      </div>` : ""}
+      ${trocadas.length ? `<div class="recusa leve">
+        <h3>${trocadas.length} prova(s) com a numeração diferente da ordem</h3>
+        <p>A coluna <b>Nº</b> diz um número e a posição da linha diz outro.
+          Quem manda no balizamento é a ordem das linhas, e é esse número que
+          vai sair impresso. Confira na tabela abaixo, onde a diferença aparece
+          marcada, se não faltou nem sobrou prova no meio.</p>
+      </div>` : ""}
       ${tabelaPrograma(r)}`);
   }
 
@@ -4914,6 +5539,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $("#limiteInd").value = p.limiteInd;
     $("#limiteRev").value = p.limiteRev == null ? "" : p.limiteRev;
     $("#limiteIndPara").value = p.limiteIndPara;
+    if ($("#limiteEquipe"))
+      $("#limiteEquipe").value = p.limiteEquipe == null ? "" : p.limiteEquipe;
     $("#temTempo").checked = !!p.temTempo;
     $("#temRevezamento").checked = !!p.temRevezamento;
     $("#temPara").checked = !!p.temPara;
@@ -5203,6 +5830,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const lr = $("#limiteRev").value.trim();
     p.limiteRev = lr === "" ? null : parseInt(lr, 10);
     p.limiteIndPara = parseInt($("#limiteIndPara").value, 10) || 3;
+    const le = $("#limiteEquipe") ? $("#limiteEquipe").value.trim() : "";
+    p.limiteEquipe = le === "" ? null : parseInt(le, 10);
     p.rotuloEquipe = "EQUIPE";   // o cabeçalho é sempre EQUIPE
     p.temTempo = $("#temTempo").checked;
     p.temRevezamento = $("#temRevezamento").checked;
@@ -5314,12 +5943,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     alvo.innerHTML = "";
     estado.perfil.grupos.forEach((g, k) => {
       const l = document.createElement("div");
-      l.className = "linha-etapa";
+      // sem a classe "grupo" a linha cai na grade das etapas, que tem seis
+      // colunas, e os campos ficam tortos debaixo dos próprios rótulos
+      l.className = "linha-etapa grupo";
       l.innerHTML = `
-        <input value="${AT(g.rotulo)}" data-c="rotulo" placeholder='PARALÍMPICO "A" + "B"' style="flex:2">
-        <input value="${AT((g.categorias || []).join(', '))}" data-c="categorias" placeholder='PARAL "A", PARAL "B"' style="flex:2">
-        <input value="${AT((g.distancias || []).join(', '))}" data-c="distancias" placeholder="25M" style="width:7rem">
-        <input value="${AT((g.estilos || []).join(', '))}" data-c="estilos" placeholder="LIVRE, COSTAS" style="width:10rem">
+        <input value="${AT(g.rotulo)}" data-c="rotulo" placeholder='PARALÍMPICO "A" + "B"'>
+        <input value="${AT((g.categorias || []).join(', '))}" data-c="categorias" placeholder='PARAL "A", PARAL "B"'>
+        <input value="${AT((g.distancias || []).join(', '))}" data-c="distancias" placeholder="25M">
+        <input value="${AT((g.estilos || []).join(', '))}" data-c="estilos" placeholder="LIVRE, COSTAS">
         <button type="button" class="mini" title="remover">×</button>`;
       $$("input", l).forEach((i) => {
         i.oninput = () => {
@@ -5490,6 +6121,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     estado.abas = r.abas;
     estado.arquivo = file.name;
     estado.descartadas = r.descartadas || [];
+    estado.provasRepetidas = r.repetidas || [];
     estado.ajustes = novosAjustes();
 
     const ind = inscricoes.filter((i) => !i.revezamento).length;
@@ -5541,7 +6173,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   /* As inscrições que vão para o balizamento: as lidas da planilha, menos as
      que o árbitro tirou na conferência, mais as que ele completou ali. */
   function inscricoesAjustadas() {
-    const aj = estado.ajustes || { removidas: new Set(), nomes: {} };
+    const aj = estado.ajustes || novosAjustes();
     let lista = estado.inscricoes.filter((i) => !aj.removidas.has(chaveDaLinha(i)));
     for (const [chave, nome] of Object.entries(aj.nomes || {})) {
       if (!String(nome || "").trim()) continue;
@@ -5550,7 +6182,51 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         lista = lista.concat([Object.assign({}, d.base, { nome: nome.trim() })]);
       }
     }
-    return lista;
+    /* As correções da conferência entram aqui, por cima do que foi lido. A
+       planilha do árbitro não é tocada em momento nenhum: se ele recomeçar,
+       tudo volta a ser o que estava escrito nela. */
+    const tempos = aj.tempos || {}, classes = aj.classes || {}, listas = aj.listas || {};
+    return lista.map((i) => {
+      const k = chaveDaLinha(i);
+      const t = tempos[k], c = classes[B.chaveAtleta(i)], l = listas[k];
+      if (t === undefined && !c && !l) return i;
+      const novo = Object.assign({}, i);
+      if (t !== undefined) {
+        novo.tempo = t === null ? null : t;
+        novo.tempoCorrigido = true;
+      }
+      if (c) {
+        if (c.classe) novo.classe = c.classe;
+        if (c.segmento) novo.segmento = c.segmento;
+      }
+      if (l) { novo.atletas = l.slice(); novo.semLista = false; }
+      return novo;
+    });
+  }
+
+  /* Tempo que não cabe na prova: o revezamento com a marca de um atleta só,
+     o ponto que ninguém digitou. Quem decide o que fazer é o árbitro. */
+  function conferirTempos() {
+    const achados = [];
+    for (const p of estado.provas) {
+      for (const s of p.series) {
+        for (const l of s.linhas) {
+          const it = l.item;
+          const r = B.tempoSuspeito(it.tempo, p.distancia);
+          if (!r) continue;
+          achados.push({
+            prova: p.numero, titulo: p.titulo, nome: it.nome, equipe: it.equipe,
+            serie: s.numero, raia: l.raia, tipo: r.tipo, metros: r.metros,
+            piso: r.piso, teto: r.teto, tempo: it.tempo,
+            texto: String(it.tempoTexto || "").trim() || B.formatarTempo(it.tempo),
+            alternativas: B.alternativasDeTempo(
+              String(it.tempoTexto || "").trim() || String(it.tempo), p.distancia),
+            item: it,
+          });
+        }
+      }
+    }
+    return achados;
   }
 
   function montar() {
@@ -5563,6 +6239,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       nomeDe: (i) => i.nome, equipeDe: (i) => i.equipe,
     });
     const planas = D.inscricoesPlanas(estado.provas);
+    estado.planas = planas;
     estado.limites = B.conferirLimites(planas, {
       limiteIndividual: p.limiteInd,
       limiteRevezamento: p.limiteRev,
@@ -5570,20 +6247,64 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     });
     estado.categorias = B.conferirCategorias(planas);
 
+    /* O sexo do atleta não vem na planilha: sai do naipe das provas
+       individuais dele. É só com isso que dá para conferir se o revezamento
+       misto tem dois de cada. */
+    const sexos = new Map();
+    for (const i of planas) {
+      if (i.revezamento || (i.naipe !== "FEM" && i.naipe !== "MASC")) continue;
+      const k = B.chaveAtleta(i);
+      sexos.set(k, sexos.has(k) && sexos.get(k) !== i.naipe ? "" : i.naipe);
+    }
+    estado.mesmoNome = B.conferirMesmoNome(planas);
+    estado.classes = B.conferirClasses(planas);
+    estado.naipes = B.conferirNaipes(planas);
+    estado.parecidos = B.conferirParecidos(planas);
+    estado.idades = B.conferirIdades(planas, {});
+    estado.nascimentos = B.conferirNascimentos(planas);
+    estado.porEquipe = B.conferirPorEquipe(estado.provas, p.limiteEquipe);
+    estado.revezamentos = B.conferirRevezamentos(estado.provas, {
+      sexoDe: (nome, equipe) =>
+        sexos.get(B.normalizar(nome) + "|" + B.normalizar(equipe)) || "",
+    });
+    estado.tempos = conferirTempos();
+
     /* Marca em vermelho, com o motivo escrito, quem o balizamento não deveria
        aceitar do jeito que está: passou do limite de provas, ou aparece em
-       duas categorias de idade ao mesmo tempo. */
+       duas categorias de idade ao mesmo tempo.
+
+       Bloco que o árbitro leu e aceitou não pinta nada. Aceitar é dizer que
+       aquele caso é à parte, autorizado, e já resolvido fora do app: sair em
+       vermelho na piscina depois disso só confunde quem vai ler a folha. */
+    const aceito = (id) => estado.ajustes.aceitos.has(id);
     const marcados = new Map();
     const anotar = (a, motivo) => {
       const k = B.normalizar(a.nome) + "|" + B.normalizar(a.equipe);
       marcados.set(k, marcados.has(k) ? marcados.get(k) + "; " + motivo : motivo);
     };
-    estado.limites.forEach((a) => anotar(a,
-      `${a.quantidade} provas, o limite é ${a.limite}`));
-    estado.categorias.forEach((a) => anotar(a,
-      `inscrito em ${a.categorias.join(" e ")}`));
+    if (!aceito("limites")) {
+      estado.limites.forEach((a) => anotar(a,
+        `${a.quantidade} provas, o limite é ${a.limite}`));
+    }
+    if (!aceito("categorias")) {
+      estado.categorias.forEach((a) => anotar(a,
+        `inscrito em ${a.categorias.join(" e ")}`));
+    }
+    if (!aceito("naipes")) {
+      estado.naipes.forEach((a) => anotar(a, "inscrito nos dois naipes"));
+    }
 
+    /* O vermelho da prova fora do programa some quando o bloco que fala dela
+       foi aceito. São dois blocos diferentes: as que têm dona no programa
+       estão em "provas que o programa junta", as outras em "fora do
+       programa". */
+    estado.propostas = D.propostasDePrograma(estado.provas);
+    const temDona = new Set(estado.propostas.map((x) => x.origem.chave));
     for (const pr of estado.provas) {
+      if (pr.aviso && aceito(temDona.has(pr.chave) ? "juntarPrograma"
+                                                   : "foraPrograma")) {
+        pr.aviso = "";
+      }
       for (const s of pr.series) {
         for (const l of s.linhas) {
           const it = l.item;
@@ -5638,12 +6359,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
        junta A e B numa linha só, ou escreve PARALÍMPICO onde os inscritos
        escrevem PARAL. Elas saem do bloco vermelho de "fora do programa" e vão
        para um bloco próprio, que mostra o casamento e pergunta antes. */
-    const propostas = D.propostasDePrograma(estado.provas);
+    const propostas = estado.propostas || [];
     const comDona = new Set(propostas.map((pr) => pr.origem.chave));
     const vaiReceber = new Set(propostas.map((pr) => pr.destino.chave));
 
+    // usa a marca da montagem, não o aviso: o aviso some quando o árbitro
+    // aceita o bloco, e mesmo assim a lista tem de continuar aqui
     const provasFora = estado.provas.filter(
-      (p) => p.aviso && p.series.length && !comDona.has(p.chave));
+      (p) => p.foraDoPrograma && p.series.length && !comDona.has(p.chave));
     const semLista = [];
     for (const p of estado.provas) {
       for (const s of p.series) {
@@ -5710,7 +6433,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           digitada errada em uma delas.
           <br><br>Assim como está, o atleta sai <b>em vermelho no balizamento</b>,
           com o motivo embaixo do nome, e ocupa raia nas duas provas.`,
-        resolver: () => escolherProvasDoAtleta(estado.categorias, null, true),
+        resolver: () => escolherProvasDoAtleta(estado.categorias, null, "categoria"),
       },
       {
         id: "limites", titulo: "Atletas acima do limite de provas",
@@ -5723,17 +6446,102 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           embaixo do nome, e ocupa raia em todas as provas em que foi inscrito.
           O app não escolhe por você quais cortar.`,
         resolver: () => escolherProvasDoAtleta(estado.limites,
-          estado.perfil.limiteInd, true),
+          estado.perfil.limiteInd, "categoria"),
       },
       {
-        id: "duplicados", titulo: "Raias e duplicidades",
-        nivel: "critico", itens: criticos,
-        explica: `Atleta repetido na mesma prova, ou raia com mais de um
-          nadador. O app ficou com a primeira inscrição e tirou a repetida das
-          raias, então o balizamento já sai certo.
+        id: "duplicados", titulo: "Atleta inscrito duas vezes na mesma prova",
+        nivel: "critico",
+        itens: estado.provas.flatMap((p) => (p.repetidos || []).map((r) => ({
+          prova: p.numero, titulo: p.titulo, nome: r.nome, equipe: r.equipe,
+          detalhe: r.motivo,
+        }))).concat(criticos),
+        explica: `O app ficou com a primeira inscrição e <b>tirou a repetida
+          das raias</b>: ela não ocupa raia, não aparece na papeleta e não
+          conta no limite de provas do atleta.
           <br><br>Confira se as duas linhas eram mesmo da mesma pessoa. Se eram
           duas pessoas de nome parecido, isso só se resolve na planilha,
           escrevendo o nome completo das duas.`,
+      },
+      {
+        id: "tempos", titulo: "Tempos que não podem estar certos",
+        nivel: "critico", itens: estado.tempos.map((t) => ({
+          prova: t.prova, titulo: t.titulo, nome: t.nome, equipe: t.equipe,
+          detalhe: `${t.texto} em ${t.metros}m: ` + (t.tipo === "RAPIDO"
+            ? `mais rápido que o recorde mundial, o mínimo possível seria ${B.formatarTempo(t.piso)}`
+            : `mais lento que o limite de ${B.formatarTempo(t.teto)}`),
+        })),
+        explica: `O tempo manda na raia: o mais rápido vai para o centro da
+          última série. Um revezamento com a marca de um atleta só, ou um
+          ponto que ninguém digitou, jogam o nadador para a raia errada e
+          <b>ninguém percebe olhando o balizamento</b>.
+          <br><br>O app não troca o tempo por conta própria. Ele mostra o que
+          está escrito, o que leu, e a outra leitura possível, quando existe.
+          <br><br>Deixando como está, o tempo continua valendo do jeito que
+          foi lido.`,
+        resolver: () => resolverTempos(estado.tempos),
+      },
+      {
+        id: "naipes", titulo: "Atleta inscrito no feminino e no masculino",
+        nivel: "critico", itens: estado.naipes.map((a) => ({
+          prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
+          detalhe: a.provas.join(" · "),
+        })),
+        explica: `A mesma pessoa não nada as duas coisas. Uma das inscrições
+          foi digitada no naipe errado, ou são dois atletas com o mesmo nome
+          na mesma equipe.
+          <br><br>Assim como está, ele <b>ocupa raia nas duas provas</b>.`,
+        resolver: () => escolherProvasDoAtleta(estado.naipes, null, "naipe"),
+      },
+      {
+        id: "classesDivergentes",
+        titulo: "Atleta com classe diferente entre as provas",
+        nivel: "critico", itens: estado.classes.map((a) => ({
+          prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
+          detalhe: a.provas.join(" · "),
+        })),
+        explica: `A classe do atleta é uma só, e ela decide se ele pode nadar
+          cada prova. Com duas classes escritas na planilha, o app acredita em
+          cada uma na sua prova, e pode <b>cortar o atleta numa e aceitar na
+          outra</b>.
+          <br><br>Escolha a classe certa e ela vale para todas as provas dele.`,
+        resolver: () => resolverClasses(estado.classes),
+      },
+      {
+        id: "nascimentos", titulo: "Atleta com duas datas de nascimento",
+        nivel: "critico", itens: estado.nascimentos.map((a) => ({
+          prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
+          detalhe: a.provas.join(" · "),
+        })),
+        explica: `A mesma pessoa aparece com anos de nascimento diferentes em
+          provas diferentes. Uma das linhas está com a data errada, e é a data
+          que diz se ele está na categoria certa.
+          <br><br>Isso se resolve na planilha: o app não tem como saber qual
+          das duas é a verdadeira.`,
+      },
+      {
+        id: "porEquipe", titulo: "Equipe acima do limite de atletas na prova",
+        nivel: "critico", itens: estado.porEquipe.map((a) => ({
+          prova: a.prova, titulo: a.titulo, nome: "", equipe: a.equipe,
+          detalhe: a.detalhe,
+        })),
+        explica: `Pelo limite que você marcou na tela da competição, esta
+          instituição inscreveu mais atletas nesta prova do que o regulamento
+          deixa. Todos <b>continuam ocupando raia</b>.
+          <br><br>Quem escolhe quem fica é a instituição, não o app.`,
+      },
+      {
+        id: "revezamentoRuim",
+        titulo: "Revezamento com nome faltando ou repetido",
+        nivel: "critico",
+        itens: estado.revezamentos.filter((r) => r.gravidade === "critico")
+          .map((r) => ({ prova: r.prova, titulo: r.titulo, nome: r.nome,
+                         equipe: r.equipe, detalhe: r.detalhe })),
+        explica: `O revezamento tem quatro nadadores. Com três, ou com o mesmo
+          nome escrito duas vezes, a equipe <b>ocupa a raia do mesmo jeito</b>
+          e a papeleta sai com a lista errada.
+          <br><br>Dá para escrever os quatro aqui mesmo.`,
+        resolver: () => escreverNadadoresDoRevezamento(
+          estado.revezamentos.filter((r) => r.gravidade === "critico" && r.item)),
       },
       {
         id: "regulamento", titulo: "Inscrições contra o regulamento",
@@ -5800,6 +6608,88 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           <br><br>Só faz sentido entre categorias vizinhas e do mesmo naipe:
           feminino não nada com masculino.`,
         resolver: () => juntarCategorias(juntaveis),
+      },
+      {
+        id: "idades", titulo: "Idade que não bate com a categoria",
+        nivel: "info", itens: estado.idades.map((a) => ({
+          prova: "", titulo: a.categoria, nome: a.nome, equipe: a.equipe,
+          detalhe: `nasceu em ${a.ano}; nesta categoria a maioria é de ${a.faixa}`,
+        })),
+        explica: `O app não tem o regulamento da competição, então ele não sabe
+          de cor que ano nasce quem é mirim. O que ele faz é olhar a própria
+          planilha: se numa categoria quase todo mundo nasceu em dois anos
+          seguidos, quem está três anos fora chama atenção.
+          <br><br>Pode ser inscrição na categoria errada, pode ser data digitada
+          errada, e pode ser que o regulamento permita mesmo. <b>O balizamento
+          sai normalmente</b>: isto é só para você olhar.`,
+      },
+      {
+        id: "mesmoNome", titulo: "Mesmo nome em duas instituições",
+        nivel: "info", itens: estado.mesmoNome.map((a) => ({
+          prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
+          detalhe: a.provas.join(" · "),
+        })),
+        explica: `Pode ser xará, e aí não há nada a fazer. Se for a mesma
+          pessoa inscrita por duas instituições, saiba que <b>o limite de
+          provas não a alcança</b>: o app conta as provas por nome mais
+          instituição, então ela conta como duas pessoas.`,
+      },
+      {
+        id: "parecidos", titulo: "Nomes quase iguais, pode ser a mesma pessoa",
+        nivel: "info", itens: estado.parecidos.map((a) => ({
+          prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
+          detalhe: a.motivo + ": " + a.provas.join(" · "),
+        })),
+        explica: `Duas escritas parecidas do mesmo nome, ou da mesma
+          instituição. Se forem a mesma pessoa, ela conta como duas: <b>o
+          limite de provas não vale</b> e a inscrição repetida não é vista.
+          <br><br>Isso se conserta na planilha, escrevendo o nome do mesmo
+          jeito nas duas linhas.`,
+      },
+      {
+        id: "revezamentoAviso", titulo: "Avisos dos revezamentos",
+        nivel: "info",
+        itens: estado.revezamentos.filter((r) => r.gravidade !== "critico")
+          .map((r) => ({ prova: r.prova, titulo: r.titulo, nome: r.nome,
+                         equipe: r.equipe, detalhe: r.detalhe })),
+        explica: `Equipe com mais de quatro nomes na célula, duas equipes da
+          mesma instituição na mesma prova, ou misto que não ficou em dois e
+          dois pelas provas individuais dos quatro.
+          <br><br>Nada disso impede: <b>o balizamento sai como está</b>. Duas
+          equipes da mesma instituição são normais em muitas competições;
+          quando for o caso, vale escrever <i>ESCOLA X A</i> e <i>ESCOLA X B</i>
+          na planilha, senão a papeleta sai com o mesmo nome duas vezes.`,
+      },
+      {
+        id: "provasRepetidas", titulo: "Prova escrita duas vezes na planilha",
+        nivel: "info", itens: (estado.provasRepetidas || []).map((r) => ({
+          prova: "", titulo: r.prova, nome: "", equipe: "",
+          detalhe: `cabeçalho na linha ${r.linha}, já tinha aparecido na ${r.antes}`,
+        })),
+        explica: `O mesmo cabeçalho de prova apareceu duas vezes. Os dois
+          blocos <b>foram juntados numa prova só</b>, o que costuma ser o
+          desejado quando a lista foi montada aos pedaços.
+          <br><br>Se um dos dois era para ser outra prova, e ficou o cabeçalho
+          copiado sem trocar, corrija na planilha e envie de novo.`,
+      },
+      {
+        id: "numeracaoPrograma",
+        titulo: "Numeração da planilha do programa não bate com a ordem",
+        nivel: "info", itens: numeracaoTrocada(),
+        explica: `A coluna <b>Nº</b> do programa diz um número e a posição da
+          linha diz outro. Quem manda no balizamento é <b>a ordem das
+          linhas</b>, então é este número que vai sair impresso.
+          <br><br>Quase sempre é prova que faltou ou que sobrou no meio do
+          programa. Confira contra o programa oficial antes de gerar.`,
+      },
+      {
+        id: "avisosClasse", titulo: "Classes deduzidas ou que não entendi",
+        nivel: "info", itens: avisosDeClasse(),
+        explica: `Onde a classe veio abreviada, ou faltando o SB e o SM, o app
+          deduziu pelo segmento e seguiu. Onde ela veio ilegível, ele diz o que
+          estava escrito.
+          <br><br>Nada aqui impede o balizamento: é o registro do que ele
+          entendeu, para você conferir se deduziu certo.`,
       },
       {
         id: "raias", titulo: "Avisos de organização das raias",
@@ -5948,8 +6838,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           voltar a marcar como pendente</button>`;
         $("button", acoes).onclick = () => {
           estado.ajustes.aceitos.delete(s.id);
+          montar();
           renderConferencia();
-          aviso("Bloco voltou para pendente.");
+          aviso("Bloco voltou para pendente e volta a sair em vermelho.");
         };
       };
     }
@@ -5992,8 +6883,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       seguir.textContent = "li e vou seguir assim mesmo";
       seguir.onclick = () => {
         estado.ajustes.aceitos.add(s.id);
+        // remonta: bloco aceito também deixa de sair em vermelho nos arquivos
+        montar();
         renderConferencia();
-        aviso("Anotado. Este bloco não trava mais a geração.");
+        aviso("Anotado. Este bloco não trava a geração nem sai em vermelho.");
       };
       alvo.appendChild(seguir);
     }
@@ -6012,6 +6905,143 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   /* Todo bloco pode ser encerrado por decisão do árbitro. É o que destranca a
      geração quando o problema não tem conserto dentro do app. */
   /* --- resolver: tirar do balizamento a prova que não está no programa --- */
+  /* A coluna Nº do programa contra a posição da linha. Quem manda é a ordem
+     das linhas; este bloco existe para o árbitro conferir contra o programa
+     oficial impresso, onde uma prova a menos desloca todas as seguintes. */
+  function numeracaoTrocada() {
+    const prog = (estado.perfil.programa || []);
+    const saida = [];
+    prog.forEach((p, i) => {
+      if (p.numero == null || p.numero === i + 1) return;
+      saida.push({
+        prova: i + 1,
+        titulo: D.tituloProva(p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe),
+        nome: "", equipe: "",
+        detalhe: `a planilha do programa chama esta prova de ${p.numero}ª`,
+      });
+    });
+    return saida;
+  }
+
+  /* O que o leitor de classe deduziu ou não entendeu. Ficava só na memória. */
+  function avisosDeClasse() {
+    const saida = [];
+    const põe = (p, it) => {
+      const d = it.diagnostico;
+      if (!d || !d.avisos || !d.avisos.length) return;
+      saida.push({
+        prova: p.numero, titulo: p.titulo, nome: it.nome, equipe: it.equipe,
+        detalhe: `"${it.classe || ""}": ` + d.avisos.join("; "),
+      });
+    };
+    for (const p of estado.provas) {
+      for (const s of p.series) for (const l of s.linhas) põe(p, l.item);
+      for (const c of (p.cortados || [])) põe(p, c);
+    }
+    return saida;
+  }
+
+  /* --- resolver: o tempo que não cabe na prova ---
+     Três saídas, e nenhuma delas é o app escolher sozinho: ler de outro
+     jeito, quando existe outra leitura possível; tirar o tempo, e aí o
+     atleta vai para as primeiras séries junto com quem não tem tempo; ou
+     deixar como está. --- */
+  function resolverTempos(lista) {
+    const caixa = document.createElement("div");
+    caixa.className = "correcao-lista";
+    for (const t of lista) {
+      const bloco = document.createElement("div");
+      bloco.className = "correcao-atleta";
+      const limite = t.tipo === "RAPIDO"
+        ? `o mais rápido possível em ${t.metros}m é ${B.formatarTempo(t.piso)}`
+        : `o mais lento que faz sentido em ${t.metros}m é ${B.formatarTempo(t.teto)}`;
+      // em revezamento o nome da linha é a própria equipe: não repete
+      const quem = B.normalizar(t.nome) === B.normalizar(t.equipe)
+        ? "" : CX(t.equipe) + " · ";
+      bloco.innerHTML = `
+        <p class="correcao-titulo"><b>${CX(t.nome)}</b>
+          <span class="apagado">${quem}${t.prova}ª ${t.titulo}</span></p>
+        <p class="nota mono">na planilha&nbsp;&nbsp;${t.texto}</p>
+        <p class="nota mono">o app leu &nbsp;&nbsp;${B.formatarTempo(t.tempo)}</p>
+        <p class="nota">${limite}. Hoje ele está na
+          <b>${t.serie}ª série, raia ${t.raia}</b>.</p>`;
+      const acoes = document.createElement("div");
+      acoes.className = "acoes";
+      for (const alt of t.alternativas) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "botao";
+        b.textContent = `Ler como ${B.formatarTempo(alt.segundos)}`;
+        b.title = alt.como;
+        b.onclick = () => aplicarTempo(t, alt.segundos,
+          `${CX(t.nome)} agora está com ${B.formatarTempo(alt.segundos)}.`);
+        acoes.appendChild(b);
+      }
+      const semTempo = document.createElement("button");
+      semTempo.type = "button";
+      semTempo.className = "botao claro";
+      semTempo.textContent = "Deixar sem tempo";
+      semTempo.onclick = () => aplicarTempo(t, null,
+        `${CX(t.nome)} ficou sem tempo e vai para as primeiras séries.`);
+      acoes.appendChild(semTempo);
+      bloco.appendChild(acoes);
+      caixa.appendChild(bloco);
+    }
+    return caixa;
+  }
+
+  function aplicarTempo(t, segundos, texto) {
+    estado.ajustes.tempos[chaveDaLinha(t.item)] = segundos;
+    montar();
+    renderConferencia();
+    aviso(texto);
+  }
+
+  /* --- resolver: a classe que vale para todas as provas do atleta --- */
+  function resolverClasses(lista) {
+    const caixa = document.createElement("div");
+    caixa.className = "correcao-lista";
+    for (const a of lista) {
+      const bloco = document.createElement("div");
+      bloco.className = "correcao-atleta";
+      const rotulo = a.campo === "classe" ? "classe" : "segmento";
+      bloco.innerHTML = `
+        <p class="correcao-titulo"><b>${CX(a.nome)}</b>
+          <span class="apagado">${CX(a.equipe)}</span></p>
+        <p class="nota">Qual ${rotulo} vale para todas as provas dele?</p>
+        <div class="provas-do-atleta"></div>`;
+      const onde = $(".provas-do-atleta", bloco);
+      const nomeGrupo = "cl" + Math.random().toString(36).slice(2);
+      a.valores.forEach((v, k) => {
+        const rot = document.createElement("label");
+        rot.className = "marcavel";
+        rot.innerHTML = `<input type="radio" name="${nomeGrupo}">
+          <span><b>${CX(v)}</b>
+          <span class="apagado">${(a.provasPorValor || a.provas)[k] || ""}</span></span>`;
+        onde.appendChild(rot);
+      });
+      const acoes = document.createElement("div");
+      acoes.className = "acoes";
+      acoes.innerHTML = `<button type="button" class="botao">
+        Aplicar em todas as provas dele</button>`;
+      $("button", acoes).onclick = () => {
+        const marcados = $$("input", onde);
+        const k = marcados.findIndex((x) => x.checked);
+        if (k < 0) { aviso(`Escolha a ${rotulo} certa antes de aplicar.`); return; }
+        const chave = B.normalizar(a.nome) + "|" + B.normalizar(a.equipe);
+        const antes = estado.ajustes.classes[chave] || {};
+        antes[a.campo] = a.valores[k];
+        estado.ajustes.classes[chave] = antes;
+        montar();
+        renderConferencia();
+        aviso(`${CX(a.nome)} agora é ${CX(a.valores[k])} em todas as provas.`);
+      };
+      bloco.appendChild(acoes);
+      caixa.appendChild(bloco);
+    }
+    return caixa;
+  }
+
   /* --- resolver: casar as provas com as do programa ---
      O palpite fica todo à vista antes de virar decisão: de um lado o que o
      programa escreveu, do outro o que veio nos inscritos, com a conta de
@@ -6119,7 +7149,17 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
      caixa já marcada é uma escolha que ninguém conferiu. Marcar a primeira
      fecha a categoria, porque ninguém nada mirim e infantil na mesma
      competição. --- */
-  function escolherProvasDoAtleta(achados, limite, exigirMesmaCategoria) {
+  function escolherProvasDoAtleta(achados, limite, fecharPor) {
+    // fecharPor: "categoria" ou "naipe". Marcar a primeira prova fecha o
+    // resto: ninguém nada mirim e infantil, nem feminino e masculino.
+    const fecho = (i) => fecharPor === "naipe" ? (i.naipe || "")
+      : fecharPor === "categoria" ? D.chaveCategoria(i.categoria) : null;
+    const nomeDoFecho = fecharPor === "naipe" ? "naipe" : "categoria";
+    const doMesmo = fecharPor === "naipe" ? "do mesmo naipe" : "da mesma categoria";
+    const maisDeUm = fecharPor === "naipe" ? "mais de um naipe"
+                                           : "mais de uma categoria";
+    const rotuloFecho = (i) => fecharPor === "naipe"
+      ? (NAIPE_LONGO[i.naipe] || i.naipe || "") : CX(i.categoria || "");
     const caixa = document.createElement("div");
     caixa.className = "correcao-lista";
     if (!achados.length) return caixa;
@@ -6135,14 +7175,22 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const escolhidas = new Set();
       const bloco = document.createElement("div");
       bloco.className = "correcao-atleta";
+      /* Nada aqui fica travado. O limite e a categoria única são o que o
+         regulamento costuma dizer, e o app diz quando você passa deles, mas
+         quem conhece a competição é você: pode marcar todas se for o caso. */
       bloco.innerHTML = `
         <p class="correcao-titulo"><b>${CX(a.nome)}</b>
           <span class="apagado">${CX(a.equipe)}</span></p>
-        <p class="nota">Marque as provas que ele vai nadar de verdade:
-          até <b>${teto}</b>${exigirMesmaCategoria
-            ? ", todas da <b>mesma categoria</b>" : ""}.</p>
+        <p class="nota">Marque as provas que ele vai nadar de verdade.
+          O previsto é até <b>${teto}</b>${fecharPor
+            ? `, todas <b>${doMesmo}</b>` : ""}, mas a escolha
+          é sua: dá para marcar todas.</p>
         <div class="provas-do-atleta"></div>
-        <p class="nota contagem"></p>`;
+        <p class="nota contagem"></p>
+        <p class="acoes-marcar">
+          <button type="button" class="link" data-todas>marcar todas</button>
+          <button type="button" class="link" data-nenhuma>limpar</button>
+        </p>`;
       const lista = $(".provas-do-atleta", bloco);
 
       const rotulos = minhas.map((i) => {
@@ -6157,27 +7205,24 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       });
 
       const atualizar = () => {
-        const catEscolhida = escolhidas.size
-          ? D.chaveCategoria([...escolhidas][0].categoria) : null;
+        const fechos = new Set([...escolhidas].map(fecho));
         minhas.forEach((i, k) => {
-          const cx = $("input", rotulos[k]);
-          const marcada = escolhidas.has(i);
-          const outraCategoria = exigirMesmaCategoria && catEscolhida &&
-            D.chaveCategoria(i.categoria) !== catEscolhida;
-          const cheio = escolhidas.size >= teto;
-          cx.checked = marcada;
-          cx.disabled = !marcada && (outraCategoria || cheio);
-          rotulos[k].classList.toggle("bloqueada", cx.disabled);
-          rotulos[k].title = cx.disabled
-            ? (outraCategoria ? "outra categoria: escolha uma só"
-                              : `já marcou ${teto} provas`) : "";
+          $("input", rotulos[k]).checked = escolhidas.has(i);
         });
         const alvo = $(".contagem", bloco);
-        alvo.textContent = escolhidas.size
-          ? `${escolhidas.size} de ${teto} marcadas` +
-            (catEscolhida ? `, categoria ${CX([...escolhidas][0].categoria)}` : "")
-          : "nenhuma marcada ainda";
-        alvo.classList.toggle("alerta-inline", !escolhidas.size);
+        const partes = [];
+        if (!escolhidas.size) partes.push("nenhuma marcada ainda");
+        else partes.push(`${escolhidas.size} de ${minhas.length} marcadas`);
+        // avisa, não impede
+        if (escolhidas.size > teto)
+          partes.push(`acima do previsto, que é ${teto}`);
+        if (fecharPor && fechos.size > 1) partes.push("de " + maisDeUm);
+        else if (fecharPor && fechos.size === 1)
+          partes.push(`${nomeDoFecho} ${rotuloFecho([...escolhidas][0])}`);
+        alvo.textContent = partes.join(", ");
+        alvo.classList.toggle("alerta-inline",
+          !escolhidas.size || escolhidas.size > teto ||
+          (fecharPor && fechos.size > 1));
       };
 
       minhas.forEach((i, k) => {
@@ -6187,6 +7232,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           atualizar();
         };
       });
+      $("[data-todas]", bloco).onclick = () => {
+        minhas.forEach((i) => escolhidas.add(i));
+        atualizar();
+      };
+      $("[data-nenhuma]", bloco).onclick = () => {
+        escolhidas.clear();
+        atualizar();
+      };
       atualizar();
 
       const acoes = document.createElement("div");
@@ -6286,9 +7339,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       for (const [item, campo] of campos) {
         const nomes = campo.value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
         if (!nomes.length) continue;
-        // mexe na inscrição original, para o ajuste sobreviver a um remontar
-        const alvo = estado.inscricoes.find((i) => chaveDaLinha(i) === chaveDaLinha(item));
-        if (alvo) { alvo.atletas = nomes; alvo.semLista = false; quantos++; }
+        // fica guardado nos ajustes, junto com o resto do que foi corrigido
+        // na conferência, e some se a planilha for enviada de novo
+        estado.ajustes.listas[chaveDaLinha(item)] = nomes;
+        quantos++;
       }
       montar();
       renderConferencia();
