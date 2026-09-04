@@ -74,7 +74,10 @@
      que ele leu e decidiu deixar como estão. */
   function novosAjustes() {
     return { removidas: new Set(), nomes: {}, aceitos: new Set(),
-             jaVistos: new Set(), tempos: {}, classes: {}, listas: {} };
+             jaVistos: new Set(), tempos: {}, classes: {}, listas: {},
+             // atletas cujas provas o árbitro já escolheu na mão. Se o que
+             // ele escolheu continua furando a regra, é exceção autorizada.
+             decisoes: {} };
   }
 
   /* ---------------- perfil ---------------- */
@@ -1272,16 +1275,18 @@
       const k = B.normalizar(a.nome) + "|" + B.normalizar(a.equipe);
       marcados.set(k, marcados.has(k) ? marcados.get(k) + "; " + motivo : motivo);
     };
+    const decidido = (a) => !!(estado.ajustes.decisoes || {})[B.chaveAtleta(a)];
     if (!aceito("limites")) {
-      estado.limites.forEach((a) => anotar(a,
+      estado.limites.filter((a) => !decidido(a)).forEach((a) => anotar(a,
         `${a.quantidade} provas, o limite é ${a.limite}`));
     }
     if (!aceito("categorias")) {
-      estado.categorias.forEach((a) => anotar(a,
+      estado.categorias.filter((a) => !decidido(a)).forEach((a) => anotar(a,
         `inscrito em ${a.categorias.join(" e ")}`));
     }
     if (!aceito("naipes")) {
-      estado.naipes.forEach((a) => anotar(a, "inscrito nos dois naipes"));
+      estado.naipes.filter((a) => !decidido(a))
+        .forEach((a) => anotar(a, "inscrito nos dois naipes"));
     }
 
     /* O vermelho da prova fora do programa some quando o bloco que fala dela
@@ -1373,6 +1378,19 @@
     // a prova do programa que vai receber gente não está vazia: está esperando
     const semInscritos = estado.provas.filter(
       (p) => !p.series.length && !vaiReceber.has(p.chave));
+
+    /* Atleta cujas provas o árbitro já escolheu na mão sai dos blocos
+       vermelhos. Se o que ele escolheu continua furando a regra, o caso vai
+       para a lista das exceções autorizadas, que fica à vista. */
+    const jaDecidido = (x) => !!(estado.ajustes.decisoes || {})[B.chaveAtleta(x)];
+    const pendentes = (lista) => lista.filter((x) => !jaDecidido(x));
+    const autorizados = []
+      .concat(estado.categorias.filter(jaDecidido)
+        .map((x) => ({ x, oque: "nada " + x.categorias.join(" e ") })))
+      .concat(estado.limites.filter(jaDecidido)
+        .map((x) => ({ x, oque: `nada ${x.quantidade} provas, o limite é ${x.limite}` })))
+      .concat(estado.naipes.filter(jaDecidido)
+        .map((x) => ({ x, oque: "nada nos dois naipes" })));
     const descartadas = (estado.descartadas || [])
       .filter((d) => !String((estado.ajustes.nomes || {})[chaveDaLinha(d)] || "").trim());
     const juntaveis = provasQueDaParaJuntar();
@@ -1414,7 +1432,7 @@
       },
       {
         id: "categorias", titulo: "Atleta em mais de uma categoria",
-        nivel: "critico", itens: estado.categorias.map((a) => ({
+        nivel: "critico", itens: pendentes(estado.categorias).map((a) => ({
           prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
           detalhe: a.categorias.join(" e ") + ": " + a.provas.join(" · "),
         })),
@@ -1423,11 +1441,12 @@
           digitada errada em uma delas.
           <br><br>Assim como está, o atleta sai <b>em vermelho no balizamento</b>,
           com o motivo embaixo do nome, e ocupa raia nas duas provas.`,
-        resolver: () => escolherProvasDoAtleta(estado.categorias, null, "categoria"),
+        resolver: () => escolherProvasDoAtleta(pendentes(estado.categorias),
+          null, "categoria"),
       },
       {
         id: "limites", titulo: "Atletas acima do limite de provas",
-        nivel: "critico", itens: estado.limites.map((a) => ({
+        nivel: "critico", itens: pendentes(estado.limites).map((a) => ({
           prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
           detalhe: `${a.quantidade} provas, o limite é ${a.limite}: ` +
                    a.provas.join(", "),
@@ -1435,7 +1454,7 @@
         explica: `O atleta sai <b>em vermelho no balizamento</b>, com o motivo
           embaixo do nome, e ocupa raia em todas as provas em que foi inscrito.
           O app não escolhe por você quais cortar.`,
-        resolver: () => escolherProvasDoAtleta(estado.limites,
+        resolver: () => escolherProvasDoAtleta(pendentes(estado.limites),
           estado.perfil.limiteInd, "categoria"),
       },
       {
@@ -1472,7 +1491,7 @@
       },
       {
         id: "naipes", titulo: "Atleta inscrito no feminino e no masculino",
-        nivel: "critico", itens: estado.naipes.map((a) => ({
+        nivel: "critico", itens: pendentes(estado.naipes).map((a) => ({
           prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
           detalhe: a.provas.join(" · "),
         })),
@@ -1480,7 +1499,7 @@
           foi digitada no naipe errado, ou são dois atletas com o mesmo nome
           na mesma equipe.
           <br><br>Assim como está, ele <b>ocupa raia nas duas provas</b>.`,
-        resolver: () => escolherProvasDoAtleta(estado.naipes, null, "naipe"),
+        resolver: () => escolherProvasDoAtleta(pendentes(estado.naipes), null, "naipe"),
       },
       {
         id: "classesDivergentes",
@@ -1598,6 +1617,20 @@
           <br><br>Só faz sentido entre categorias vizinhas e do mesmo naipe:
           feminino não nada com masculino.`,
         resolver: () => juntarCategorias(juntaveis),
+      },
+      {
+        id: "autorizados", titulo: "Exceções que você autorizou",
+        nivel: "info", itens: autorizados.map(({ x, oque }) => ({
+          prova: "", titulo: "", nome: x.nome, equipe: x.equipe,
+          detalhe: oque + ", e você escolheu as provas dele na mão",
+        })),
+        explica: `Você abriu o caso, marcou as provas que estes atletas nadam
+          e aplicou. O que ficou continua fora do previsto pelo regulamento, e
+          está assim porque <b>você decidiu</b>.
+          <br><br>Eles <b>não saem em vermelho</b> no balizamento nem nas
+          papeletas, e não travam mais a geração.
+          <br><br>Se foi engano, dá para voltar a apontar o caso.`,
+        resolver: () => desfazerAutorizacoes(autorizados),
       },
       {
         id: "idades", titulo: "Idade que não bate com a categoria",
@@ -1931,6 +1964,33 @@
     return saida;
   }
 
+  /* --- resolver: voltar a apontar um caso que você autorizou --- */
+  function desfazerAutorizacoes(autorizados) {
+    const caixa = document.createElement("div");
+    caixa.className = "correcao-lista";
+    for (const { x, oque } of autorizados) {
+      const bloco = document.createElement("div");
+      bloco.className = "correcao-atleta";
+      bloco.innerHTML = `
+        <p class="correcao-titulo"><b>${CX(x.nome)}</b>
+          <span class="apagado">${CX(x.equipe)}</span></p>
+        <p class="nota">${oque}.</p>`;
+      const acoes = document.createElement("div");
+      acoes.className = "acoes";
+      acoes.innerHTML = `<button type="button" class="botao claro">
+        Voltar a apontar este caso</button>`;
+      $("button", acoes).onclick = () => {
+        delete estado.ajustes.decisoes[B.chaveAtleta(x)];
+        montar();
+        renderConferencia();
+        aviso(`${CX(x.nome)} voltou para os blocos vermelhos.`);
+      };
+      bloco.appendChild(acoes);
+      caixa.appendChild(bloco);
+    }
+    return caixa;
+  }
+
   /* --- resolver: o tempo que não cabe na prova ---
      Três saídas, e nenhuma delas é o app escolher sozinho: ler de outro
      jeito, quando existe outra leitura possível; tirar o tempo, e aí o
@@ -2246,6 +2306,14 @@
           if (escolhidas.has(i)) estado.ajustes.removidas.delete(k);
           else estado.ajustes.removidas.add(k);
         });
+        /* Escolher as provas na mão é decisão tomada, mesmo quando você marca
+           todas e nada é removido. Se o que sobrou continua acima do limite ou
+           em duas categorias, é exceção que você autorizou: o caso sai dos
+           blocos vermelhos, entra na lista das exceções e não sai marcado
+           em vermelho no balizamento. */
+        estado.ajustes.decisoes[B.chaveAtleta(a)] = {
+          nome: a.nome, equipe: a.equipe, quantas: escolhidas.size,
+        };
         montar();
         renderConferencia();
         aviso(`${CX(a.nome)} ficou com ${escolhidas.size} prova(s).`);
