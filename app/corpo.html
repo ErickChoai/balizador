@@ -187,9 +187,6 @@
           <label class="campo">Individuais
             <input id="limiteInd" type="number" min="1" max="20" placeholder="2">
           </label>
-          <label class="campo"><span class="rotulo">Revezamentos <span class="opcional">opcional</span></span>
-            <input id="limiteRev" type="number" min="0" max="20" placeholder="sem limite">
-          </label>
           <label class="campo" id="linhaPara">Individuais no paradesporto
             <input id="limiteIndPara" type="number" min="1" max="20" placeholder="3">
           </label>
@@ -227,14 +224,29 @@
 
       <div class="cartao largo">
         <h3>Alguma categoria nada junto com outra? <span class="opcional">opcional</span></h3>
-        <p class="nota">É o caso do Paralímpico "A" com o "B" nos 25m. Deixe
-          distância e estilo em branco para valer em todas as provas.</p>
+        <p class="nota" id="notaGrupos">Quando duas categorias dividem as mesmas
+          raias, o balizamento tem de sair com uma prova só, no nome que o
+          programa usa. <b>Onde o programa já traz um <code>+</code> no nome da
+          prova, o app faz isso sozinho</b> e você não precisa preencher nada
+          aqui. Este cartão é para o resto: quando você resolve juntar duas
+          categorias que o programa deixou separadas.</p>
+        <div class="exemplo-grupo">
+          <span class="apagado">Exemplo, lendo a linha da esquerda para a direita:</span>
+          <p>a prova <b>PARALÍMPICO "A" + "B"</b> recebe quem estiver inscrito
+            em <b>PARAL A</b> e em <b>PARAL B</b>, só nos <b>25m</b>, em
+            qualquer estilo.</p>
+        </div>
         <div class="cabecalho-lista grupos">
           <span>Nome da prova que sai disso</span><span>Categorias que se juntam</span>
           <span>Só nas distâncias</span><span>Só nos estilos</span><span></span>
         </div>
         <div id="grupos"></div>
+        <p class="nota apagado">Distância e estilo em branco valem para todas as
+          provas. Separe por vírgula para pôr mais de uma.</p>
         <button type="button" class="mini claro" id="addGrupo">adicionar agrupamento</button>
+        <datalist id="listaCategorias"></datalist>
+        <datalist id="listaDistancias"></datalist>
+        <datalist id="listaEstilos"></datalist>
       </div>
 
       <div class="cartao">
@@ -262,11 +274,28 @@
 
     <!-- 3a. o formato exigido -->
     <div id="painelFormato">
-    <h2>Como a planilha de inscritos precisa ser</h2>
-    <p class="sub">Uma planilha só. Você não precisa criar aba nenhuma.
-      A regra é uma: o nome da prova numa linha, e os atletas dela logo embaixo.</p>
+    <h2>Agora os inscritos</h2>
+    <p class="sub">Uma planilha só, sem aba nenhuma: o nome da prova numa linha
+      e os atletas dela logo embaixo.</p>
 
-    <div class="cartao especificacao">
+    <div class="acoes acoes-topo">
+      <button type="button" class="botao" id="btnEntendi">
+        Enviar a minha planilha</button>
+      <button type="button" class="mini claro" id="btnModelo">
+        Baixar a planilha pronta para preencher</button>
+    </div>
+    <p class="nota" id="notaModelo"></p>
+
+    <div class="cartao">
+      <h3>É assim que ela é</h3>
+      <div id="exemploFormato"></div>
+      <div class="acoes">
+        <button type="button" class="mini claro" id="btnDuvidas">
+          Tem dúvida de como o arquivo deve ser?</button>
+      </div>
+    </div>
+
+    <div class="cartao especificacao" id="detalheFormato" hidden>
       <h3>As quatro coisas que ela precisa ter</h3>
       <ol class="regras-formato">
         <li><b>O nome inteiro da prova numa linha.</b> Distância, estilo,
@@ -277,24 +306,17 @@
         <li><b>Embaixo, um atleta por linha.</b></li>
         <li><b>Acabou a prova, pule uma linha</b> e escreva a próxima.</li>
       </ol>
-      <div id="exemploFormato"></div>
       <div id="colunasExigidas"></div>
-      <p class="nota">Revezamento: os 4 nomes vão na mesma célula, um por linha
-        (Alt+Enter no Excel). Se os nadadores só forem escolhidos no dia,
-        escreva apenas a equipe: a raia fica reservada e o balizamento sai com
-        as linhas em branco para anotar na hora.</p>
+      <p class="nota">Revezamento: escreva só o nome da equipe. Quem nada é
+        escolhido no dia da prova, pelo representante, e é a equipe que ocupa
+        a raia, no balizamento e na papeleta.</p>
       <p class="nota">Prova sem ninguém: escreva <code>SEM INSCRITOS</code>
         embaixo do nome dela, ou simplesmente não escreva nada.</p>
-      <div class="acoes">
-        <button type="button" class="botao claro" id="btnModelo">
-          Baixar a planilha pronta para preencher</button>
-      </div>
-      <p class="nota" id="notaModelo"></p>
     </div>
 
     <div class="acoes">
-      <button type="button" class="botao" id="btnEntendi">
-        Entendi, quero enviar a planilha</button>
+      <button type="button" class="botao" id="btnEntendi2">
+        Enviar a minha planilha</button>
     </div>
     </div>
 

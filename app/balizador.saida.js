@@ -35,7 +35,9 @@
   }
 
   function linhaAtleta(prova, perfil, raia, it) {
-    const v = [raia, CX(it.nome), CX(it.equipe)];
+    // no revezamento quem nada é a equipe: o nome dela ocupa a coluna do
+    // nome, e a coluna da equipe fica vazia para não repetir a mesma coisa
+    const v = [raia, CX(it.nome), prova.revezamento ? "" : CX(it.equipe)];
     if (prova.paralimpica && !prova.revezamento) {
       if (perfil.mostrarCategoria) v.push(CX(it.letraCategoria || it.categoria || ""));
       v.push(CX(it.classe));
@@ -43,15 +45,6 @@
     if (perfil.temTempo) v.push(tempoDeInscricao(it));
     v.push("");
     return v;
-  }
-
-  /* Nomes de um revezamento. Quando a equipe se inscreveu sem a lista (os
-     nadadores são escolhidos no dia), devolve quatro linhas em branco, para a
-     raia sair reservada e com espaço de escrever à mão. */
-  function nomesRevezamento(it) {
-    if (it.atletas && it.atletas.length) return it.atletas;
-    if (it.semLista) return ["", "", "", ""];
-    return null;
   }
 
   /* =================== PLANILHA =================== */
@@ -99,25 +92,11 @@
         linhas.push([ORD(s.numero) + " SÉRIE"]);
         for (const l of s.linhas) {
           const it = l.item;
-          const nomesRev = nomesRevezamento(it);
-          if (nomesRev) {
-            const ini = linhas.length;
-            nomesRev.forEach((a) => linhas.push([null, CX(a), null, ""]));
-            const fim = linhas.length - 1;
-            [0, 2, cols.length - 1].forEach((c) =>
-              merges.push({ s: { r: ini, c }, e: { r: fim, c } }));
-            linhas[ini][0] = l.raia;
-            linhas[ini][2] = CX(it.equipe);
-            if (perfil.temTempo) linhas[ini][cols.length - 2] = tempoDeInscricao(it);
-            if (it.semLista) linhas[ini][cols.length - 1] = "LISTA DE ATLETAS PENDENTE";
-            pintar.push({ r: ini, tipo: "raiaRev", ate: fim });
-          } else {
-            pintar.push({ r: linhas.length, tipo: it.marcado ? "vermelho" : "" });
-            const linha = linhaAtleta(p, perfil, l.raia, it);
-            // por que está em vermelho, escrito ao lado e não só na conferência
-            if (it.marcado && it.motivoMarcado) linha.push(CX(it.motivoMarcado));
-            linhas.push(linha);
-          }
+          pintar.push({ r: linhas.length, tipo: it.marcado ? "vermelho" : "" });
+          const linha = linhaAtleta(p, perfil, l.raia, it);
+          // por que está em vermelho, escrito ao lado e não só na conferência
+          if (it.marcado && it.motivoMarcado) linha.push(CX(it.motivoMarcado));
+          linhas.push(linha);
         }
       }
       if (p.cortados && p.cortados.length) {
@@ -432,49 +411,15 @@
 
         for (const l of s.linhas) {
           const it = l.item;
-          const nomesRev = nomesRevezamento(it);
           const colNome = cols.findIndex((c) => c.chave === "nome");
           const largNome = cols[colNome].larg;
-
-          if (nomesRev) {
-            // sem lista sobra espaço embaixo para o aviso não encostar na pauta
-            const alt = Math.max(6, nomesRev.length * 3.6 + (it.semLista ? 5 : 1.6));
-            if (y + alt > RODAPE) { novaPagina(rotuloPagina); desenharColunas(); }
-            doc.setFont("helvetica", "bold").setFontSize(9);
-            escreverCelula(doc, cols, 0, String(l.raia), y + alt / 2 + 1);
-            doc.setFont("helvetica", "normal").setFontSize(7.5);
-            nomesRev.forEach((a, k) => {
-              const ly = y + 3.6 + k * 3.6;
-              if (a) doc.text(CX(a), xDaColuna(cols, colNome) + 1.5, ly);
-              else {   // sem lista: pauta para escrever o nome no dia da prova
-                doc.setDrawColor(170).setLineWidth(0.1);
-                doc.line(xDaColuna(cols, colNome) + 1.5, ly + 0.6,
-                         xDaColuna(cols, colNome) + largNome - 3, ly + 0.6);
-              }
-            });
-            doc.setFont("helvetica", "bold").setFontSize(8);
-            cols.forEach((c, k) => {
-              if (c.chave === "equipe")
-                escreverCelula(doc, cols, k, CX(it.equipe), y + alt / 2 + 1);
-              if (c.chave === "tempo")
-                escreverCelula(doc, cols, k, tempoDeInscricao(it), y + alt / 2 + 1);
-            });
-            if (it.semLista) {
-              doc.setFont("helvetica", "italic").setFontSize(5.8).setTextColor(150);
-              doc.text("lista de atletas pendente",
-                       xDaColuna(cols, colNome) + 1.5, y + alt - 0.4);
-              doc.setTextColor(0);
-            }
-            linhaDeBase(doc, y + alt);
-            y += alt;
-            continue;
-          }
 
           doc.setFont("helvetica", "bold").setFontSize(8);
           const partesNome = doc.splitTextToSize(CX(it.nome), largNome - 3);
           const colEq = cols.findIndex((c) => c.chave === "equipe");
           doc.setFont("helvetica", "normal");
-          const partesEq = doc.splitTextToSize(CX(it.equipe), cols[colEq].larg - 3);
+          const partesEq = doc.splitTextToSize(
+            p.revezamento ? "" : CX(it.equipe), cols[colEq].larg - 3);
           const motivo = it.marcado && it.motivoMarcado ? it.motivoMarcado : "";
           const alt = Math.max(5.2, 1.6 + Math.max(partesNome.length,
                                                    partesEq.length) * 3.4) +
@@ -564,17 +509,17 @@
       for (const s of p.series) {
         for (const l of s.linhas) {
           const it = l.item;
-          const nomes = it.atletas && it.atletas.length ? it.atletas : [it.nome];
-          for (const nome of nomes) {
-            cartoes.push({
-              prova: p.numero, titulo: p.titulo, serie: s.numero, raia: l.raia,
-              nome, equipe: it.equipe,
-              tempo: perfil.temTempo ? tempoDeInscricao(it) : "",
-              categoria: p.paralimpica ? (it.letraCategoria || it.categoria || "") : null,
-              classe: p.paralimpica ? it.classe : "",
-              revezamento: p.revezamento,
-            });
-          }
+          // uma papeleta por raia. No revezamento a raia é da equipe: quem
+          // nada só é escolhido no dia, e não é o app que decide isso
+          cartoes.push({
+            prova: p.numero, titulo: p.titulo, serie: s.numero, raia: l.raia,
+            nome: it.nome, equipe: it.equipe,
+            tempo: perfil.temTempo ? tempoDeInscricao(it) : "",
+            categoria: p.paralimpica && !p.revezamento
+              ? (it.letraCategoria || it.categoria || "") : null,
+            classe: p.paralimpica && !p.revezamento ? it.classe : "",
+            revezamento: p.revezamento,
+          });
         }
       }
     }
@@ -627,9 +572,12 @@
     y += tam * 0.42;
     doc.text(CX(d.nome), x0, y);
 
-    ajustar(doc, CX(d.equipe), 8.5, 5.5, larg);
-    y += 4.6;
-    doc.text(CX(d.equipe), x0, y);
+    // no revezamento o nome já é a equipe: não escreve duas vezes
+    if (B.normalizar(d.nome) !== B.normalizar(d.equipe)) {
+      ajustar(doc, CX(d.equipe), 8.5, 5.5, larg);
+      y += 4.6;
+      doc.text(CX(d.equipe), x0, y);
+    }
 
     doc.setFont("helvetica", "bold").setFontSize(8.5);
     y += 5.6;

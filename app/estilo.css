@@ -1,4 +1,8 @@
 :root{
+  /* diz ao navegador em que tema ele está: é isto que faz o calendário do
+     campo de data abrir claro no claro e escuro no escuro, com o ícone
+     visível. Sem isto o ícone sai preto no fundo preto. */
+  color-scheme:light;
   --fundo:#F4F7F8; --papel:#FFFFFF; --papel2:#EBF2F4;
   --tinta:#0F2027; --suave:#587280; --linha:#D7E3E7;
   --agua:#0B7285; --agua-fraca:#DEF0F2;
@@ -9,6 +13,7 @@
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
+    color-scheme:dark;
     --fundo:#091115; --papel:#0F1B21; --papel2:#16252C;
     --tinta:#E3ECEF; --suave:#8DA5B0; --linha:#1E323A;
     --agua:#45B8C6; --agua-fraca:#0D2C34;
@@ -19,6 +24,7 @@
   }
 }
 :root[data-theme="dark"]{
+  color-scheme:dark;
   --fundo:#091115; --papel:#0F1B21; --papel2:#16252C;
   --tinta:#E3ECEF; --suave:#8DA5B0; --linha:#1E323A;
   --agua:#45B8C6; --agua-fraca:#0D2C34;
@@ -282,6 +288,14 @@ input.pendente,select.pendente,textarea.pendente{
 .recusa p{font-size:1rem;max-width:74ch;line-height:1.5}
 .recusa.leve{background:var(--ambar-fraca);border-color:var(--ambar)}
 .recusa.leve h3{color:var(--ambar)}
+/* a mesma caixa, mas para perguntar em vez de recusar */
+.recusa.pergunta{background:var(--agua-fraca);border-color:var(--agua)}
+.recusa.pergunta h3{color:var(--agua)}
+.recusa.pergunta .juncao{
+  display:grid;grid-template-columns:auto 1fr;gap:.3rem 1.2rem;
+  font-size:1rem;margin:.2rem 0;
+}
+.recusa.pergunta .juncao b{white-space:nowrap}
 
 /* ---------- fichas e tabelas ---------- */
 .fichas{display:grid;gap:.6rem;margin-bottom:1rem;
@@ -661,3 +675,14 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
   .campos:has(> .campo:only-child) > .campo{max-width:46rem}
   .cartao > .previa{clear:both}
 }
+
+/* o exemplo que ensina a ler a linha do agrupamento */
+.exemplo-grupo{
+  background:var(--papel2);border-radius:6px;padding:.7rem .9rem;
+  display:flex;flex-direction:column;gap:.2rem;
+}
+.exemplo-grupo span{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em}
+.exemplo-grupo p{font-size:1rem;line-height:1.5}
+
+/* o botão que importa fica no alto, antes de qualquer explicação */
+.acoes-topo{margin-bottom:.4rem;align-items:center}

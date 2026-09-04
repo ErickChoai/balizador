@@ -419,10 +419,9 @@
     const limiteDe = opts.limiteDe || (() => limiteInd);
     const porAtleta = new Map();
     for (const i of inscricoes) {
-      // revezamento inscrito só com a equipe: quem aparece na linha é a
-      // escola, não um atleta. Contá-la faria a escola passar do limite de
-      // revezamentos sozinha, sem ter inscrito ninguém duas vezes.
-      if (i.semLista) continue;
+      // no revezamento quem nada é a equipe, e os nadadores só são
+      // escolhidos no dia: não há atleta para contar aqui
+      if (i.revezamento || i.semLista) continue;
       const k = normalizar(i.nome) + "|" + normalizar(i.equipe);
       if (!porAtleta.has(k)) porAtleta.set(k, { ind: [], rev: [], ref: i });
       (i.revezamento ? porAtleta.get(k).rev : porAtleta.get(k).ind).push(i);
@@ -506,9 +505,11 @@
   ------------------------------------------------ */
 
   /**
-   * opts: { sexoDe(nome, equipe) -> "FEM" | "MASC" | "" }
-   * O sexo não vem da planilha: sai das provas individuais do próprio atleta,
-   * e por isso o misto só é conferido quando os quatro são conhecidos.
+   * Quem nada o revezamento é a equipe. Os quatro nomes só são escolhidos no
+   * dia da prova, pelo representante, e por isso o que vier escrito na
+   * planilha não é conferido: seria apontar erro em rascunho.
+   * O que sobra para conferir é a raia: duas equipes da mesma instituição na
+   * mesma prova ocupam duas raias e saem com o mesmo nome na papeleta.
    */
   function conferirRevezamentos(provas, opts) {
     opts = opts || {};
@@ -523,44 +524,6 @@
           const ke = normalizar(it.equipe);
           if (!equipes.has(ke)) equipes.set(ke, { rotulo: it.equipe, n: 0 });
           equipes.get(ke).n++;
-          const nomes = (it.atletas || []).filter((n) => String(n).trim());
-          if (it.semLista || !nomes.length) continue;
-
-          if (nomes.length !== 4) {
-            achados.push({
-              tipo: nomes.length < 4 ? "REVEZAMENTO INCOMPLETO"
-                                     : "REVEZAMENTO COM GENTE DEMAIS",
-              gravidade: nomes.length < 4 ? "critico" : "aviso",
-              prova: p.numero, titulo: p.titulo, nome: "", equipe: it.equipe,
-              detalhe: `${nomes.length} nome(s) na célula, o revezamento tem 4`,
-              item: it,
-            });
-          }
-          const vistos = new Map();
-          for (const n of nomes) {
-            const k = normalizar(n);
-            if (vistos.has(k)) {
-              achados.push({
-                tipo: "NADADOR REPETIDO NO REVEZAMENTO", gravidade: "critico",
-                prova: p.numero, titulo: p.titulo, nome: n, equipe: it.equipe,
-                detalhe: "escrito duas vezes na mesma equipe", item: it,
-              });
-            } else vistos.set(k, true);
-          }
-          if (p.naipe === "MISTO" && nomes.length === 4) {
-            const sexos = nomes.map((n) => sexoDe(n, it.equipe));
-            if (sexos.every((s) => s === "FEM" || s === "MASC")) {
-              const f = sexos.filter((s) => s === "FEM").length;
-              if (f !== 2) {
-                achados.push({
-                  tipo: "MISTO FORA DE DOIS E DOIS", gravidade: "aviso",
-                  prova: p.numero, titulo: p.titulo, nome: "", equipe: it.equipe,
-                  detalhe: `${f} do feminino e ${4 - f} do masculino, ` +
-                           "pelas provas individuais deles", item: it,
-                });
-              }
-            }
-          }
         }
       }
       for (const [, v] of equipes) {

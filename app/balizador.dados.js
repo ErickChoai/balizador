@@ -659,7 +659,8 @@
           if (funcional) l.push("DF");
           if (paral) l.push(funcional ? "S6/SB5/SM6" : "TEA");
           l.push(perfil.temTempo ? "31.20" : "");
-          linhas.push(revez ? [equipe, equipe].concat(l.slice(2)) : l);
+          // no revezamento a coluna do nome fica vazia: quem nada é a equipe
+          linhas.push(revez ? [""].concat(l.slice(1)) : l);
         });
       }
       linhas.push([]);
@@ -696,9 +697,9 @@
       ["3", "Embaixo do cabeçalho, um atleta por linha. Acabou a prova, deixe"],
       ["", "uma linha em branco e comece a próxima."],
       [],
-      ["4", "Revezamento: os 4 nomes na mesma célula, um por linha (Alt+Enter)."],
-      ["", "Se os nadadores só forem escolhidos no dia, escreva apenas a equipe:"],
-      ["", "a raia fica reservada e o balizamento sai com linhas em branco."],
+      ["4", "Revezamento: escreva só o nome da equipe, na coluna EQUIPE, e deixe"],
+      ["", "a coluna do nome em branco. Quem nada é escolhido no dia da prova,"],
+      ["", "pelo representante, e é a equipe que ocupa a raia."],
       [],
       ["5", "Prova sem ninguém: escreva SEM INSCRITOS embaixo do cabeçalho,"],
       ["", "ou simplesmente não escreva nada."],
@@ -1134,9 +1135,12 @@
   function montarBalizamento(inscricoes, perfil) {
     const raias = perfil.raias || 6;
     const regra = perfil.regraSerie || B.MENOS_SERIES;
+    const programa = perfil.programa || [];
 
     // categoria e naipe de cada inscrição
     for (const i of inscricoes) {
+      i.categoriaOriginal = "";
+      i.juntadaPeloPrograma = "";
       // na lista vertical o cabeçalho da prova já disse tudo; só o formato de
       // blocos lado a lado precisa tirar categoria e naipe do nome da aba
       if (!i.categoriaDefinida && (!i.categoria || !i.naipe)) {
@@ -1146,6 +1150,41 @@
       }
       if (i.misto) i.naipe = "MISTO";
       i.categoriaProva = grupoDe(i.categoria, i.distancia, i.estilo, perfil);
+    }
+
+    /* O programa é quem manda, inclusive quando ele junta categorias numa
+       linha só. "PARALÍMPICO A + B" quer dizer que A e B nadam juntas nesta
+       prova, então PARAL A e PARAL B caem direto ali, sem ninguém precisar
+       dizer nada. A letra tem de ser a mesma, sempre; só a palavra pode
+       estar abreviada, e é aí que mora o palpite. */
+    if (programa.length && perfil.juntarPrograma !== false) {
+      const noPrograma = new Set(programa.map((p) =>
+        chaveProva(p.distancia, p.estilo, p.categoria, p.naipe)));
+      const candidatas = new Map();
+      for (const p of programa) {
+        const k = [p.distancia, p.estilo, p.naipe].join("|");
+        if (!candidatas.has(k)) candidatas.set(k, []);
+        candidatas.get(k).push(p);
+      }
+      for (const i of inscricoes) {
+        const k = chaveProva(i.distancia, i.estilo, i.categoriaProva, i.naipe);
+        if (noPrograma.has(k)) continue;
+        const ki = chaveCategoria(i.categoriaProva);
+        let achada = null, como = "";
+        for (const p of (candidatas.get([i.distancia, i.estilo, i.naipe].join("|")) || [])) {
+          for (const parte of partesDaCategoria(p.categoria)) {
+            const tipo = casaCategoria(ki, parte);
+            if (!tipo) continue;
+            if (tipo === "exato") { achada = p; como = tipo; break; }
+            if (!achada) { achada = p; como = tipo; }
+          }
+          if (como === "exato") break;
+        }
+        if (!achada) continue;
+        i.categoriaOriginal = i.categoriaProva;
+        i.categoriaProva = achada.rotulo || achada.categoria;
+        i.juntadaPeloPrograma = como;
+      }
     }
 
     // agrupa em provas, com a chave já normalizada
@@ -1162,7 +1201,6 @@
 
     // a ordem oficial vem do programa; sem programa, cai numa ordem natural
     let sequencia;
-    const programa = perfil.programa || [];
     if (programa.length) {
       sequencia = programa.map((p) => ({
         chave: chaveProva(p.distancia, p.estilo, p.categoria, p.naipe),
@@ -1216,6 +1254,17 @@
         }
       }
 
+      // de onde veio quem o programa mandou juntar nesta prova
+      const casadas = [];
+      for (const i of itens) {
+        if (!i.juntadaPeloPrograma || !i.categoriaOriginal) continue;
+        const c = casadas.find((x) => chaveCategoria(x.categoria) ===
+                                      chaveCategoria(i.categoriaOriginal));
+        if (c) c.quantos++;
+        else casadas.push({ categoria: i.categoriaOriginal, quantos: 1,
+                            como: i.juntadaPeloPrograma });
+      }
+
       // elegibilidade por classe funcional
       const nadam = [], cortados = [];
       for (const i of unicos) {
@@ -1252,10 +1301,13 @@
           ? "esta prova não consta no programa oficial; confira a inscrição"
           : "",
         revezamento: revez, paralimpica: paral, nRaias: raias,
-        series, cortados, repetidos,
+        series, cortados, repetidos, casadas,
         total: nadam.length,
-        atletas: series.reduce((s, se) => s + se.linhas.reduce(
-          (t, l) => t + (l.item.atletas ? l.item.atletas.length : 1), 0), 0),
+        // no revezamento quem ocupa a raia é a equipe, e os nadadores só são
+        // escolhidos no dia: o que se conta aqui são as equipes
+        atletas: series.reduce((s, se) => s + (revez ? se.linhas.length
+          : se.linhas.reduce((t, l) => t + (l.item.atletas
+            ? l.item.atletas.length : 1), 0)), 0),
       });
     });
     return provas;
@@ -1411,7 +1463,10 @@
       for (const s of p.series) {
         for (const l of s.linhas) {
           const it = l.item;
-          const nomes = it.atletas && it.atletas.length ? it.atletas : [it.nome];
+          // no revezamento a linha é da equipe: os quatro nomes que vierem
+          // escritos são rascunho, quem nada só é definido no dia da prova
+          const nomes = !p.revezamento && it.atletas && it.atletas.length
+            ? it.atletas : [it.nome];
           for (const nome of nomes) {
             saida.push({
               nome, equipe: it.equipe, categoria: it.categoria,

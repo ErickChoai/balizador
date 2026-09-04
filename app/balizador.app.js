@@ -22,7 +22,7 @@
                  "(S/SB/SM). O app valida cada inscrição contra o mapa de provas.",
       exige: ["nome", "cidade", "segmento", "classe"],
       usarRegrasPara: true, mostrarCategoria: false,
-      limiteInd: 5, limiteRev: null,
+      limiteInd: 5,
       categoriasPara: ["DF", "DV", "DI", "DA", "TEA"],
     },
     ESCOLAR: {
@@ -31,7 +31,7 @@
                  "define a prova; não há classe funcional.",
       exige: ["nome", "escola", "categoria"],
       usarRegrasPara: false, mostrarCategoria: false,
-      limiteInd: 2, limiteRev: 2,
+      limiteInd: 2,
       categoriasPara: [],
     },
     ESCOLAR_PARA: {
@@ -40,7 +40,7 @@
                  "mesmo evento, com classe funcional só nas provas paralímpicas.",
       exige: ["nome", "escola", "categoria", "classe (só nas paralímpicas)"],
       usarRegrasPara: false, mostrarCategoria: true,
-      limiteInd: 2, limiteRev: 2,
+      limiteInd: 2,
       categoriasPara: ["PARAL"],
     },
     TEMPO: {
@@ -49,7 +49,7 @@
                  "o balizamento é por desempenho.",
       exige: ["nome", "equipe", "categoria", "tempo"],
       usarRegrasPara: false, mostrarCategoria: false,
-      limiteInd: 5, limiteRev: 2,
+      limiteInd: 5,
       categoriasPara: [],
     },
   };
@@ -74,7 +74,7 @@
      que ele leu e decidiu deixar como estão. */
   function novosAjustes() {
     return { removidas: new Set(), nomes: {}, aceitos: new Set(),
-             jaVistos: new Set(), tempos: {}, classes: {}, listas: {},
+             jaVistos: new Set(), tempos: {}, classes: {},
              // atletas cujas provas o árbitro já escolheu na mão. Se o que
              // ele escolheu continua furando a regra, é exceção autorizada.
              decisoes: {} };
@@ -89,7 +89,8 @@
       rotuloEquipe: "EQUIPE",
       temPara: false, tipoClasse: "FUNCIONAL", temTempo: false,
       temRevezamento: false, mostrarCategoria: false, categoriasPara: [],
-      limiteInd: "", limiteRev: "", limiteIndPara: "", limiteEquipe: "",
+      limiteInd: "", limiteIndPara: "", limiteEquipe: "",
+      juntarPrograma: true,
       etapas: [], grupos: [], programa: [], programaTexto: "", programaArquivo: "",
       ignorarAbas: ["CASOS ESPECÍFICOS", "LEGENDAS", "COMO PREENCHER"],
       dedupMisto: true,
@@ -117,6 +118,8 @@
   function irPara(passo) {
     $$(".passo").forEach((p) => p.classList.toggle("ativo", p.dataset.passo === passo));
     $$(".tela").forEach((t) => (t.hidden = t.dataset.tela !== passo));
+    // as listas dos agrupamentos saem do programa, que pode ter chegado agora
+    if (passo === "competicao") preencherListasDoPrograma();
     if (passo === "inscritos") mostrarPainel("formato");
     if (passo === "conferencia") renderConferencia();
     if (passo === "gerar") renderGerar();
@@ -410,8 +413,30 @@
 
     const voltas = etapasForaDeOrdem(r.provas);
     const trocadas = r.provas.filter((p, i) => p.numero != null && p.numero !== i + 1);
+    const juncoes = juncoesDoPrograma(r.provas);
+    const juntar = estado.perfil.juntarPrograma !== false;
 
     html("resultadoPrograma", `${fichas}
+      ${juncoes.length ? `<div class="recusa pergunta" id="cartaoJuncoes">
+        <h3>Este programa manda categorias nadarem juntas</h3>
+        <p>Onde o nome da prova traz um <b>+</b>, o programa está dizendo que
+          aquelas categorias dividem as mesmas raias. Posso já jogar os
+          inscritos de cada uma na prova certa, mesmo que na planilha de
+          inscritos elas venham separadas e com o nome abreviado.</p>
+        <div class="juncao">${juncoes.map((j) => `
+          <b>${j.categoria}</b>
+          <span class="apagado">junta ${j.partes.length} categorias, em
+            ${j.provas.length} prova(s): ${j.distancias.join(", ").toLowerCase()}</span>`).join("")}
+        </div>
+        <p class="nota" id="notaJuncoes">${juntar
+          ? "Vou juntar sozinho. A conferência mostra depois o que casou com o quê."
+          : "Não vou juntar nada: cada caso vai ser perguntado na conferência."}</p>
+        <div class="acoes">
+          <button type="button" class="botao" id="btnJuntarSim">Pode juntar</button>
+          <button type="button" class="mini claro" id="btnJuntarNao">
+            Prefiro conferir uma por uma</button>
+        </div>
+      </div>` : ""}
       <p class="nota">Lido de <b>${r.arquivo}</b>, aba <b>${r.aba}</b>,
         formato ${r.formato === "colunas"
           ? "de colunas separadas" : "de prova escrita por extenso"}.
@@ -433,6 +458,20 @@
           marcada, se não faltou nem sobrou prova no meio.</p>
       </div>` : ""}
       ${tabelaPrograma(r)}`);
+
+    const marcarJuncao = (valor) => {
+      estado.perfil.juntarPrograma = valor;
+      const nota = $("#notaJuncoes");
+      if (nota) {
+        nota.textContent = valor
+          ? "Vou juntar sozinho. A conferência mostra depois o que casou com o quê."
+          : "Não vou juntar nada: cada caso vai ser perguntado na conferência.";
+      }
+      aviso(valor ? "Certo, junto sozinho pelo programa."
+                  : "Certo, pergunto caso a caso na conferência.");
+    };
+    ao("btnJuntarSim", "click", () => marcarJuncao(true));
+    ao("btnJuntarNao", "click", () => marcarJuncao(false));
   }
 
   function tabelaLinhasRuins(ruins) {
@@ -486,23 +525,23 @@
   const ATALHOS = {
     PARA: { temPara: true, tipoClasse: "FUNCIONAL",
             temTempo: false, temRevezamento: false, mostrarCategoria: false,
-            limiteInd: 5, limiteRev: null,
+            limiteInd: 5,
             limiteIndPara: 5, categoriasPara: ["DF", "DV", "DI", "DA", "TEA"] },
     ESCOLAR: { temPara: false, temTempo: false,
                temRevezamento: true, mostrarCategoria: false,
-               limiteInd: 2, limiteRev: 2,
+               limiteInd: 2,
                limiteIndPara: 3, categoriasPara: [] },
     ESCOLAR_PARA: { temPara: true, tipoClasse: "CONDICAO",
                     temTempo: false, temRevezamento: true, mostrarCategoria: true,
-                    limiteInd: 2, limiteRev: 2,
+                    limiteInd: 2,
                     limiteIndPara: 3, categoriasPara: ["PARAL"] },
     TEMPO: { temPara: false, temTempo: true,
              temRevezamento: true, mostrarCategoria: false,
-             limiteInd: 5, limiteRev: 2,
+             limiteInd: 5,
              limiteIndPara: 5, categoriasPara: [] },
     VAZIO: { temPara: false, temTempo: false,
              temRevezamento: false, mostrarCategoria: false,
-             limiteInd: "", limiteRev: "",
+             limiteInd: "",
              limiteIndPara: "", raias: "", categoriasPara: [] },
   };
 
@@ -530,7 +569,6 @@
     $("#piscina").value = p.piscina || "";
     $("#raias").value = p.raias;
     $("#limiteInd").value = p.limiteInd;
-    $("#limiteRev").value = p.limiteRev == null ? "" : p.limiteRev;
     $("#limiteIndPara").value = p.limiteIndPara;
     if ($("#limiteEquipe"))
       $("#limiteEquipe").value = p.limiteEquipe == null ? "" : p.limiteEquipe;
@@ -589,7 +627,7 @@
 
     const doPrograma = (p.programa || []).length;
     const cabecalhos = doPrograma
-      ? p.programa.slice(0, 3).map((x) => D.cabecalhoDeProva(
+      ? p.programa.slice(0, 2).map((x) => D.cabecalhoDeProva(
           x.distancia, x.estilo, x.rotulo || x.categoria, x.naipe))
       : (() => {
           const cat = funcional ? "DF" : "MIRIM";
@@ -604,8 +642,8 @@
       linhas.push({ tipo: "prova", vals: [cab].concat(cols) });
       const revez = /^\s*\d+\s*X/i.test(cab);
       if (revez) {
-        linhas.push({ tipo: "atleta",
-                      vals: ["ANA<br>BRUNO<br>CARLA<br>DIEGO"].concat(apoio(0)) });
+        // no revezamento quem nada é a equipe: a coluna do nome fica vazia
+        linhas.push({ tipo: "atleta", vals: [""].concat(apoio(0)) });
         linhas.push({ tipo: "atleta", vals: [""].concat(apoio(1)) });
       } else {
         // o nome do exemplo segue o naipe da prova, senão confunde mais do
@@ -618,7 +656,7 @@
         linhas.push({ tipo: "atleta", vals: [nomes[1]].concat(apoio(1)) });
       }
     });
-    if (doPrograma > 3) {
+    if (doPrograma > 2) {
       linhas.push({ tipo: "vazia", vals: [] });
       linhas.push({ tipo: "resto", vals: [
         `… e assim até a ${doPrograma}ª prova`] });
@@ -653,7 +691,7 @@
           : "O nome da aba não importa, e você não precisa criar mais de uma."}
           As linhas destacadas são os nomes das provas.${
           p.temRevezamento
-            ? " No revezamento, os 4 nomes vão na mesma célula, um por linha; a linha de baixo mostra uma equipe que ainda não definiu os nadadores."
+            ? " No revezamento basta a equipe: quem nada é escolhido no dia."
             : ""}</p>
       </div>`;
   }
@@ -750,6 +788,12 @@
     return `${ano}-${pad2(mes)}-${pad2(dia)}`;
   }
 
+  // "2026-09-22" -> "22/09", que é como o dia sai no cabeçalho da etapa
+  function diaCurto(iso) {
+    const p = pedacosDaData(iso);
+    return p ? pad2(p.dia) + "/" + pad2(p.mes + 1) : String(iso || "").trim();
+  }
+
   function pad2(n) {
     return String(n).padStart(2, "0");
   }
@@ -820,8 +864,6 @@
     p.raias = parseInt($("#raias").value, 10) || 6;   // 6 só como fallback interno
     p.regraSerie = B.ULTIMAS_CHEIAS;   // últimas séries cheias, sobra na primeira
     p.limiteInd = parseInt($("#limiteInd").value, 10) || 0;
-    const lr = $("#limiteRev").value.trim();
-    p.limiteRev = lr === "" ? null : parseInt(lr, 10);
     p.limiteIndPara = parseInt($("#limiteIndPara").value, 10) || 3;
     const le = $("#limiteEquipe") ? $("#limiteEquipe").value.trim() : "";
     p.limiteEquipe = le === "" ? null : parseInt(le, 10);
@@ -863,7 +905,7 @@
       const v = (x) => (x == null || x === "" ? "" : AT(x));
       l.innerHTML = `
         <input value="${v(e.nome)}" data-c="nome" placeholder="1ª ETAPA">
-        <input value="${v(e.dia)}" data-c="dia" placeholder="22/09">
+        <input value="${v(diaParaIso(e.dia) || "")}" data-c="dia" type="date">
         <input value="${v(e.periodo)}" data-c="periodo" placeholder="MANHÃ">
         <input value="${v(e.de)}" data-c="de" type="number" min="1" placeholder="1">
         <input value="${v(e.ate)}" data-c="ate" type="number" min="1"
@@ -871,10 +913,12 @@
         <button type="button" class="mini" title="remover esta etapa">×</button>`;
       $$("input", l).forEach((i) => {
         i.oninput = () => {
-          const numerica = i.dataset.c === "de" || i.dataset.c === "ate";
+          const campo = i.dataset.c;
+          const numerica = campo === "de" || campo === "ate";
           const bruto = i.value.trim();
-          estado.perfil.etapas[k][i.dataset.c] = numerica
-            ? (bruto === "" ? "" : parseInt(bruto, 10) || "")
+          // o calendário devolve 2026-09-22; no cabeçalho da etapa sai 22/09
+          estado.perfil.etapas[k][campo] = campo === "dia" ? diaCurto(bruto)
+            : numerica ? (bruto === "" ? "" : parseInt(bruto, 10) || "")
             : i.value;
           validarConfig();
         };
@@ -931,8 +975,26 @@
   }
 
   /* --- grupos de categorias que nadam juntas --- */
+  /* As listas que os campos do agrupamento oferecem saem do próprio programa
+     de provas: é lá que estão as categorias, as distâncias e os estilos que
+     existem nesta competição. Digitar continua valendo, para quando o nome
+     dos inscritos for diferente do nome do programa. */
+  function preencherListasDoPrograma() {
+    const prog = estado.perfil.programa || [];
+    const põe = (id, valores) => {
+      const alvo = $("#" + id);
+      if (!alvo) return;
+      alvo.innerHTML = [...new Set(valores.filter(Boolean))]
+        .map((v) => `<option value="${AT(v)}">`).join("");
+    };
+    põe("listaCategorias", prog.map((p) => p.rotulo || p.categoria));
+    põe("listaDistancias", prog.map((p) => p.distancia));
+    põe("listaEstilos", prog.map((p) => p.estilo));
+  }
+
   function renderGrupos() {
     const alvo = $("#grupos");
+    preencherListasDoPrograma();
     alvo.innerHTML = "";
     estado.perfil.grupos.forEach((g, k) => {
       const l = document.createElement("div");
@@ -940,10 +1002,14 @@
       // colunas, e os campos ficam tortos debaixo dos próprios rótulos
       l.className = "linha-etapa grupo";
       l.innerHTML = `
-        <input value="${AT(g.rotulo)}" data-c="rotulo" placeholder='PARALÍMPICO "A" + "B"'>
-        <input value="${AT((g.categorias || []).join(', '))}" data-c="categorias" placeholder='PARAL "A", PARAL "B"'>
-        <input value="${AT((g.distancias || []).join(', '))}" data-c="distancias" placeholder="25M">
-        <input value="${AT((g.estilos || []).join(', '))}" data-c="estilos" placeholder="LIVRE, COSTAS">
+        <input value="${AT(g.rotulo)}" data-c="rotulo" list="listaCategorias"
+               placeholder='PARALÍMPICO "A" + "B"'>
+        <input value="${AT((g.categorias || []).join(', '))}" data-c="categorias"
+               list="listaCategorias" placeholder='PARAL "A", PARAL "B"'>
+        <input value="${AT((g.distancias || []).join(', '))}" data-c="distancias"
+               list="listaDistancias" placeholder="25M">
+        <input value="${AT((g.estilos || []).join(', '))}" data-c="estilos"
+               list="listaEstilos" placeholder="LIVRE, COSTAS">
         <button type="button" class="mini" title="remover">×</button>`;
       $$("input", l).forEach((i) => {
         i.oninput = () => {
@@ -1102,6 +1168,9 @@
       const vistos = new Set();
       inscricoes = inscricoes.filter((i) => {
         if (!i.revezamento) return true;
+        // duas linhas da mesma equipe sem nadador escrito são duas equipes,
+        // não a mesma repetida: quem nada só é escolhido no dia
+        if (!(i.atletas || []).length) return true;
         const k = [i.distancia, i.estilo, i.misto, B.normalizar(i.equipe),
                    (i.atletas || []).map(B.normalizar).join(">")].join("|");
         if (vistos.has(k)) return false;
@@ -1178,11 +1247,11 @@
     /* As correções da conferência entram aqui, por cima do que foi lido. A
        planilha do árbitro não é tocada em momento nenhum: se ele recomeçar,
        tudo volta a ser o que estava escrito nela. */
-    const tempos = aj.tempos || {}, classes = aj.classes || {}, listas = aj.listas || {};
+    const tempos = aj.tempos || {}, classes = aj.classes || {};
     return lista.map((i) => {
       const k = chaveDaLinha(i);
-      const t = tempos[k], c = classes[B.chaveAtleta(i)], l = listas[k];
-      if (t === undefined && !c && !l) return i;
+      const t = tempos[k], c = classes[B.chaveAtleta(i)];
+      if (t === undefined && !c) return i;
       const novo = Object.assign({}, i);
       if (t !== undefined) {
         novo.tempo = t === null ? null : t;
@@ -1192,7 +1261,6 @@
         if (c.classe) novo.classe = c.classe;
         if (c.segmento) novo.segmento = c.segmento;
       }
-      if (l) { novo.atletas = l.slice(); novo.semLista = false; }
       return novo;
     });
   }
@@ -1235,20 +1303,10 @@
     estado.planas = planas;
     estado.limites = B.conferirLimites(planas, {
       limiteIndividual: p.limiteInd,
-      limiteRevezamento: p.limiteRev,
       limiteDe: (i) => (ehPara(i.categoria, p) ? p.limiteIndPara : p.limiteInd),
     });
     estado.categorias = B.conferirCategorias(planas);
 
-    /* O sexo do atleta não vem na planilha: sai do naipe das provas
-       individuais dele. É só com isso que dá para conferir se o revezamento
-       misto tem dois de cada. */
-    const sexos = new Map();
-    for (const i of planas) {
-      if (i.revezamento || (i.naipe !== "FEM" && i.naipe !== "MASC")) continue;
-      const k = B.chaveAtleta(i);
-      sexos.set(k, sexos.has(k) && sexos.get(k) !== i.naipe ? "" : i.naipe);
-    }
     estado.mesmoNome = B.conferirMesmoNome(planas);
     estado.classes = B.conferirClasses(planas);
     estado.naipes = B.conferirNaipes(planas);
@@ -1256,10 +1314,7 @@
     estado.idades = B.conferirIdades(planas, {});
     estado.nascimentos = B.conferirNascimentos(planas);
     estado.porEquipe = B.conferirPorEquipe(estado.provas, p.limiteEquipe);
-    estado.revezamentos = B.conferirRevezamentos(estado.provas, {
-      sexoDe: (nome, equipe) =>
-        sexos.get(B.normalizar(nome) + "|" + B.normalizar(equipe)) || "",
-    });
+    estado.revezamentos = B.conferirRevezamentos(estado.provas, {});
     estado.tempos = conferirTempos();
 
     /* Marca em vermelho, com o motivo escrito, quem o balizamento não deveria
@@ -1362,20 +1417,6 @@
     // aceita o bloco, e mesmo assim a lista tem de continuar aqui
     const provasFora = estado.provas.filter(
       (p) => p.foraDoPrograma && p.series.length && !comDona.has(p.chave));
-    const semLista = [];
-    for (const p of estado.provas) {
-      for (const s of p.series) {
-        for (const l of s.linhas) {
-          if (!l.item.semLista) continue;
-          semLista.push({
-            prova: p.numero, titulo: p.titulo, nome: "", equipe: l.item.equipe,
-            detalhe: `${s.numero}ª série, raia ${l.raia}`, item: l.item,
-          });
-        }
-      }
-    }
-
-    // a prova do programa que vai receber gente não está vazia: está esperando
     const semInscritos = estado.provas.filter(
       (p) => !p.series.length && !vaiReceber.has(p.chave));
 
@@ -1539,20 +1580,6 @@
           <br><br>Quem escolhe quem fica é a instituição, não o app.`,
       },
       {
-        id: "revezamentoRuim",
-        titulo: "Revezamento com nome faltando ou repetido",
-        nivel: "critico",
-        itens: estado.revezamentos.filter((r) => r.gravidade === "critico")
-          .map((r) => ({ prova: r.prova, titulo: r.titulo, nome: r.nome,
-                         equipe: r.equipe, detalhe: r.detalhe })),
-        explica: `O revezamento tem quatro nadadores. Com três, ou com o mesmo
-          nome escrito duas vezes, a equipe <b>ocupa a raia do mesmo jeito</b>
-          e a papeleta sai com a lista errada.
-          <br><br>Dá para escrever os quatro aqui mesmo.`,
-        resolver: () => escreverNadadoresDoRevezamento(
-          estado.revezamentos.filter((r) => r.gravidade === "critico" && r.item)),
-      },
-      {
         id: "regulamento", titulo: "Inscrições contra o regulamento",
         nivel: "critico", itens: cortes.filter((c) => c.gravidade === "critico"),
         explica: `A classe funcional destes atletas não disputa esta prova, pelo
@@ -1573,15 +1600,6 @@
           nenhum nome de atleta ao lado. Elas <b>não entraram no balizamento</b>:
           ninguém ocupa essa raia.`,
         resolver: () => escreverNomesFaltando(descartadas),
-      },
-      {
-        id: "semLista", titulo: "Revezamentos ainda sem a lista de atletas",
-        nivel: "info", itens: semLista,
-        explica: `A equipe se inscreveu sem dizer quem nada. Isto <b>não é
-          erro</b>: a raia fica reservada em nome da equipe e o balizamento sai
-          com quatro linhas em branco, para anotar os nomes na borda da piscina
-          no dia da prova.`,
-        resolver: () => escreverNadadoresDoRevezamento(semLista),
       },
       {
         id: "semClasse", titulo: "Atletas sem classe definida",
@@ -1617,6 +1635,22 @@
           <br><br>Só faz sentido entre categorias vizinhas e do mesmo naipe:
           feminino não nada com masculino.`,
         resolver: () => juntarCategorias(juntaveis),
+      },
+      {
+        id: "juntadas", titulo: "Categorias que o programa mandou juntar",
+        nivel: "info",
+        itens: estado.provas.filter((p) => (p.casadas || []).length).map((p) => ({
+          prova: p.numero, titulo: p.titulo, nome: "", equipe: "",
+          detalhe: "recebeu " + p.casadas.map((c) =>
+            `${c.categoria} (${c.quantos})`).join(" e "),
+        })),
+        explica: `O nome destas provas no programa traz um <b>+</b>, e é isso
+          que diz que as categorias nadam juntas. Os inscritos vieram
+          separados, e o app já os colocou na prova certa.
+          <br><br>A letra tem de ser a mesma, sempre: A nunca vira B. O que
+          ele releva é a palavra abreviada, <i>PARAL</i> por <i>PARALÍMPICO</i>.
+          <br><br>Se quiser conferir um por um em vez disso, volte ao passo 1 e
+          diga que prefere conferir.`,
       },
       {
         id: "autorizados", titulo: "Exceções que você autorizou",
@@ -1670,18 +1704,18 @@
           jeito nas duas linhas.`,
       },
       {
-        id: "revezamentoAviso", titulo: "Avisos dos revezamentos",
+        id: "revezamentoAviso",
+        titulo: "Duas equipes da mesma instituição no revezamento",
         nivel: "info",
-        itens: estado.revezamentos.filter((r) => r.gravidade !== "critico")
-          .map((r) => ({ prova: r.prova, titulo: r.titulo, nome: r.nome,
-                         equipe: r.equipe, detalhe: r.detalhe })),
-        explica: `Equipe com mais de quatro nomes na célula, duas equipes da
-          mesma instituição na mesma prova, ou misto que não ficou em dois e
-          dois pelas provas individuais dos quatro.
-          <br><br>Nada disso impede: <b>o balizamento sai como está</b>. Duas
-          equipes da mesma instituição são normais em muitas competições;
-          quando for o caso, vale escrever <i>ESCOLA X A</i> e <i>ESCOLA X B</i>
-          na planilha, senão a papeleta sai com o mesmo nome duas vezes.`,
+        itens: estado.revezamentos.map((r) => ({
+          prova: r.prova, titulo: r.titulo, nome: r.nome,
+          equipe: r.equipe, detalhe: r.detalhe })),
+        explica: `Cada uma ocupa a sua raia, o que é normal em muita
+          competição. <b>O balizamento sai como está.</b>
+          <br><br>O único cuidado é o nome: as duas saem escritas igual, no
+          balizamento e na papeleta, e ninguém distingue uma da outra na borda
+          da piscina. Vale escrever <i>ESCOLA X A</i> e <i>ESCOLA X B</i> na
+          planilha.`,
       },
       {
         id: "provasRepetidas", titulo: "Prova escrita duas vezes na planilha",
@@ -1928,6 +1962,26 @@
   /* Todo bloco pode ser encerrado por decisão do árbitro. É o que destranca a
      geração quando o problema não tem conserto dentro do app. */
   /* --- resolver: tirar do balizamento a prova que não está no programa --- */
+  /* As categorias que o próprio programa manda juntar: as que trazem "+" no
+     nome. É daqui que sai a pergunta do passo 1 e o que o app faz sozinho ao
+     montar, sem esperar o árbitro descobrir a tela dos agrupamentos. */
+  function juncoesDoPrograma(provas) {
+    const mapa = new Map();
+    (provas || []).forEach((p, i) => {
+      const partes = D.partesDaCategoria(p.categoria);
+      if (partes.length < 2) return;
+      const k = D.chaveCategoria(p.categoria);
+      if (!mapa.has(k)) {
+        mapa.set(k, { categoria: p.rotulo || p.categoria, partes,
+                      provas: [], distancias: [] });
+      }
+      const v = mapa.get(k);
+      v.provas.push(i + 1);
+      if (!v.distancias.includes(p.distancia)) v.distancias.push(p.distancia);
+    });
+    return [...mapa.values()];
+  }
+
   /* A coluna Nº do programa contra a posição da linha. Quem manda é a ordem
      das linhas; este bloco existe para o árbitro conferir contra o programa
      oficial impresso, onde uma prova a menos desloca todas as seguintes. */
@@ -2367,51 +2421,6 @@
   }
 
   /* --- resolver: escrever os 4 nadadores de um revezamento --- */
-  function escreverNadadoresDoRevezamento(semLista) {
-    const caixa = document.createElement("div");
-    caixa.className = "correcao-lista";
-    const campos = [];
-
-    for (const r of semLista) {
-      const bloco = document.createElement("div");
-      bloco.className = "correcao-atleta";
-      bloco.innerHTML = `
-        <p class="correcao-titulo"><b>${CX(r.equipe)}</b>
-          <span class="apagado">${r.prova}ª ${r.titulo}</span></p>
-        <label class="campo largo">Os quatro nadadores, um por linha
-          <textarea rows="4" spellcheck="false"
-            placeholder="deixe em branco para anotar no dia da prova"></textarea>
-        </label>`;
-      const campo = $("textarea", bloco);
-      campo.value = (r.item.atletas || []).join("\n");
-      campos.push([r.item, campo]);
-      caixa.appendChild(bloco);
-    }
-
-    const acoes = document.createElement("div");
-    acoes.className = "acoes";
-    acoes.innerHTML = `<button type="button" class="botao">
-      Aplicar os nomes</button>`;
-    $("button", acoes).onclick = () => {
-      let quantos = 0;
-      for (const [item, campo] of campos) {
-        const nomes = campo.value.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
-        if (!nomes.length) continue;
-        // fica guardado nos ajustes, junto com o resto do que foi corrigido
-        // na conferência, e some se a planilha for enviada de novo
-        estado.ajustes.listas[chaveDaLinha(item)] = nomes;
-        quantos++;
-      }
-      montar();
-      renderConferencia();
-      aviso(quantos ? `${quantos} revezamento(s) com a lista completa.`
-                    : "Nenhum nome foi digitado; segue para anotar no dia.");
-    };
-    caixa.appendChild(acoes);
-    return caixa;
-  }
-
-  /* --- resolver: juntar duas categorias vizinhas numa prova só --- */
   function juntarCategorias(pares) {
     const caixa = document.createElement("div");
     caixa.className = "correcao-lista";
@@ -2642,7 +2651,18 @@
     }
 
     $("#btnModelo").onclick = () => baixarModelo();
-    $("#btnEntendi").onclick = () => mostrarPainel("envio");
+    ao("btnEntendi", "click", () => mostrarPainel("envio"));
+    ao("btnEntendi2", "click", () => mostrarPainel("envio"));
+    // o explicativo longo abre só para quem tem dúvida
+    ao("btnDuvidas", "click", () => {
+      const alvo = $("#detalheFormato");
+      const botao = $("#btnDuvidas");
+      alvo.hidden = !alvo.hidden;
+      botao.textContent = alvo.hidden
+        ? "Tem dúvida de como o arquivo deve ser?"
+        : "fechar a explicação";
+      if (!alvo.hidden) alvo.scrollIntoView({ block: "nearest" });
+    });
     $("#verFormato").onclick = () => mostrarPainel("formato");
     $("#irConferencia").onclick = () => irPara("conferencia");
     $("#irGerar").onclick = () => irPara("gerar");
