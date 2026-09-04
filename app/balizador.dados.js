@@ -1215,6 +1215,112 @@
     return (perfil.categoriasPara || []).some((p) => c.includes(chaveCategoria(p)));
   }
 
+  /* ---------------- categorias que o programa junta ----------------
+     O programa escreve numa linha só o que os inscritos mandam em duas:
+
+       programa    25m LIVRE PARALÍMPICO "A" + "B" FEMININO
+       inscritos   25M LIVRE PARAL A FEMININO   e   25M LIVRE PARAL B FEMININO
+
+     Sem casar as duas coisas, as provas do programa saem vazias e as dos
+     inscritos saem no fim, em vermelho, fora do programa. O "+" do programa
+     já diz quem nada junto: é dele que sai a proposta.
+  ------------------------------------------------------------------- */
+
+  // 'PARALÍMPICO "A" + "B"'  ->  ["PARALIMPICO A", "PARALIMPICO B"]
+  // 'MIRIM + INFANTIL'       ->  ["MIRIM", "INFANTIL"]
+  function partesDaCategoria(categoria) {
+    const k = chaveCategoria(categoria);
+    if (k.indexOf("+") < 0) return [k];
+    const partes = k.split("+").map((s) => s.trim()).filter(Boolean);
+    let base = "";
+    return partes.map((p, i) => {
+      const pedacos = p.split(" ").filter(Boolean);
+      if (i === 0) {
+        base = pedacos.length > 1 ? pedacos.slice(0, -1).join(" ") : "";
+        return p;
+      }
+      // "B" sozinho depois do "+" herda o PARALÍMPICO da primeira parte
+      if (base && pedacos.length === 1 && /^[A-Z]$/.test(pedacos[0]))
+        return base + " " + pedacos[0];
+      return p;
+    });
+  }
+
+  // "PARALIMPICO A" -> { base: "PARALIMPICO", letra: "A" }
+  function pedacosDaCategoria(chave) {
+    const t = String(chave).split(" ").filter(Boolean);
+    if (t.length > 1 && /^[A-Z]$/.test(t[t.length - 1]))
+      return { base: t.slice(0, -1).join(" "), letra: t[t.length - 1] };
+    return { base: String(chave), letra: "" };
+  }
+
+  /* Como esta categoria dos inscritos se parece com esta parte do programa.
+     A letra tem de ser a mesma, sempre: A não vira B por semelhança nenhuma.
+     A palavra pode estar abreviada, e é só aí que existe palpite: PARAL é o
+     começo de PARALÍMPICO. Por isso "semelhante" volta separado de "exato":
+     o exato o app aplica sozinho, o semelhante ele mostra e pergunta. */
+  function casaCategoria(chaveInscritos, chavePrograma) {
+    if (chaveInscritos === chavePrograma) return "exato";
+    const x = pedacosDaCategoria(chaveInscritos);
+    const y = pedacosDaCategoria(chavePrograma);
+    if (x.letra !== y.letra) return "";
+    if (x.base === y.base) return "exato";
+    const curto = x.base.length <= y.base.length ? x.base : y.base;
+    const longo = x.base.length <= y.base.length ? y.base : x.base;
+    if (curto.length >= 4 && longo.indexOf(curto) === 0) return "semelhante";
+    return "";
+  }
+
+  /**
+   * Olha as provas montadas e propõe, para cada prova que ficou fora do
+   * programa, a prova do programa que deveria tê-la recebido.
+   * Devolve [{ origem, destino, parte, tipo, soma }], tipo = exato|semelhante.
+   */
+  function propostasDePrograma(provas) {
+    const doPrograma = provas.filter((p) => p.doPrograma);
+    if (!doPrograma.length) return [];
+    const saida = [];
+    for (const f of provas) {
+      if (f.doPrograma || !f.series.length) continue;
+      const kf = chaveCategoria(f.categoria);
+      let melhor = null;
+      for (const d of doPrograma) {
+        if (d.distancia !== f.distancia || d.estilo !== f.estilo ||
+            d.naipe !== f.naipe) continue;
+        const partes = partesDaCategoria(d.categoria);
+        for (const parte of partes) {
+          const tipo = casaCategoria(kf, parte);
+          if (!tipo) continue;
+          // exato ganha de semelhante; entre iguais, fica o primeiro
+          if (!melhor || (melhor.tipo === "semelhante" && tipo === "exato"))
+            melhor = { destino: d, parte, tipo, soma: partes.length > 1 };
+        }
+      }
+      if (melhor) saida.push(Object.assign({ origem: f }, melhor));
+    }
+    return saida;
+  }
+
+  /* As propostas viram linhas de "categorias que nadam juntas", as mesmas da
+     tela da competição, para ficarem visíveis e desfazíveis lá. Uma linha por
+     categoria do programa e distância: é a distância que mede o agrupamento,
+     porque o mesmo programa junta A com B no 25m e B com C no 50m. */
+  function gruposDePropostas(propostas) {
+    const mapa = new Map();
+    for (const pr of propostas) {
+      const k = chaveCategoria(pr.destino.categoria) + "|" + pr.origem.distancia;
+      if (!mapa.has(k)) {
+        mapa.set(k, { rotulo: pr.destino.categoria, categorias: [],
+                      distancias: [pr.origem.distancia], estilos: [] });
+      }
+      const g = mapa.get(k);
+      if (!g.categorias.includes(pr.origem.categoria))
+        g.categorias.push(pr.origem.categoria);
+      if (!g.estilos.includes(pr.origem.estilo)) g.estilos.push(pr.origem.estilo);
+    }
+    return [...mapa.values()];
+  }
+
   function tituloProva(distancia, estilo, categoria, naipe) {
     const n = { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" }[naipe] || naipe;
     const d = /^4X/.test(distancia)
@@ -1251,6 +1357,7 @@
     lerProgramaPlanilha, linhaDoPrograma, gerarModeloPrograma,
     normalizarDistancia, normalizarEstilo, normalizarNaipe,
     montarBalizamento, inscricoesPlanas, tituloProva, eventoRegras, COLUNAS_MODELO,
+    partesDaCategoria, casaCategoria, propostasDePrograma, gruposDePropostas,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else raiz.BalizadorDados = api;

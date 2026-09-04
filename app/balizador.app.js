@@ -8,6 +8,13 @@
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const CX = (t) => String(t == null ? "" : t).toUpperCase();
 
+  /* Valor que vai dentro de um atributo HTML. Sem isto, a aspa de
+     PARALÍMPICO "A" + "B" fecha o atributo no meio e o campo aparece
+     cortado em PARALÍMPICO, levando junto o casamento com o programa. */
+  const AT = (t) => String(t == null ? "" : t)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
   const TIPOS = {
     PARA: {
       rotulo: "Paradesportiva",
@@ -808,7 +815,7 @@
     estado.perfil.etapas.forEach((e, k) => {
       const l = document.createElement("div");
       l.className = "linha-etapa";
-      const v = (x) => (x == null || x === "" ? "" : String(x));
+      const v = (x) => (x == null || x === "" ? "" : AT(x));
       l.innerHTML = `
         <input value="${v(e.nome)}" data-c="nome" placeholder="1ª ETAPA">
         <input value="${v(e.dia)}" data-c="dia" placeholder="22/09">
@@ -886,10 +893,10 @@
       const l = document.createElement("div");
       l.className = "linha-etapa";
       l.innerHTML = `
-        <input value="${g.rotulo}" data-c="rotulo" placeholder='PARALÍMPICO "A" + "B"' style="flex:2">
-        <input value="${(g.categorias || []).join(', ')}" data-c="categorias" placeholder='PARAL "A", PARAL "B"' style="flex:2">
-        <input value="${(g.distancias || []).join(', ')}" data-c="distancias" placeholder="25M" style="width:7rem">
-        <input value="${(g.estilos || []).join(', ')}" data-c="estilos" placeholder="LIVRE, COSTAS" style="width:10rem">
+        <input value="${AT(g.rotulo)}" data-c="rotulo" placeholder='PARALÍMPICO "A" + "B"' style="flex:2">
+        <input value="${AT((g.categorias || []).join(', '))}" data-c="categorias" placeholder='PARAL "A", PARAL "B"' style="flex:2">
+        <input value="${AT((g.distancias || []).join(', '))}" data-c="distancias" placeholder="25M" style="width:7rem">
+        <input value="${AT((g.estilos || []).join(', '))}" data-c="estilos" placeholder="LIVRE, COSTAS" style="width:10rem">
         <button type="button" class="mini" title="remover">×</button>`;
       $$("input", l).forEach((i) => {
         i.oninput = () => {
@@ -1204,7 +1211,16 @@
       }
     }
 
-    const provasFora = estado.provas.filter((p) => p.aviso && p.series.length);
+    /* Provas que ficaram fora do programa mas têm dona lá dentro: o programa
+       junta A e B numa linha só, ou escreve PARALÍMPICO onde os inscritos
+       escrevem PARAL. Elas saem do bloco vermelho de "fora do programa" e vão
+       para um bloco próprio, que mostra o casamento e pergunta antes. */
+    const propostas = D.propostasDePrograma(estado.provas);
+    const comDona = new Set(propostas.map((pr) => pr.origem.chave));
+    const vaiReceber = new Set(propostas.map((pr) => pr.destino.chave));
+
+    const provasFora = estado.provas.filter(
+      (p) => p.aviso && p.series.length && !comDona.has(p.chave));
     const semLista = [];
     for (const p of estado.provas) {
       for (const s of p.series) {
@@ -1218,12 +1234,35 @@
       }
     }
 
-    const semInscritos = estado.provas.filter((p) => !p.series.length);
+    // a prova do programa que vai receber gente não está vazia: está esperando
+    const semInscritos = estado.provas.filter(
+      (p) => !p.series.length && !vaiReceber.has(p.chave));
     const descartadas = (estado.descartadas || [])
       .filter((d) => !String((estado.ajustes.nomes || {})[chaveDaLinha(d)] || "").trim());
     const juntaveis = provasQueDaParaJuntar();
 
     return [
+      {
+        id: "juntarPrograma",
+        titulo: "Provas que o programa junta ou escreve de outro jeito",
+        nivel: "critico",
+        itens: propostas.map((pr) => ({
+          prova: pr.origem.numero, titulo: pr.origem.titulo, nome: "", equipe: "",
+          detalhe: `${pr.origem.total} atleta(s), que vão para a ` +
+                   `${pr.destino.numero}ª ${pr.destino.titulo}`,
+        })),
+        explica: `O programa escreve numa linha só o que os inscritos mandaram
+          em duas, <i>PARALÍMPICO "A" + "B"</i> no lugar de <i>PARAL A</i> e
+          <i>PARAL B</i>, ou escreve a mesma categoria com outra palavra.
+          <br><br>Do jeito que está, estas provas saem <b>no fim do
+          balizamento, em vermelho</b>, com o aviso de que não constam no
+          programa, e as provas do programa saem marcadas como <i>sem
+          inscritos</i>. A numeração impressa deixa de bater com a da piscina.
+          <br><br>Cada atleta continua com a categoria dele: a letra sai ao lado
+          do nome e o limite de provas não muda. Juntar vale só para montar as
+          raias, que é o que o programa está mandando fazer.`,
+        resolver: () => casarComPrograma(propostas),
+      },
       {
         id: "foraPrograma", titulo: "Provas fora do programa oficial",
         nivel: "critico",
@@ -1550,6 +1589,75 @@
   /* Todo bloco pode ser encerrado por decisão do árbitro. É o que destranca a
      geração quando o problema não tem conserto dentro do app. */
   /* --- resolver: tirar do balizamento a prova que não está no programa --- */
+  /* --- resolver: casar as provas com as do programa ---
+     O palpite fica todo à vista antes de virar decisão: de um lado o que o
+     programa escreveu, do outro o que veio nos inscritos, com a conta de
+     atletas de cada um. O casamento vira linha de "categorias que nadam
+     juntas" na tela da competição, onde dá para conferir e desfazer. --- */
+  function casarComPrograma(propostas) {
+    const caixa = document.createElement("div");
+    caixa.className = "correcao-lista";
+
+    const aplicar = (lista, texto) => {
+      for (const g of D.gruposDePropostas(lista)) {
+        const igual = estado.perfil.grupos.find((x) =>
+          D.chaveCategoria(x.rotulo) === D.chaveCategoria(g.rotulo) &&
+          (x.distancias || []).join() === g.distancias.join());
+        if (!igual) { estado.perfil.grupos.push(g); continue; }
+        // mesma prova de destino já casada antes: só acrescenta o que falta
+        igual.categorias = igual.categorias || [];
+        igual.estilos = igual.estilos || [];
+        for (const c of g.categorias)
+          if (!igual.categorias.includes(c)) igual.categorias.push(c);
+        for (const e of g.estilos)
+          if (!igual.estilos.includes(e)) igual.estilos.push(e);
+      }
+      renderGrupos();
+      montar();
+      renderConferencia();
+      aviso(texto);
+    };
+
+    const porDestino = new Map();
+    for (const pr of propostas) {
+      if (!porDestino.has(pr.destino.chave)) porDestino.set(pr.destino.chave, []);
+      porDestino.get(pr.destino.chave).push(pr);
+    }
+
+    if (porDestino.size > 1) {
+      const topo = document.createElement("div");
+      topo.className = "acoes";
+      topo.innerHTML = `<button type="button" class="botao">
+        Juntar as ${propostas.length} provas de uma vez</button>`;
+      $("button", topo).onclick = () => aplicar(propostas,
+        `${propostas.length} provas foram para o lugar delas no programa.`);
+      caixa.appendChild(topo);
+    }
+
+    for (const [, lista] of porDestino) {
+      const destino = lista[0].destino;
+      const total = lista.reduce((t, pr) => t + pr.origem.total, 0);
+      const bloco = document.createElement("div");
+      bloco.className = "correcao-atleta";
+      const origens = lista.map((pr) =>
+        `${pr.origem.categoria}, ${pr.origem.total} atleta(s)`).join("  ·  ");
+      bloco.innerHTML = `
+        <p class="correcao-titulo"><b>${destino.numero}ª ${destino.titulo}</b>
+          <span class="apagado">ficaria com ${total} atleta(s)</span></p>
+        <p class="nota mono">no programa &nbsp;&nbsp;${destino.categoria}</p>
+        <p class="nota mono">nos inscritos&nbsp;&nbsp;${origens}</p>`;
+      const acoes = document.createElement("div");
+      acoes.className = "acoes";
+      acoes.innerHTML = `<button type="button" class="botao">
+        Juntar nesta prova</button>`;
+      $("button", acoes).onclick = () => aplicar(lista,
+        `${destino.numero}ª ${destino.titulo} agora tem ${total} atleta(s).`);
+      bloco.appendChild(acoes);
+      caixa.appendChild(bloco);
+    }
+    return caixa;
+  }
+
   function resolverProvasFora(provasFora) {
     const caixa = document.createElement("div");
     caixa.className = "correcao-lista";
