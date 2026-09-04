@@ -686,3 +686,18 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
 
 /* o botão que importa fica no alto, antes de qualquer explicação */
 .acoes-topo{margin-bottom:.4rem;align-items:center}
+
+/* o que o programa já manda juntar, escrito na tela da competição */
+.juncoes-programa{
+  background:var(--agua-fraca);border-left:3px solid var(--agua);
+  border-radius:6px;padding:.7rem .9rem;margin-bottom:.6rem;
+  display:flex;flex-direction:column;gap:.15rem;
+}
+.juncoes-programa.desligada{
+  background:var(--papel2);border-left-color:var(--linha);opacity:.75;
+}
+.juncoes-programa p{font-size:1rem;line-height:1.5}
+.rotulo-juncoes{
+  font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;
+  color:var(--suave);margin-bottom:.2rem;
+}

@@ -459,19 +459,37 @@
       </div>` : ""}
       ${tabelaPrograma(r)}`);
 
-    const marcarJuncao = (valor) => {
+    /* Clicar tem de deixar marca na tela: o botão escolhido fica em destaque,
+       o outro apaga, e a linha de baixo diz o que ficou valendo. Sem isso o
+       clique parece não ter feito nada. */
+    const marcarJuncao = (valor, avisar) => {
       estado.perfil.juntarPrograma = valor;
       const nota = $("#notaJuncoes");
+      const sim = $("#btnJuntarSim"), nao = $("#btnJuntarNao");
+      if (sim && nao) {
+        sim.className = valor ? "botao" : "mini claro";
+        nao.className = valor ? "mini claro" : "botao";
+        sim.textContent = valor ? "Vou juntar sozinho" : "Pode juntar";
+        nao.textContent = valor ? "Prefiro conferir uma por uma"
+                                : "Vou conferir uma por uma";
+      }
       if (nota) {
         nota.textContent = valor
-          ? "Vou juntar sozinho. A conferência mostra depois o que casou com o quê."
-          : "Não vou juntar nada: cada caso vai ser perguntado na conferência.";
+          ? "Está valendo: junto sozinho, e a conferência mostra depois o que "
+            + "casou com o quê. Você também vê a lista na tela da competição."
+          : "Está valendo: não junto nada, e cada caso vai ser perguntado na "
+            + "conferência.";
       }
-      aviso(valor ? "Certo, junto sozinho pelo programa."
-                  : "Certo, pergunto caso a caso na conferência.");
+      renderGrupos();
+      if (avisar) {
+        aviso(valor ? "Certo, junto sozinho pelo programa."
+                    : "Certo, pergunto caso a caso na conferência.");
+      }
     };
-    ao("btnJuntarSim", "click", () => marcarJuncao(true));
-    ao("btnJuntarNao", "click", () => marcarJuncao(false));
+    ao("btnJuntarSim", "click", () => marcarJuncao(true, true));
+    ao("btnJuntarNao", "click", () => marcarJuncao(false, true));
+    // deixa a tela já mostrando o que está valendo, sem esperar clique
+    if (juncoes.length) marcarJuncao(juntar, false);
   }
 
   function tabelaLinhasRuins(ruins) {
@@ -996,6 +1014,24 @@
     const alvo = $("#grupos");
     preencherListasDoPrograma();
     alvo.innerHTML = "";
+
+    /* O que o programa já manda juntar aparece aqui em cima, escrito, para
+       ninguém precisar adivinhar se aconteceu. Não é campo: é o que o app faz
+       sozinho, e mexer nisso é mexer no programa de provas. */
+    const juncoes = juncoesDoPrograma(estado.perfil.programa || []);
+    const juntando = estado.perfil.juntarPrograma !== false;
+    if (juncoes.length) {
+      const caixa = document.createElement("div");
+      caixa.className = "juncoes-programa" + (juntando ? "" : " desligada");
+      caixa.innerHTML = `
+        <p class="rotulo-juncoes">${juntando
+          ? "Estas o programa já manda juntar, e o app faz sozinho:"
+          : "Estas o programa manda juntar, mas você pediu para conferir uma por uma:"}</p>
+        ${juncoes.map((j) => `<p><b>${AT(j.categoria)}</b>
+          <span class="apagado">recebe ${j.partes.length} categorias, em
+          ${j.provas.length} prova(s): ${AT(j.distancias.join(", ").toLowerCase())}</span></p>`).join("")}`;
+      alvo.appendChild(caixa);
+    }
     estado.perfil.grupos.forEach((g, k) => {
       const l = document.createElement("div");
       // sem a classe "grupo" a linha cai na grade das etapas, que tem seis
