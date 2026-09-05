@@ -218,6 +218,37 @@
   /* =================== PDF DO BALIZAMENTO =================== */
   const A4 = { w: 210, h: 297 };
   const MG = 12;
+  const ALT_SLOT = (A4.h - 2 * MG) / 4;   // quatro papeletas por folha
+
+  /* As logos das instituições, lado a lado dentro de uma faixa. Cada uma
+     entra na altura da faixa, guardando a proporção; se a soma passar da
+     largura, todas encolhem juntas, para nenhuma ficar deformada. */
+  function desenharLogos(doc, logos, x, y, larg, alt) {
+    const lista = (logos || []).filter((l) => l && l.dados);
+    if (!lista.length || larg <= 0) return;
+    const vao = 3;
+    let larguras = lista.map((l) => alt * ((l.w && l.h) ? l.w / l.h : 1));
+    let total = larguras.reduce((a, b) => a + b, 0) + vao * (lista.length - 1);
+    let altura = alt;
+    if (total > larg) {
+      const k = larg / total;
+      larguras = larguras.map((w) => w * k);
+      altura = alt * k;
+      total = larg;
+    }
+    let cx = x + (larg - total) / 2;
+    for (let i = 0; i < lista.length; i++) {
+      // imagem que o jsPDF não entender não pode derrubar o PDF inteiro
+      try {
+        // o apelido faz a mesma imagem ser guardada uma vez só, mesmo saindo
+        // em toda página; a compressão evita um PDF de megabytes por causa
+        // de duas logos
+        doc.addImage(lista[i].dados, "PNG", cx, y + (alt - altura) / 2,
+                     larguras[i], altura, "logo" + i, "FAST");
+      } catch (e) { /* segue sem ela */ }
+      cx += larguras[i] + vao;
+    }
+  }
 
   function novoPdf() {
     const { jsPDF } = window.jspdf;
@@ -236,15 +267,28 @@
     doc.setTextColor(0);
   }
 
+  /* A marca do app, desenhada e não importada: é o mesmo quadradinho BZ da
+     tela, e assim ela não depende de nenhum arquivo de imagem. */
+  function marcaBalizador(doc, x, base, lado) {
+    doc.setFillColor(11, 114, 133);
+    doc.roundedRect(x, base - lado + 0.6, lado, lado, 0.8, 0.8, "F");
+    doc.setFont("helvetica", "bold").setFontSize(lado * 1.8).setTextColor(255);
+    doc.text("BZ", x + lado / 2, base - lado / 2 + 1.4, { align: "center" });
+    doc.setTextColor(0);
+  }
+
   function rodapeCredito(doc, pagina) {
+    const lado = 4;
+    const base = A4.h - 6;
+    marcaBalizador(doc, MG, base, lado);
     doc.setFont("helvetica", "normal").setFontSize(6.5).setTextColor(150);
-    doc.text("Feito com Balizador · " + SITE, MG, A4.h - 7);
+    doc.text("Feito com Balizador · " + SITE, MG + lado + 1.6, A4.h - 7);
     if (pagina != null)
       doc.text(String(pagina), A4.w - MG, A4.h - 7, { align: "right" });
     doc.setTextColor(0);
   }
 
-  function cabecalhoPagina(doc, perfil, rotuloEtapa, pagina) {
+  function cabecalhoPagina(doc, perfil, rotuloEtapa, pagina, logos) {
     marcaDagua(doc);
     let y = MG + 4;
     doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0);
@@ -267,6 +311,10 @@
       doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(0);
       doc.text(CX(rotuloEtapa), A4.w - MG, MG + 4, { align: "right" });
     }
+    // a faixa livre entre o texto do cabeçalho e a etapa
+    const xLogos = MG + 80;
+    desenharLogos(doc, logos, xLogos, MG,
+                  A4.w - MG - xLogos - (rotuloEtapa ? 24 : 0), 15);
     doc.setDrawColor(0).setLineWidth(0.4);
     doc.line(MG, y + 2.5, A4.w - MG, y + 2.5);
 
@@ -319,18 +367,18 @@
     else doc.text(texto, x + 1.5, y);
   }
 
-  function gerarPdfBalizamento(provas, perfil) {
+  function gerarPdfBalizamento(provas, perfil, logos) {
     const doc = novoPdf();
     const util = A4.w - 2 * MG;
     const RODAPE = A4.h - MG - 6;
     let pagina = 1, etapaAtual = null, rotuloPagina = null;
-    let y = cabecalhoPagina(doc, perfil, null, 1);
+    let y = cabecalhoPagina(doc, perfil, null, 1, logos);
     // uma página recém-aberta não deve ser quebrada de novo pela etapa
     let paginaVazia = true;
 
     const novaPagina = (rot) => {
       doc.addPage(); pagina++; rotuloPagina = rot;
-      y = cabecalhoPagina(doc, perfil, rot, pagina);
+      y = cabecalhoPagina(doc, perfil, rot, pagina, logos);
       paginaVazia = true;
     };
 
@@ -502,7 +550,7 @@
 
 
   /* =================== PAPELETAS =================== */
-  function gerarPapeletas(provas, perfil) {
+  function gerarPapeletas(provas, perfil, logos) {
     const doc = novoPdf();
     const cartoes = [];
     for (const p of provas) {
@@ -524,7 +572,8 @@
       }
     }
 
-    const alturaSlot = (A4.h - 2 * MG) / 4;
+    const alturaSlot = ALT_SLOT;
+    const daPapeleta = (logos || []).filter((l) => l && l.naPapeleta);
     const util = A4.w - 2 * MG;
     const lEsq = util * 0.54, lDir = util - lEsq;
 
@@ -533,7 +582,7 @@
       if (pos === 0 && idx) doc.addPage();
       if (pos === 0) rodapeCredito(doc, null);
       const topo = MG + pos * alturaSlot;
-      desenharPapeleta(doc, MG, topo, lEsq, lDir, d, perfil);
+      desenharPapeleta(doc, MG, topo, lEsq, lDir, d, perfil, daPapeleta);
       if (pos < 3 && idx + 1 < cartoes.length) {
         doc.setDrawColor(170).setLineWidth(0.2).setLineDashPattern([1.2, 1.2], 0);
         doc.line(MG / 2, topo + alturaSlot, A4.w - MG / 2, topo + alturaSlot);
@@ -554,7 +603,7 @@
     return t;
   }
 
-  function desenharPapeleta(doc, x0, topo, lEsq, lDir, d, perfil) {
+  function desenharPapeleta(doc, x0, topo, lEsq, lDir, d, perfil, logos) {
     const pad = 3.5;
     const larg = lEsq - pad;
     let y = topo + pad;
@@ -605,6 +654,9 @@
     doc.text("RAIA", xr, topo + pad + 20, { align: "center" });
     doc.setFont("helvetica", "bold").setFontSize(32);
     doc.text(String(d.raia), xr, topo + pad + 32, { align: "center" });
+
+    // as logos marcadas, no pé do cartão, abaixo do que está escrito
+    desenharLogos(doc, logos, x0, topo + ALT_SLOT - 19, lEsq - pad * 2, 14);
 
     const xt = x0 + lEsq, lt = lDir - pad;
     let yt = topo + pad;

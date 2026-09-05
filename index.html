@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Balizador, natação</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%230B7285%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2233%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22central%22%20font-family%3D%22Verdana%2CDejaVu%20Sans%2Csans-serif%22%20font-weight%3D%22bold%22%20font-size%3D%2227%22%20fill%3D%22%23ffffff%22%3EBZ%3C%2Ftext%3E%3C%2Fsvg%3E"><link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%230B7285%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2233%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22central%22%20font-family%3D%22Verdana%2CDejaVu%20Sans%2Csans-serif%22%20font-weight%3D%22bold%22%20font-size%3D%2227%22%20fill%3D%22%23ffffff%22%3EBZ%3C%2Ftext%3E%3C%2Fsvg%3E"><meta name="theme-color" content="#0B7285">
 <meta name="description" content="Monta balizamento, papeletas de raia e confere erros de inscrição em competições de natação. Roda inteiramente no seu computador.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..600&family=JetBrains+Mono:wght@400..500&display=swap">
 <style>
@@ -749,6 +750,22 @@ h2 > .link{font-size:.95rem;font-weight:400;margin-left:.7rem;vertical-align:mid
 .bloco.info h3{font-size:1.06rem}
 .bloco.info .contador{opacity:.8}
 
+/* as logos das instituições, no passo de gerar */
+.grade-logos{display:grid;gap:.8rem;
+  grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))}
+.caixa-logo{
+  background:var(--papel2);border:1px dashed var(--linha);border-radius:8px;
+  padding:.7rem;display:flex;flex-direction:column;gap:.5rem;align-items:center;
+}
+.caixa-logo.cheia{border-style:solid;border-color:var(--agua)}
+.moldura-logo{
+  height:5rem;width:100%;display:grid;place-items:center;
+  background:#fff;border-radius:4px;overflow:hidden;
+}
+.moldura-logo img{max-height:4.4rem;max-width:92%;object-fit:contain}
+.moldura-logo span{color:#8DA5B0;font-size:.85rem}
+.caixa-logo .marcavel{font-size:.92rem;align-self:flex-start}
+
 </style>
 </head>
 <body>
@@ -1108,6 +1125,29 @@ h2 > .link{font-size:.95rem;font-weight:400;margin-left:.7rem;vertical-align:mid
     <p class="sub">Os arquivos são montados aqui no seu computador. Veja a
       prévia antes de baixar: é a mesma coisa que vai sair no arquivo.</p>
     <div id="resumoGerar"></div>
+
+    <div class="cartao">
+      <h3>Logos das instituições <span class="opcional">opcional</span></h3>
+      <p class="nota">Elas saem no alto de <b>toda página</b> do balizamento, na
+        faixa ao lado do nome da competição. Marque as que também devem sair na
+        papeleta, onde o espaço é pequeno. As imagens ficam só nesta sessão: se
+        você fechar a página, envie de novo.</p>
+      <div class="campos">
+        <label class="campo">Quantas logos?
+          <select id="quantasLogos">
+            <option value="0">nenhuma</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+        </label>
+      </div>
+      <div id="logos" class="grade-logos"></div>
+    </div>
+
     <div class="grade-saidas">
       <div class="saida" data-saida="xlsx">
         <b>Planilha do balizamento</b>
@@ -4313,6 +4353,37 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   /* =================== PDF DO BALIZAMENTO =================== */
   const A4 = { w: 210, h: 297 };
   const MG = 12;
+  const ALT_SLOT = (A4.h - 2 * MG) / 4;   // quatro papeletas por folha
+
+  /* As logos das instituições, lado a lado dentro de uma faixa. Cada uma
+     entra na altura da faixa, guardando a proporção; se a soma passar da
+     largura, todas encolhem juntas, para nenhuma ficar deformada. */
+  function desenharLogos(doc, logos, x, y, larg, alt) {
+    const lista = (logos || []).filter((l) => l && l.dados);
+    if (!lista.length || larg <= 0) return;
+    const vao = 3;
+    let larguras = lista.map((l) => alt * ((l.w && l.h) ? l.w / l.h : 1));
+    let total = larguras.reduce((a, b) => a + b, 0) + vao * (lista.length - 1);
+    let altura = alt;
+    if (total > larg) {
+      const k = larg / total;
+      larguras = larguras.map((w) => w * k);
+      altura = alt * k;
+      total = larg;
+    }
+    let cx = x + (larg - total) / 2;
+    for (let i = 0; i < lista.length; i++) {
+      // imagem que o jsPDF não entender não pode derrubar o PDF inteiro
+      try {
+        // o apelido faz a mesma imagem ser guardada uma vez só, mesmo saindo
+        // em toda página; a compressão evita um PDF de megabytes por causa
+        // de duas logos
+        doc.addImage(lista[i].dados, "PNG", cx, y + (alt - altura) / 2,
+                     larguras[i], altura, "logo" + i, "FAST");
+      } catch (e) { /* segue sem ela */ }
+      cx += larguras[i] + vao;
+    }
+  }
 
   function novoPdf() {
     const { jsPDF } = window.jspdf;
@@ -4331,15 +4402,28 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     doc.setTextColor(0);
   }
 
+  /* A marca do app, desenhada e não importada: é o mesmo quadradinho BZ da
+     tela, e assim ela não depende de nenhum arquivo de imagem. */
+  function marcaBalizador(doc, x, base, lado) {
+    doc.setFillColor(11, 114, 133);
+    doc.roundedRect(x, base - lado + 0.6, lado, lado, 0.8, 0.8, "F");
+    doc.setFont("helvetica", "bold").setFontSize(lado * 1.8).setTextColor(255);
+    doc.text("BZ", x + lado / 2, base - lado / 2 + 1.4, { align: "center" });
+    doc.setTextColor(0);
+  }
+
   function rodapeCredito(doc, pagina) {
+    const lado = 4;
+    const base = A4.h - 6;
+    marcaBalizador(doc, MG, base, lado);
     doc.setFont("helvetica", "normal").setFontSize(6.5).setTextColor(150);
-    doc.text("Feito com Balizador · " + SITE, MG, A4.h - 7);
+    doc.text("Feito com Balizador · " + SITE, MG + lado + 1.6, A4.h - 7);
     if (pagina != null)
       doc.text(String(pagina), A4.w - MG, A4.h - 7, { align: "right" });
     doc.setTextColor(0);
   }
 
-  function cabecalhoPagina(doc, perfil, rotuloEtapa, pagina) {
+  function cabecalhoPagina(doc, perfil, rotuloEtapa, pagina, logos) {
     marcaDagua(doc);
     let y = MG + 4;
     doc.setFont("helvetica", "bold").setFontSize(14).setTextColor(0);
@@ -4362,6 +4446,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       doc.setFont("helvetica", "bold").setFontSize(8).setTextColor(0);
       doc.text(CX(rotuloEtapa), A4.w - MG, MG + 4, { align: "right" });
     }
+    // a faixa livre entre o texto do cabeçalho e a etapa
+    const xLogos = MG + 80;
+    desenharLogos(doc, logos, xLogos, MG,
+                  A4.w - MG - xLogos - (rotuloEtapa ? 24 : 0), 15);
     doc.setDrawColor(0).setLineWidth(0.4);
     doc.line(MG, y + 2.5, A4.w - MG, y + 2.5);
 
@@ -4414,18 +4502,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     else doc.text(texto, x + 1.5, y);
   }
 
-  function gerarPdfBalizamento(provas, perfil) {
+  function gerarPdfBalizamento(provas, perfil, logos) {
     const doc = novoPdf();
     const util = A4.w - 2 * MG;
     const RODAPE = A4.h - MG - 6;
     let pagina = 1, etapaAtual = null, rotuloPagina = null;
-    let y = cabecalhoPagina(doc, perfil, null, 1);
+    let y = cabecalhoPagina(doc, perfil, null, 1, logos);
     // uma página recém-aberta não deve ser quebrada de novo pela etapa
     let paginaVazia = true;
 
     const novaPagina = (rot) => {
       doc.addPage(); pagina++; rotuloPagina = rot;
-      y = cabecalhoPagina(doc, perfil, rot, pagina);
+      y = cabecalhoPagina(doc, perfil, rot, pagina, logos);
       paginaVazia = true;
     };
 
@@ -4597,7 +4685,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
 
   /* =================== PAPELETAS =================== */
-  function gerarPapeletas(provas, perfil) {
+  function gerarPapeletas(provas, perfil, logos) {
     const doc = novoPdf();
     const cartoes = [];
     for (const p of provas) {
@@ -4619,7 +4707,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       }
     }
 
-    const alturaSlot = (A4.h - 2 * MG) / 4;
+    const alturaSlot = ALT_SLOT;
+    const daPapeleta = (logos || []).filter((l) => l && l.naPapeleta);
     const util = A4.w - 2 * MG;
     const lEsq = util * 0.54, lDir = util - lEsq;
 
@@ -4628,7 +4717,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (pos === 0 && idx) doc.addPage();
       if (pos === 0) rodapeCredito(doc, null);
       const topo = MG + pos * alturaSlot;
-      desenharPapeleta(doc, MG, topo, lEsq, lDir, d, perfil);
+      desenharPapeleta(doc, MG, topo, lEsq, lDir, d, perfil, daPapeleta);
       if (pos < 3 && idx + 1 < cartoes.length) {
         doc.setDrawColor(170).setLineWidth(0.2).setLineDashPattern([1.2, 1.2], 0);
         doc.line(MG / 2, topo + alturaSlot, A4.w - MG / 2, topo + alturaSlot);
@@ -4649,7 +4738,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return t;
   }
 
-  function desenharPapeleta(doc, x0, topo, lEsq, lDir, d, perfil) {
+  function desenharPapeleta(doc, x0, topo, lEsq, lDir, d, perfil, logos) {
     const pad = 3.5;
     const larg = lEsq - pad;
     let y = topo + pad;
@@ -4700,6 +4789,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     doc.text("RAIA", xr, topo + pad + 20, { align: "center" });
     doc.setFont("helvetica", "bold").setFontSize(32);
     doc.text(String(d.raia), xr, topo + pad + 32, { align: "center" });
+
+    // as logos marcadas, no pé do cartão, abaixo do que está escrito
+    desenharLogos(doc, logos, x0, topo + ALT_SLOT - 19, lEsq - pad * 2, 14);
 
     const xt = x0 + lEsq, lt = lDir - pad;
     let yt = topo + pad;
@@ -5168,6 +5260,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     tempos: [], naipes: [], classes: [], mesmoNome: [], parecidos: [],
     idades: [], nascimentos: [], porEquipe: [], revezamentos: [],
     provasRepetidas: [],
+    // logos das instituições, só nesta sessão: nada disso é guardado
+    logos: [],
     // correções feitas na tela da conferência, sem mexer na planilha:
     // provas tiradas de quem passou do limite, e nomes que faltavam
     ajustes: novosAjustes(),
@@ -7816,6 +7910,84 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
   }
 
 
+  /* ---------------- tela 5: gerar ----------------
+     As logos entram aqui, no fim, porque é onde o árbitro já sabe que o
+     balizamento está pronto. Elas não são guardadas: ficam na memória desta
+     sessão e vão para dentro do PDF na hora de gerar. */
+
+  // a imagem entra encolhida: uma logo de 3000px deixaria o PDF pesado sem
+  // aparecer melhor numa faixa de 16mm
+  const LADO_MAXIMO = 480;
+
+  function lerLogo(file) {
+    return new Promise((ok, falha) => {
+      const leitor = new FileReader();
+      leitor.onerror = () => falha(new Error("não consegui ler a imagem"));
+      leitor.onload = () => {
+        const img = new Image();
+        img.onerror = () => falha(new Error("isto não parece uma imagem"));
+        img.onload = () => {
+          const k = Math.min(1, LADO_MAXIMO / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * k));
+          const h = Math.max(1, Math.round(img.height * k));
+          const tela = document.createElement("canvas");
+          tela.width = w; tela.height = h;
+          tela.getContext("2d").drawImage(img, 0, 0, w, h);
+          ok({ nome: file.name, dados: tela.toDataURL("image/png"), w, h });
+        };
+        img.src = leitor.result;
+      };
+      leitor.readAsDataURL(file);
+    });
+  }
+
+  function renderLogos() {
+    const alvo = $("#logos");
+    if (!alvo) return;
+    const quantas = parseInt(($("#quantasLogos") || {}).value, 10) || 0;
+    estado.logos.length = quantas;
+    alvo.innerHTML = "";
+    for (let i = 0; i < quantas; i++) {
+      const l = estado.logos[i] || null;
+      const caixa = document.createElement("div");
+      caixa.className = "caixa-logo" + (l ? " cheia" : "");
+      caixa.innerHTML = `
+        <div class="moldura-logo">${l
+          ? `<img src="${l.dados}" alt="">`
+          : "<span>sem imagem</span>"}</div>
+        <input type="file" accept="image/*" hidden>
+        <button type="button" class="mini claro">${
+          l ? "trocar a imagem" : "escolher a imagem"}</button>
+        <label class="marcavel"><input type="checkbox"${
+          l && l.naPapeleta ? " checked" : ""}${l ? "" : " disabled"}>
+          <span>sai também na papeleta</span></label>`;
+      const campo = $("input[type=file]", caixa);
+      $("button", caixa).onclick = () => campo.click();
+      campo.onchange = async () => {
+        const arq = campo.files[0];
+        if (!arq) return;
+        try {
+          const lida = await lerLogo(arq);
+          lida.naPapeleta = !!(estado.logos[i] && estado.logos[i].naPapeleta);
+          estado.logos[i] = lida;
+          renderLogos();
+          aviso(`${arq.name} entrou como logo ${i + 1}.`);
+        } catch (e) {
+          aviso("Não consegui ler esta imagem. Tente um PNG ou um JPG.");
+        }
+      };
+      $(".marcavel input", caixa).onchange = (ev) => {
+        if (estado.logos[i]) estado.logos[i].naPapeleta = ev.target.checked;
+      };
+      alvo.appendChild(caixa);
+    }
+  }
+
+  // as que valem: só as que têm imagem de verdade
+  function logosParaSaida() {
+    return estado.logos.filter((l) => l && l.dados);
+  }
+
   /* ---------------- tela 5: gerar ---------------- */
   function renderGerar() {
     if (!estado.provas.length) montar();
@@ -7842,10 +8014,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       return { tipo: "planilha", wb };
     }
     if (qual === "pdf") {
-      return { tipo: "pdf", doc: S.gerarPdfBalizamento(estado.provas, estado.perfil),
+      return { tipo: "pdf",
+               doc: S.gerarPdfBalizamento(estado.provas, estado.perfil,
+                                          logosParaSaida()),
                nome: baseNome() + " - BALIZAMENTO.pdf" };
     }
-    const { doc } = S.gerarPapeletas(estado.provas, estado.perfil);
+    const { doc } = S.gerarPapeletas(estado.provas, estado.perfil,
+                                     logosParaSaida());
     return { tipo: "pdf", doc, nome: baseNome() + " - PAPELETAS.pdf" };
   }
 
@@ -8046,6 +8221,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       if (e.target.files[0]) carregarArquivo(e.target.files[0]);
     };
 
+    ao("quantasLogos", "change", renderLogos);
     $$("[data-previa]").forEach((b) =>
       (b.onclick = () => verPrevia(b.dataset.previa)));
     $("#btnXlsx").onclick = () => {
@@ -8058,12 +8234,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     };
     $("#btnPdf").onclick = () => {
       montar();
-      const doc = S.gerarPdfBalizamento(estado.provas, estado.perfil);
+      const doc = S.gerarPdfBalizamento(estado.provas, estado.perfil,
+                                        logosParaSaida());
       doc.save(baseNome() + " - BALIZAMENTO.pdf");
     };
     $("#btnPapeletas").onclick = () => {
       montar();
-      const { doc } = S.gerarPapeletas(estado.provas, estado.perfil);
+      const { doc } = S.gerarPapeletas(estado.provas, estado.perfil,
+                                       logosParaSaida());
       doc.save(baseNome() + " - PAPELETAS.pdf");
     };
     $("#btnPerfilSalvar").onclick = () => {

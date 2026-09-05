@@ -739,3 +739,19 @@ h2 > .link{font-size:.95rem;font-weight:400;margin-left:.7rem;vertical-align:mid
 /* aviso em azul não pode pesar tanto quanto o problema em vermelho */
 .bloco.info h3{font-size:1.06rem}
 .bloco.info .contador{opacity:.8}
+
+/* as logos das instituições, no passo de gerar */
+.grade-logos{display:grid;gap:.8rem;
+  grid-template-columns:repeat(auto-fill,minmax(13rem,1fr))}
+.caixa-logo{
+  background:var(--papel2);border:1px dashed var(--linha);border-radius:8px;
+  padding:.7rem;display:flex;flex-direction:column;gap:.5rem;align-items:center;
+}
+.caixa-logo.cheia{border-style:solid;border-color:var(--agua)}
+.moldura-logo{
+  height:5rem;width:100%;display:grid;place-items:center;
+  background:#fff;border-radius:4px;overflow:hidden;
+}
+.moldura-logo img{max-height:4.4rem;max-width:92%;object-fit:contain}
+.moldura-logo span{color:#8DA5B0;font-size:.85rem}
+.caixa-logo .marcavel{font-size:.92rem;align-self:flex-start}

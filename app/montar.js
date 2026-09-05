@@ -30,12 +30,29 @@ const FONTES =
   'family=Instrument+Sans:wght@400..600&' +
   'family=JetBrains+Mono:wght@400..500&display=swap">';
 
+/* O ícone da aba, desenhado aqui mesmo e embutido como data URI: assim o
+   arquivo continua sendo um só e funciona offline, sem o mundinho cinza que o
+   navegador põe quando não acha ícone nenhum. É o mesmo quadradinho BZ da
+   tela, com o azul de água do app. */
+const ICONE =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">' +
+  '<rect width="64" height="64" rx="14" fill="#0B7285"/>' +
+  '<text x="32" y="33" text-anchor="middle" dominant-baseline="central" ' +
+  'font-family="Verdana,DejaVu Sans,sans-serif" font-weight="bold" ' +
+  'font-size="27" fill="#ffffff">BZ</text></svg>';
+const LINK_ICONE =
+  '<link rel="icon" href="data:image/svg+xml,' + encodeURIComponent(ICONE) + '">' +
+  '<link rel="apple-touch-icon" href="data:image/svg+xml,' +
+  encodeURIComponent(ICONE) + '">' +
+  '<meta name="theme-color" content="#0B7285">';
+
 const html = `<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Balizador, natação</title>
+${LINK_ICONE}
 <meta name="description" content="Monta balizamento, papeletas de raia e confere erros de inscrição em competições de natação. Roda inteiramente no seu computador.">
 ${FONTES}
 <style>

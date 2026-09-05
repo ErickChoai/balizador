@@ -61,6 +61,8 @@
     tempos: [], naipes: [], classes: [], mesmoNome: [], parecidos: [],
     idades: [], nascimentos: [], porEquipe: [], revezamentos: [],
     provasRepetidas: [],
+    // logos das instituições, só nesta sessão: nada disso é guardado
+    logos: [],
     // correções feitas na tela da conferência, sem mexer na planilha:
     // provas tiradas de quem passou do limite, e nomes que faltavam
     ajustes: novosAjustes(),
@@ -2709,6 +2711,84 @@
   }
 
 
+  /* ---------------- tela 5: gerar ----------------
+     As logos entram aqui, no fim, porque é onde o árbitro já sabe que o
+     balizamento está pronto. Elas não são guardadas: ficam na memória desta
+     sessão e vão para dentro do PDF na hora de gerar. */
+
+  // a imagem entra encolhida: uma logo de 3000px deixaria o PDF pesado sem
+  // aparecer melhor numa faixa de 16mm
+  const LADO_MAXIMO = 480;
+
+  function lerLogo(file) {
+    return new Promise((ok, falha) => {
+      const leitor = new FileReader();
+      leitor.onerror = () => falha(new Error("não consegui ler a imagem"));
+      leitor.onload = () => {
+        const img = new Image();
+        img.onerror = () => falha(new Error("isto não parece uma imagem"));
+        img.onload = () => {
+          const k = Math.min(1, LADO_MAXIMO / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * k));
+          const h = Math.max(1, Math.round(img.height * k));
+          const tela = document.createElement("canvas");
+          tela.width = w; tela.height = h;
+          tela.getContext("2d").drawImage(img, 0, 0, w, h);
+          ok({ nome: file.name, dados: tela.toDataURL("image/png"), w, h });
+        };
+        img.src = leitor.result;
+      };
+      leitor.readAsDataURL(file);
+    });
+  }
+
+  function renderLogos() {
+    const alvo = $("#logos");
+    if (!alvo) return;
+    const quantas = parseInt(($("#quantasLogos") || {}).value, 10) || 0;
+    estado.logos.length = quantas;
+    alvo.innerHTML = "";
+    for (let i = 0; i < quantas; i++) {
+      const l = estado.logos[i] || null;
+      const caixa = document.createElement("div");
+      caixa.className = "caixa-logo" + (l ? " cheia" : "");
+      caixa.innerHTML = `
+        <div class="moldura-logo">${l
+          ? `<img src="${l.dados}" alt="">`
+          : "<span>sem imagem</span>"}</div>
+        <input type="file" accept="image/*" hidden>
+        <button type="button" class="mini claro">${
+          l ? "trocar a imagem" : "escolher a imagem"}</button>
+        <label class="marcavel"><input type="checkbox"${
+          l && l.naPapeleta ? " checked" : ""}${l ? "" : " disabled"}>
+          <span>sai também na papeleta</span></label>`;
+      const campo = $("input[type=file]", caixa);
+      $("button", caixa).onclick = () => campo.click();
+      campo.onchange = async () => {
+        const arq = campo.files[0];
+        if (!arq) return;
+        try {
+          const lida = await lerLogo(arq);
+          lida.naPapeleta = !!(estado.logos[i] && estado.logos[i].naPapeleta);
+          estado.logos[i] = lida;
+          renderLogos();
+          aviso(`${arq.name} entrou como logo ${i + 1}.`);
+        } catch (e) {
+          aviso("Não consegui ler esta imagem. Tente um PNG ou um JPG.");
+        }
+      };
+      $(".marcavel input", caixa).onchange = (ev) => {
+        if (estado.logos[i]) estado.logos[i].naPapeleta = ev.target.checked;
+      };
+      alvo.appendChild(caixa);
+    }
+  }
+
+  // as que valem: só as que têm imagem de verdade
+  function logosParaSaida() {
+    return estado.logos.filter((l) => l && l.dados);
+  }
+
   /* ---------------- tela 5: gerar ---------------- */
   function renderGerar() {
     if (!estado.provas.length) montar();
@@ -2735,10 +2815,13 @@
       return { tipo: "planilha", wb };
     }
     if (qual === "pdf") {
-      return { tipo: "pdf", doc: S.gerarPdfBalizamento(estado.provas, estado.perfil),
+      return { tipo: "pdf",
+               doc: S.gerarPdfBalizamento(estado.provas, estado.perfil,
+                                          logosParaSaida()),
                nome: baseNome() + " - BALIZAMENTO.pdf" };
     }
-    const { doc } = S.gerarPapeletas(estado.provas, estado.perfil);
+    const { doc } = S.gerarPapeletas(estado.provas, estado.perfil,
+                                     logosParaSaida());
     return { tipo: "pdf", doc, nome: baseNome() + " - PAPELETAS.pdf" };
   }
 
@@ -2939,6 +3022,7 @@
       if (e.target.files[0]) carregarArquivo(e.target.files[0]);
     };
 
+    ao("quantasLogos", "change", renderLogos);
     $$("[data-previa]").forEach((b) =>
       (b.onclick = () => verPrevia(b.dataset.previa)));
     $("#btnXlsx").onclick = () => {
@@ -2951,12 +3035,14 @@
     };
     $("#btnPdf").onclick = () => {
       montar();
-      const doc = S.gerarPdfBalizamento(estado.provas, estado.perfil);
+      const doc = S.gerarPdfBalizamento(estado.provas, estado.perfil,
+                                        logosParaSaida());
       doc.save(baseNome() + " - BALIZAMENTO.pdf");
     };
     $("#btnPapeletas").onclick = () => {
       montar();
-      const { doc } = S.gerarPapeletas(estado.provas, estado.perfil);
+      const { doc } = S.gerarPapeletas(estado.provas, estado.perfil,
+                                       logosParaSaida());
       doc.save(baseNome() + " - PAPELETAS.pdf");
     };
     $("#btnPerfilSalvar").onclick = () => {
