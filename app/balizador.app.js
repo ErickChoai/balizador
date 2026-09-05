@@ -459,32 +459,41 @@
       </div>` : ""}
       ${tabelaPrograma(r)}`);
 
-    /* Clicar tem de deixar marca na tela: o botão escolhido fica em destaque,
-       o outro apaga, e a linha de baixo diz o que ficou valendo. Sem isso o
-       clique parece não ter feito nada. */
-    const marcarJuncao = (valor, avisar) => {
+    /* Decidir fecha o cartão. Ele é uma pergunta, e pergunta respondida sai
+       da frente: fica uma linha dizendo o que ficou valendo, com um jeito de
+       mudar. Enquanto ele continuava inteiro na tela, clicar parecia não ter
+       feito nada. */
+    const marcarJuncao = (valor, fechando) => {
       estado.perfil.juntarPrograma = valor;
-      const nota = $("#notaJuncoes");
+      const cartao = $("#cartaoJuncoes");
+      if (fechando && cartao) {
+        cartao.className = "recusa pergunta fechada";
+        cartao.innerHTML = `<p><b>${valor ? "Certo, junto sozinho."
+                                          : "Certo, não junto nada."}</b>
+          ${valor
+            ? "Os inscritos de cada categoria já entram na prova certa. A lista "
+              + "está na tela da competição, e a conferência mostra o que casou."
+            : "Cada caso vai ser perguntado na conferência."}
+          <button type="button" class="link" id="btnMudarJuncao">mudar</button></p>`;
+        ao("btnMudarJuncao", "click", () => renderResultadoPrograma(r));
+        renderGrupos();
+        aviso(valor ? "Certo, junto sozinho pelo programa."
+                    : "Certo, pergunto caso a caso na conferência.");
+        return;
+      }
+      // ainda aberto: mostra qual das duas está valendo
       const sim = $("#btnJuntarSim"), nao = $("#btnJuntarNao");
+      const nota = $("#notaJuncoes");
       if (sim && nao) {
         sim.className = valor ? "botao" : "mini claro";
         nao.className = valor ? "mini claro" : "botao";
-        sim.textContent = valor ? "Vou juntar sozinho" : "Pode juntar";
-        nao.textContent = valor ? "Prefiro conferir uma por uma"
-                                : "Vou conferir uma por uma";
       }
       if (nota) {
         nota.textContent = valor
-          ? "Está valendo: junto sozinho, e a conferência mostra depois o que "
-            + "casou com o quê. Você também vê a lista na tela da competição."
-          : "Está valendo: não junto nada, e cada caso vai ser perguntado na "
-            + "conferência.";
+          ? "Do jeito que está, junto sozinho."
+          : "Do jeito que está, não junto nada.";
       }
       renderGrupos();
-      if (avisar) {
-        aviso(valor ? "Certo, junto sozinho pelo programa."
-                    : "Certo, pergunto caso a caso na conferência.");
-      }
     };
     ao("btnJuntarSim", "click", () => marcarJuncao(true, true));
     ao("btnJuntarNao", "click", () => marcarJuncao(false, true));
