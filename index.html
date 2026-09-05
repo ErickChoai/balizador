@@ -422,8 +422,8 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
 
 /* ---------- competições de exemplo ---------- */
 .linha-exemplo{
-  display:flex;gap:1rem;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;padding:.7rem 0;border-bottom:1px solid var(--linha);
+  display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:center;
+  padding:.7rem 0;border-bottom:1px solid var(--linha);
 }
 .linha-exemplo:last-child{border-bottom:0;padding-bottom:0}
 .linha-exemplo b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:.98rem}
@@ -657,11 +657,6 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
   .cartao{display:block}
   .cartao::after{content:"";display:table;clear:both}
   .cartao > * + *{margin-top:.85rem}
-  .cartao > .nota{
-    float:right;width:min(26rem,38%);margin:0 0 .85rem 2.2rem;max-width:none;
-    padding-left:1.1rem;border-left:2px solid var(--linha);
-  }
-  .cartao > .nota + *{margin-top:0}
   /* nas listas e tabelas o texto volta para cima, senão a grade fica torta */
   .cartao > .lista-etapas,.cartao > .cabecalho-lista,.cartao > table,
   .cartao > .planilha-exemplo,.cartao > .scroll-x{clear:both}
@@ -720,6 +715,22 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
 .recusa.pergunta.fechada p{font-size:1rem}
 .recusa.pergunta.fechada .link{margin-left:.5rem}
 
+/* botão de baixar modelo não pode ficar colado na tabela de cima */
+.acoes-soltas{margin-top:.6rem}
+/* o "para que serve" ao lado do título, sem competir com ele */
+h2 > .link{font-size:.95rem;font-weight:400;margin-left:.7rem;vertical-align:middle}
+
+/* cada agrupamento é um cartão, não uma linha de campos apertados */
+.grupo-cartao{
+  background:var(--papel2);border-radius:8px;padding:.9rem 1rem;
+  display:flex;flex-direction:column;gap:.7rem;margin-bottom:.6rem;
+}
+.grupo-topo{display:flex;gap:1rem;align-items:end;justify-content:space-between}
+.grupo-cats,.grupo-filtros{display:flex;gap:.8rem;flex-wrap:wrap}
+.grupo-cats > .campo{flex:1 1 14rem}
+.grupo-filtros > .campo{flex:0 1 12rem}
+.grupo-saida{font-size:1rem}
+
 </style>
 </head>
 <body>
@@ -743,11 +754,13 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
 <main>
   <!-- ============ 1. PROGRAMA DE PROVAS ============ -->
   <section class="tela" data-tela="programa">
-    <h2>Comece pelo programa de provas</h2>
-    <p class="sub">É o programa que manda na <b>ordem</b> e na <b>numeração</b>
-      das provas: no balizamento, no PDF e nas papeletas. Traga-o numa planilha:
-      é mais fácil de conferir, de corrigir e de guardar para o ano que vem do
-      que uma lista digitada aqui dentro.</p>
+    <h2>Comece pelo programa de provas
+      <button type="button" class="link" id="btnOqueEPrograma">para que serve?</button></h2>
+    <p class="sub" id="oqueEPrograma" hidden>É o programa que manda na
+      <b>ordem</b> e na <b>numeração</b> das provas: no balizamento, no PDF e
+      nas papeletas. Traga-o numa planilha: é mais fácil de conferir, de
+      corrigir e de guardar para o ano que vem do que uma lista digitada aqui
+      dentro.</p>
 
     <div class="cartao especificacao">
       <h3>Como a planilha do programa precisa ser</h3>
@@ -777,7 +790,7 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
       <p class="nota">Se você já tem o programa escrito por extenso, também serve:
         uma coluna só, com o cabeçalho <code>PROVA</code> e uma prova por linha:
         <code>25m LIVRE PRÉ-MIRIM "B" FEMININO</code>.</p>
-      <div class="acoes">
+      <div class="acoes acoes-soltas">
         <button type="button" class="mini claro" id="btnModeloPrograma">
           Baixar a planilha modelo do programa</button>
       </div>
@@ -826,7 +839,7 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
 
     <div id="config">
       <div class="cartao">
-        <h3>Qual é o nome da competição?</h3>
+        <h3>Informações da competição</h3>
         <div class="campos">
           <label class="campo largo">Nome
             <input id="nomeComp" placeholder="JEPB 2026, NATAÇÃO">
@@ -849,8 +862,6 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
             <output id="previaData" class="valor-calculado"></output>
           </div>
         </div>
-        <p class="nota">Nome, local e data saem no alto de toda página do
-          balizamento.</p>
       </div>
 
       <div class="cartao">
@@ -867,9 +878,6 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
             </select>
           </label>
         </div>
-        <p class="nota">As últimas séries saem sempre cheias. A sobra fica na
-          primeira série, que é onde nadam os mais lentos e quem não informou
-          tempo. Nenhuma série fica abaixo de metade das raias.</p>
         <dl class="previa">
           <div><dt>Ordem de preenchimento das raias</dt><dd id="previaRaias" class="mono"></dd></div>
           <div><dt>Mínimo por série</dt><dd id="previaMinimo" class="mono"></dd></div>
@@ -919,7 +927,7 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
             <input id="limiteEquipe" type="number" min="1" max="50" placeholder="sem limite">
           </label>
         </div>
-        <p class="nota">Quem passar do limite sai destacado na conferência e no
+        <p class="nota" hidden>Quem passar do limite sai destacado na conferência e no
           balizamento, com o motivo escrito.</p>
       </div>
 
@@ -956,18 +964,12 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
           aqui. Este cartão é para o resto: quando você resolve juntar duas
           categorias que o programa deixou separadas.</p>
         <div class="exemplo-grupo">
-          <span class="apagado">Exemplo, lendo a linha da esquerda para a direita:</span>
-          <p>a prova <b>PARALÍMPICO "A" + "B"</b> recebe quem estiver inscrito
-            em <b>PARAL A</b> e em <b>PARAL B</b>, só nos <b>25m</b>, em
-            qualquer estilo.</p>
-        </div>
-        <div class="cabecalho-lista grupos">
-          <span>Nome da prova que sai disso</span><span>Categorias que se juntam</span>
-          <span>Só nas distâncias</span><span>Só nos estilos</span><span></span>
+          <span class="apagado">Como funciona:</span>
+          <p>você diz quantas categorias nadam juntas, escolhe quais, e a prova
+            que sai disso fica no lugar da primeira delas, com o número que ela
+            já tinha no programa. As outras saem como provas sem inscritos.</p>
         </div>
         <div id="grupos"></div>
-        <p class="nota apagado">Distância e estilo em branco valem para todas as
-          provas. Separe por vírgula para pôr mais de uma.</p>
         <button type="button" class="mini claro" id="addGrupo">adicionar agrupamento</button>
         <datalist id="listaCategorias"></datalist>
         <datalist id="listaDistancias"></datalist>
@@ -3685,6 +3687,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       }
       if (i.misto) i.naipe = "MISTO";
       i.categoriaProva = grupoDe(i.categoria, i.distancia, i.estilo, perfil);
+      // agrupamento montado à mão manda mais que o casamento automático:
+      // sem isto, "INFANTIL + JUVENIL" voltaria a virar "INFANTIL" por
+      // semelhança, desfazendo o que o árbitro pediu
+      i.deGrupo = chaveCategoria(i.categoriaProva) !== chaveCategoria(i.categoria);
     }
 
     /* O programa é quem manda, inclusive quando ele junta categorias numa
@@ -3702,6 +3708,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         candidatas.get(k).push(p);
       }
       for (const i of inscricoes) {
+        if (i.deGrupo) continue;
         const k = chaveProva(i.distancia, i.estilo, i.categoriaProva, i.naipe);
         if (noPrograma.has(k)) continue;
         const ki = chaveCategoria(i.categoriaProva);
@@ -3742,6 +3749,36 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         partes: [p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe],
         doPrograma: true,
       }));
+      /* Grupo montado à mão sobre provas que o programa deixou separadas: a
+         prova que sai disso fica no lugar da primeira delas, para a numeração
+         impressa não mudar. As outras saem como provas sem inscritos, que é o
+         que elas viraram de fato. */
+      for (const g of (perfil.grupos || [])) {
+        const cats = (g.categorias || []).map(chaveCategoria).filter(Boolean);
+        if (!cats.length || !g.rotulo) continue;
+        if (sequencia.some((x) => x.doPrograma &&
+            chaveCategoria(x.partes[2]) === chaveCategoria(g.rotulo))) continue;
+        const porProva = new Map();
+        sequencia.forEach((seq, idx) => {
+          if (!seq.doPrograma) return;
+          const [d, e, cat, n] = seq.partes;
+          if (!cats.includes(chaveCategoria(cat))) return;
+          if (g.distancias && g.distancias.length && !g.distancias.includes(d)) return;
+          if (g.estilos && g.estilos.length && !g.estilos.includes(e)) return;
+          const k = [d, e, n].join("|");
+          if (!porProva.has(k)) porProva.set(k, []);
+          porProva.get(k).push(idx);
+        });
+        for (const [, idxs] of porProva) {
+          const [d, e, , n] = sequencia[idxs[0]].partes;
+          sequencia[idxs[0]] = {
+            chave: chaveProva(d, e, g.rotulo, n),
+            partes: [d, e, g.rotulo, n],
+            doPrograma: true,
+          };
+        }
+      }
+
       const noPrograma = new Set(sequencia.map((s) => s.chave));
       // quem tem inscrito mas não está no programa entra no fim, sinalizado
       [...mapa.keys()]
@@ -6088,34 +6125,120 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
           ${j.provas.length} prova(s): ${AT(j.distancias.join(", ").toLowerCase())}</span></p>`).join("")}`;
       alvo.appendChild(caixa);
     }
-    estado.perfil.grupos.forEach((g, k) => {
-      const l = document.createElement("div");
-      // sem a classe "grupo" a linha cai na grade das etapas, que tem seis
-      // colunas, e os campos ficam tortos debaixo dos próprios rótulos
-      l.className = "linha-etapa grupo";
-      l.innerHTML = `
-        <input value="${AT(g.rotulo)}" data-c="rotulo" list="listaCategorias"
-               placeholder='PARALÍMPICO "A" + "B"'>
-        <input value="${AT((g.categorias || []).join(', '))}" data-c="categorias"
-               list="listaCategorias" placeholder='PARAL "A", PARAL "B"'>
-        <input value="${AT((g.distancias || []).join(', '))}" data-c="distancias"
-               list="listaDistancias" placeholder="25M">
-        <input value="${AT((g.estilos || []).join(', '))}" data-c="estilos"
-               list="listaEstilos" placeholder="LIVRE, COSTAS">
-        <button type="button" class="mini" title="remover">×</button>`;
-      $$("input", l).forEach((i) => {
-        i.oninput = () => {
-          const c = i.dataset.c;
-          estado.perfil.grupos[k][c] = c === "rotulo" ? i.value
-            : i.value.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
-        };
-      });
-      $("button", l).onclick = () => {
-        estado.perfil.grupos.splice(k, 1); renderGrupos();
-      };
-      alvo.appendChild(l);
-    });
+    estado.perfil.grupos.forEach((g, k) => alvo.appendChild(linhaDeGrupo(g, k)));
   }
+
+  /* As categorias, as distâncias e os estilos que existem nesta competição,
+     tirados do programa. Nada de digitar: escolher de uma lista fechada
+     impede o 25m medley, que não existe em lugar nenhum. */
+  function categoriasDoPrograma() {
+    const prog = estado.perfil.programa || [];
+    const m = new Map();
+    for (const p of prog) {
+      const rot = p.rotulo || p.categoria;
+      if (rot) m.set(D.chaveCategoria(rot), rot);
+    }
+    return [...m.values()];
+  }
+
+  function provasDoGrupo(cats) {
+    const chaves = (cats || []).map(D.chaveCategoria).filter(Boolean);
+    if (!chaves.length) return estado.perfil.programa || [];
+    return (estado.perfil.programa || []).filter((p) =>
+      chaves.includes(D.chaveCategoria(p.rotulo || p.categoria)));
+  }
+
+  function opcoes(valores, escolhido, vazio) {
+    return [`<option value="">${vazio}</option>`].concat(
+      [...new Set(valores)].map((v) =>
+        `<option value="${AT(v)}"${D.chaveCategoria(v) === D.chaveCategoria(escolhido || "")
+          ? " selected" : ""}>${AT(v)}</option>`)).join("");
+  }
+
+  /* Uma linha de agrupamento: quantas categorias nadam juntas, quais são
+     elas, e em que distância e estilo isso vale. O nome da prova que sai
+     disso o app escreve sozinho, juntando as categorias escolhidas. */
+  function linhaDeGrupo(g, k) {
+    const cartao = document.createElement("div");
+    cartao.className = "grupo-cartao";
+    const cats = g.categorias || [];
+    const quantas = Math.max(2, cats.length || 2);
+    const doGrupo = provasDoGrupo(cats.filter(Boolean));
+    const distEscolhida = (g.distancias || [])[0] || "";
+    const estilosPossiveis = doGrupo
+      .filter((p) => !distEscolhida || p.distancia === distEscolhida)
+      .map((p) => p.estilo);
+
+    cartao.innerHTML = `
+      <div class="grupo-topo">
+        <label class="campo">Quantas categorias nadam juntas?
+          <select data-c="quantas">${[2, 3, 4, 5].map((n) =>
+            `<option${n === quantas ? " selected" : ""}>${n}</option>`).join("")}</select>
+        </label>
+        <button type="button" class="mini" data-remover>remover</button>
+      </div>
+      <div class="grupo-cats">${Array.from({ length: quantas }, (_, i) => `
+        <label class="campo">${i + 1}ª categoria
+          <select data-cat="${i}">${opcoes(categoriasDoPrograma(), cats[i],
+            "escolha a categoria")}</select></label>`).join("")}
+      </div>
+      <div class="grupo-filtros">
+        <label class="campo">Só na distância
+          <select data-c="distancia">${opcoes(doGrupo.map((p) => p.distancia),
+            distEscolhida, "todas")}</select></label>
+        <label class="campo">Só no estilo
+          <select data-c="estilo">${opcoes(estilosPossiveis,
+            (g.estilos || [])[0] || "", "todos")}</select></label>
+      </div>
+      <p class="nota grupo-saida"></p>`;
+
+    const escolhidas = () => $$("[data-cat]", cartao).map((s) => s.value).filter(Boolean);
+    const atualizarSaida = () => {
+      const c = escolhidas();
+      const alvo = $(".grupo-saida", cartao);
+      if (c.length < 2) {
+        alvo.innerHTML = "Escolha as categorias que vão nadar juntas.";
+        alvo.classList.add("alerta-inline");
+        return;
+      }
+      alvo.classList.remove("alerta-inline");
+      const onde = distEscolhida ? " nos " + distEscolhida.toLowerCase() : "";
+      const est = (g.estilos || [])[0];
+      alvo.innerHTML = `Vai sair como <b>${AT(c.join(" + "))}</b>${onde}${
+        est ? ", só no " + AT(est.toLowerCase()) : ""}.`;
+    };
+
+    const guardar = () => {
+      const c = escolhidas();
+      g.categorias = c;
+      g.rotulo = c.join(" + ");
+      const d = $("[data-c=distancia]", cartao).value;
+      const e = $("[data-c=estilo]", cartao).value;
+      g.distancias = d ? [d] : [];
+      g.estilos = e ? [e] : [];
+    };
+
+    $$("select", cartao).forEach((sel) => {
+      sel.onchange = () => {
+        if (sel.dataset.c === "quantas") {
+          const c = escolhidas();
+          g.categorias = c.slice(0, parseInt(sel.value, 10));
+          renderGrupos();
+          return;
+        }
+        guardar();
+        // trocar categoria ou distância muda o que ainda faz sentido escolher
+        renderGrupos();
+      };
+    });
+    $("[data-remover]", cartao).onclick = () => {
+      estado.perfil.grupos.splice(k, 1);
+      renderGrupos();
+    };
+    atualizarSaida();
+    return cartao;
+  }
+
 
   /* ---------------- tela 3: inscritos ---------------- */
   /* O que cada coluna de apoio guarda. A primeira linha não é coluna: é o
@@ -7742,6 +7865,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       };
     }
 
+    // o técnico já sabe o que é um programa de provas; quem não souber clica
+    ao("btnOqueEPrograma", "click", () => {
+      const alvo = $("#oqueEPrograma"), botao = $("#btnOqueEPrograma");
+      alvo.hidden = !alvo.hidden;
+      botao.textContent = alvo.hidden ? "para que serve?" : "fechar";
+    });
     $("#btnModelo").onclick = () => baixarModelo();
     ao("btnEntendi", "click", () => mostrarPainel("envio"));
     ao("btnEntendi2", "click", () => mostrarPainel("envio"));

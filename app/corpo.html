@@ -18,11 +18,13 @@
 <main>
   <!-- ============ 1. PROGRAMA DE PROVAS ============ -->
   <section class="tela" data-tela="programa">
-    <h2>Comece pelo programa de provas</h2>
-    <p class="sub">É o programa que manda na <b>ordem</b> e na <b>numeração</b>
-      das provas: no balizamento, no PDF e nas papeletas. Traga-o numa planilha:
-      é mais fácil de conferir, de corrigir e de guardar para o ano que vem do
-      que uma lista digitada aqui dentro.</p>
+    <h2>Comece pelo programa de provas
+      <button type="button" class="link" id="btnOqueEPrograma">para que serve?</button></h2>
+    <p class="sub" id="oqueEPrograma" hidden>É o programa que manda na
+      <b>ordem</b> e na <b>numeração</b> das provas: no balizamento, no PDF e
+      nas papeletas. Traga-o numa planilha: é mais fácil de conferir, de
+      corrigir e de guardar para o ano que vem do que uma lista digitada aqui
+      dentro.</p>
 
     <div class="cartao especificacao">
       <h3>Como a planilha do programa precisa ser</h3>
@@ -52,7 +54,7 @@
       <p class="nota">Se você já tem o programa escrito por extenso, também serve:
         uma coluna só, com o cabeçalho <code>PROVA</code> e uma prova por linha:
         <code>25m LIVRE PRÉ-MIRIM "B" FEMININO</code>.</p>
-      <div class="acoes">
+      <div class="acoes acoes-soltas">
         <button type="button" class="mini claro" id="btnModeloPrograma">
           Baixar a planilha modelo do programa</button>
       </div>
@@ -101,7 +103,7 @@
 
     <div id="config">
       <div class="cartao">
-        <h3>Qual é o nome da competição?</h3>
+        <h3>Informações da competição</h3>
         <div class="campos">
           <label class="campo largo">Nome
             <input id="nomeComp" placeholder="JEPB 2026, NATAÇÃO">
@@ -124,8 +126,6 @@
             <output id="previaData" class="valor-calculado"></output>
           </div>
         </div>
-        <p class="nota">Nome, local e data saem no alto de toda página do
-          balizamento.</p>
       </div>
 
       <div class="cartao">
@@ -142,9 +142,6 @@
             </select>
           </label>
         </div>
-        <p class="nota">As últimas séries saem sempre cheias. A sobra fica na
-          primeira série, que é onde nadam os mais lentos e quem não informou
-          tempo. Nenhuma série fica abaixo de metade das raias.</p>
         <dl class="previa">
           <div><dt>Ordem de preenchimento das raias</dt><dd id="previaRaias" class="mono"></dd></div>
           <div><dt>Mínimo por série</dt><dd id="previaMinimo" class="mono"></dd></div>
@@ -194,7 +191,7 @@
             <input id="limiteEquipe" type="number" min="1" max="50" placeholder="sem limite">
           </label>
         </div>
-        <p class="nota">Quem passar do limite sai destacado na conferência e no
+        <p class="nota" hidden>Quem passar do limite sai destacado na conferência e no
           balizamento, com o motivo escrito.</p>
       </div>
 
@@ -231,18 +228,12 @@
           aqui. Este cartão é para o resto: quando você resolve juntar duas
           categorias que o programa deixou separadas.</p>
         <div class="exemplo-grupo">
-          <span class="apagado">Exemplo, lendo a linha da esquerda para a direita:</span>
-          <p>a prova <b>PARALÍMPICO "A" + "B"</b> recebe quem estiver inscrito
-            em <b>PARAL A</b> e em <b>PARAL B</b>, só nos <b>25m</b>, em
-            qualquer estilo.</p>
-        </div>
-        <div class="cabecalho-lista grupos">
-          <span>Nome da prova que sai disso</span><span>Categorias que se juntam</span>
-          <span>Só nas distâncias</span><span>Só nos estilos</span><span></span>
+          <span class="apagado">Como funciona:</span>
+          <p>você diz quantas categorias nadam juntas, escolhe quais, e a prova
+            que sai disso fica no lugar da primeira delas, com o número que ela
+            já tinha no programa. As outras saem como provas sem inscritos.</p>
         </div>
         <div id="grupos"></div>
-        <p class="nota apagado">Distância e estilo em branco valem para todas as
-          provas. Separe por vírgula para pôr mais de uma.</p>
         <button type="button" class="mini claro" id="addGrupo">adicionar agrupamento</button>
         <datalist id="listaCategorias"></datalist>
         <datalist id="listaDistancias"></datalist>

@@ -1150,6 +1150,10 @@
       }
       if (i.misto) i.naipe = "MISTO";
       i.categoriaProva = grupoDe(i.categoria, i.distancia, i.estilo, perfil);
+      // agrupamento montado à mão manda mais que o casamento automático:
+      // sem isto, "INFANTIL + JUVENIL" voltaria a virar "INFANTIL" por
+      // semelhança, desfazendo o que o árbitro pediu
+      i.deGrupo = chaveCategoria(i.categoriaProva) !== chaveCategoria(i.categoria);
     }
 
     /* O programa é quem manda, inclusive quando ele junta categorias numa
@@ -1167,6 +1171,7 @@
         candidatas.get(k).push(p);
       }
       for (const i of inscricoes) {
+        if (i.deGrupo) continue;
         const k = chaveProva(i.distancia, i.estilo, i.categoriaProva, i.naipe);
         if (noPrograma.has(k)) continue;
         const ki = chaveCategoria(i.categoriaProva);
@@ -1207,6 +1212,36 @@
         partes: [p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe],
         doPrograma: true,
       }));
+      /* Grupo montado à mão sobre provas que o programa deixou separadas: a
+         prova que sai disso fica no lugar da primeira delas, para a numeração
+         impressa não mudar. As outras saem como provas sem inscritos, que é o
+         que elas viraram de fato. */
+      for (const g of (perfil.grupos || [])) {
+        const cats = (g.categorias || []).map(chaveCategoria).filter(Boolean);
+        if (!cats.length || !g.rotulo) continue;
+        if (sequencia.some((x) => x.doPrograma &&
+            chaveCategoria(x.partes[2]) === chaveCategoria(g.rotulo))) continue;
+        const porProva = new Map();
+        sequencia.forEach((seq, idx) => {
+          if (!seq.doPrograma) return;
+          const [d, e, cat, n] = seq.partes;
+          if (!cats.includes(chaveCategoria(cat))) return;
+          if (g.distancias && g.distancias.length && !g.distancias.includes(d)) return;
+          if (g.estilos && g.estilos.length && !g.estilos.includes(e)) return;
+          const k = [d, e, n].join("|");
+          if (!porProva.has(k)) porProva.set(k, []);
+          porProva.get(k).push(idx);
+        });
+        for (const [, idxs] of porProva) {
+          const [d, e, , n] = sequencia[idxs[0]].partes;
+          sequencia[idxs[0]] = {
+            chave: chaveProva(d, e, g.rotulo, n),
+            partes: [d, e, g.rotulo, n],
+            doPrograma: true,
+          };
+        }
+      }
+
       const noPrograma = new Set(sequencia.map((s) => s.chave));
       // quem tem inscrito mas não está no programa entra no fim, sinalizado
       [...mapa.keys()]

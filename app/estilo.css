@@ -413,8 +413,8 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
 
 /* ---------- competições de exemplo ---------- */
 .linha-exemplo{
-  display:flex;gap:1rem;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;padding:.7rem 0;border-bottom:1px solid var(--linha);
+  display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:center;
+  padding:.7rem 0;border-bottom:1px solid var(--linha);
 }
 .linha-exemplo:last-child{border-bottom:0;padding-bottom:0}
 .linha-exemplo b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:.98rem}
@@ -648,11 +648,6 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
   .cartao{display:block}
   .cartao::after{content:"";display:table;clear:both}
   .cartao > * + *{margin-top:.85rem}
-  .cartao > .nota{
-    float:right;width:min(26rem,38%);margin:0 0 .85rem 2.2rem;max-width:none;
-    padding-left:1.1rem;border-left:2px solid var(--linha);
-  }
-  .cartao > .nota + *{margin-top:0}
   /* nas listas e tabelas o texto volta para cima, senão a grade fica torta */
   .cartao > .lista-etapas,.cartao > .cabecalho-lista,.cartao > table,
   .cartao > .planilha-exemplo,.cartao > .scroll-x{clear:both}
@@ -710,3 +705,19 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
 .recusa.pergunta.fechada{padding:.7rem 1.1rem;gap:0}
 .recusa.pergunta.fechada p{font-size:1rem}
 .recusa.pergunta.fechada .link{margin-left:.5rem}
+
+/* botão de baixar modelo não pode ficar colado na tabela de cima */
+.acoes-soltas{margin-top:.6rem}
+/* o "para que serve" ao lado do título, sem competir com ele */
+h2 > .link{font-size:.95rem;font-weight:400;margin-left:.7rem;vertical-align:middle}
+
+/* cada agrupamento é um cartão, não uma linha de campos apertados */
+.grupo-cartao{
+  background:var(--papel2);border-radius:8px;padding:.9rem 1rem;
+  display:flex;flex-direction:column;gap:.7rem;margin-bottom:.6rem;
+}
+.grupo-topo{display:flex;gap:1rem;align-items:end;justify-content:space-between}
+.grupo-cats,.grupo-filtros{display:flex;gap:.8rem;flex-wrap:wrap}
+.grupo-cats > .campo{flex:1 1 14rem}
+.grupo-filtros > .campo{flex:0 1 12rem}
+.grupo-saida{font-size:1rem}
