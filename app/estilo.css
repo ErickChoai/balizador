@@ -721,3 +721,21 @@ h2 > .link{font-size:.95rem;font-weight:400;margin-left:.7rem;vertical-align:mid
 .grupo-cats > .campo{flex:1 1 14rem}
 .grupo-filtros > .campo{flex:0 1 12rem}
 .grupo-saida{font-size:1rem}
+
+/* o aviso de que já dá para gerar, por cima de tudo */
+.cortina{
+  position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:rgba(9,17,21,.72);padding:1.5rem;
+}
+.caixa-aviso{
+  background:var(--papel);border:1px solid var(--linha);
+  border-left:4px solid var(--bom);border-radius:12px;
+  padding:1.5rem 1.7rem;max-width:34rem;
+  display:flex;flex-direction:column;gap:.8rem;
+  box-shadow:0 12px 40px rgba(0,0,0,.35);
+}
+.caixa-aviso h3{color:var(--bom)}
+
+/* aviso em azul não pode pesar tanto quanto o problema em vermelho */
+.bloco.info h3{font-size:1.06rem}
+.bloco.info .contador{opacity:.8}

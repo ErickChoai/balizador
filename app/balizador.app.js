@@ -74,7 +74,7 @@
      que ele leu e decidiu deixar como estão. */
   function novosAjustes() {
     return { removidas: new Set(), nomes: {}, aceitos: new Set(),
-             jaVistos: new Set(), tempos: {}, classes: {},
+             jaVistos: new Set(), ultimosItens: {}, tempos: {}, classes: {},
              // atletas cujas provas o árbitro já escolheu na mão. Se o que
              // ele escolheu continua furando a regra, é exceção autorizada.
              decisoes: {} };
@@ -1775,6 +1775,7 @@
         resolver: () => escreverNomesFaltando(descartadas),
       },
       {
+        rotuloVer: "ver os atletas",
         id: "semClasse", titulo: "Atletas sem classe definida",
         nivel: "info", itens: cortes.filter((c) => c.gravidade === "info"),
         explica: `A classe destes atletas veio em branco ou ilegível, então o
@@ -1784,6 +1785,7 @@
           prefere não colocar o atleta numa raia por engano.`,
       },
       {
+        rotuloVer: "ver as provas",
         id: "provasVazias", titulo: "Provas do programa sem ninguém inscrito",
         nivel: "info", itens: semInscritos.map((p) => ({
           prova: p.numero, titulo: p.titulo, nome: "", equipe: "",
@@ -1796,6 +1798,7 @@
           <br><br>Não há o que consertar: é assim que tem de sair.`,
       },
       {
+        rotuloVer: "ver as provas",
         id: "juntar", titulo: "Provas pequenas que dá para juntar",
         nivel: "info", itens: juntaveis.map((j) => ({
           prova: j.a.numero, titulo: j.a.titulo, nome: "", equipe: "",
@@ -1810,6 +1813,7 @@
         resolver: () => juntarCategorias(juntaveis),
       },
       {
+        rotuloVer: "ver as provas",
         id: "juntadas", titulo: "Categorias que o programa mandou juntar",
         nivel: "info",
         itens: estado.provas.filter((p) => (p.casadas || []).length).map((p) => ({
@@ -1826,6 +1830,7 @@
           diga que prefere conferir.`,
       },
       {
+        rotuloVer: "ver as exceções",
         id: "autorizados", titulo: "Exceções que você autorizou",
         nivel: "info", itens: autorizados.map(({ x, oque }) => ({
           prova: "", titulo: "", nome: x.nome, equipe: x.equipe,
@@ -1840,6 +1845,7 @@
         resolver: () => desfazerAutorizacoes(autorizados),
       },
       {
+        rotuloVer: "ver os atletas",
         id: "idades", titulo: "Idade que não bate com a categoria",
         nivel: "info", itens: estado.idades.map((a) => ({
           prova: "", titulo: a.categoria, nome: a.nome, equipe: a.equipe,
@@ -1854,6 +1860,7 @@
           sai normalmente</b>: isto é só para você olhar.`,
       },
       {
+        rotuloVer: "ver os nomes",
         id: "mesmoNome", titulo: "Mesmo nome em duas instituições",
         nivel: "info", itens: estado.mesmoNome.map((a) => ({
           prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
@@ -1865,6 +1872,7 @@
           instituição, então ela conta como duas pessoas.`,
       },
       {
+        rotuloVer: "ver os nomes",
         id: "parecidos", titulo: "Nomes quase iguais, pode ser a mesma pessoa",
         nivel: "info", itens: estado.parecidos.map((a) => ({
           prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
@@ -1877,6 +1885,7 @@
           jeito nas duas linhas.`,
       },
       {
+        rotuloVer: "ver as equipes",
         id: "revezamentoAviso",
         titulo: "Duas equipes da mesma instituição no revezamento",
         nivel: "info",
@@ -1891,6 +1900,7 @@
           planilha.`,
       },
       {
+        rotuloVer: "ver as provas",
         id: "provasRepetidas", titulo: "Prova escrita duas vezes na planilha",
         nivel: "info", itens: (estado.provasRepetidas || []).map((r) => ({
           prova: "", titulo: r.prova, nome: "", equipe: "",
@@ -1903,6 +1913,7 @@
           copiado sem trocar, corrija na planilha e envie de novo.`,
       },
       {
+        rotuloVer: "ver as provas",
         id: "numeracaoPrograma",
         titulo: "Numeração da planilha do programa não bate com a ordem",
         nivel: "info", itens: numeracaoTrocada(),
@@ -1913,6 +1924,7 @@
           programa. Confira contra o programa oficial antes de gerar.`,
       },
       {
+        rotuloVer: "ver os atletas",
         id: "avisosClasse", titulo: "Classes deduzidas ou que não entendi",
         nivel: "info", itens: avisosDeClasse(),
         explica: `Onde a classe veio abreviada, ou faltando o SB e o SM, o app
@@ -1922,6 +1934,7 @@
           entendeu, para você conferir se deduziu certo.`,
       },
       {
+        rotuloVer: "ver os avisos",
         id: "raias", titulo: "Avisos de organização das raias",
         nivel: "info", itens: avisos,
         explica: `Séries com menos gente que o mínimo dentro de uma prova
@@ -1961,7 +1974,17 @@
     if (!estado.provas.length) montar();
     const secoes = montarSecoes();
     const comItens = secoes.filter((s) => s.itens.length);
-    comItens.forEach((s) => estado.ajustes.jaVistos.add(s.id));
+    // guarda o que o bloco tinha: depois de resolvido, é isto que o "ver de
+    // novo" mostra, senão ele abre vazio e ninguém lembra o que era
+    estado.ajustes.ultimosItens = estado.ajustes.ultimosItens || {};
+    comItens.forEach((s) => {
+      estado.ajustes.jaVistos.add(s.id);
+      // guarda a lista mais cheia que o bloco já teve: resolvendo um por um,
+      // a última seria de um item só, e o "ver de novo" contaria meia história
+      const antes = estado.ajustes.ultimosItens[s.id];
+      if (!antes || s.itens.length > antes.length)
+        estado.ajustes.ultimosItens[s.id] = s.itens;
+    });
 
     // resolvido é o que sumiu sozinho; aceito é o que o árbitro leu e decidiu
     // deixar como está. Os dois fecham; só os abertos travam a geração.
@@ -1998,6 +2021,15 @@
         : ""}`;
 
     ligarSecoes(abertas, resolvidas.concat(aceitas));
+
+    /* O último vermelho caiu: avisa, porque o botão de gerar fica lá embaixo
+       e ninguém percebe que ele destravou. Só na virada, não toda vez. */
+    const travadoAntes = estado.travado !== false;
+    estado.travado = pendentesCriticas.length > 0;
+    if (travadoAntes && !estado.travado && estado.provas.length) {
+      avisarQuePodeGerar();
+    }
+
     const botao = $("#irGerar");
     if (botao) {
       botao.disabled = pendentesCriticas.length > 0;
@@ -2006,6 +2038,32 @@
         : "Gerar os arquivos";
     }
     liberar("gerar", !pendentesCriticas.length);
+  }
+
+  /* A virada: não sobrou vermelho nenhum. Aparece por cima, no meio, porque
+     é a única coisa nesta tela que muda o que o árbitro faz em seguida. */
+  function avisarQuePodeGerar() {
+    if ($("#avisoPodeGerar")) return;
+    const fundo = document.createElement("div");
+    fundo.className = "cortina";
+    fundo.id = "avisoPodeGerar";
+    fundo.innerHTML = `
+      <div class="caixa-aviso" role="dialog" aria-modal="true">
+        <h3>O seu balizamento já pode ser gerado</h3>
+        <p class="nota">Não sobrou nenhum bloco vermelho. Os avisos em azul
+          continuam aí, e nenhum deles impede a geração.</p>
+        <div class="acoes">
+          <button type="button" class="botao" id="avisoGerar">Gerar os arquivos</button>
+          <button type="button" class="mini claro" id="avisoFicar">
+            Continuar na conferência</button>
+        </div>
+      </div>`;
+    const fechar = () => fundo.remove();
+    document.body.appendChild(fundo);
+    $("#avisoGerar", fundo).onclick = () => { fechar(); irPara("gerar"); };
+    $("#avisoFicar", fundo).onclick = fechar;
+    fundo.onclick = (e) => { if (e.target === fundo) fechar(); };
+    $("#avisoGerar", fundo).focus();
   }
 
   /* Um bloco fechado, verde, de uma linha só. É o que sobra depois que o
@@ -2023,14 +2081,21 @@
     </section>`;
   }
 
+  /* O bloco vermelho abre a lista de cara: ele trava a geração e precisa ser
+     lido. O azul nasce fechado, atrás de um botão, senão vinte linhas de aviso
+     ficam do mesmo tamanho do problema de verdade e o olho se perde. */
   function secaoHtml(s) {
     const temConserto = typeof s.resolver === "function";
+    const fechavel = s.nivel !== "critico";
     return `<section class="bloco ${s.nivel}" data-secao="${s.id}">
       <h3>${s.titulo} <span class="contador">${s.itens.length}</span>
         <span class="botoes-bloco">
           ${temConserto
             ? `<button type="button" class="resolver" data-resolver="${s.id}">resolver</button>`
             : ""}
+          ${fechavel
+            ? `<button type="button" class="info" data-lista="${s.id}">${
+                s.rotuloVer || "ver a lista"}</button>` : ""}
           <button type="button" class="info" data-info="${s.id}">o que acontece</button>
         </span></h3>
       <div class="explicacao" id="explica-${s.id}" hidden>
@@ -2038,7 +2103,8 @@
         <div class="acoes" id="saidas-${s.id}"></div>
       </div>
       ${temConserto ? `<div class="explicacao correcao" id="corrige-${s.id}" hidden></div>` : ""}
-      ${tabelaDeItens(s.itens)}</section>`;
+      <div id="lista-${s.id}"${fechavel ? " hidden" : ""}>${
+        tabelaDeItens(s.itens)}</div></section>`;
   }
 
   function tabelaDeItens(itens) {
@@ -2061,7 +2127,13 @@
         alvo.hidden = !abrindo;
         b.textContent = abrindo ? "esconder" : "ver de novo";
         if (!abrindo) return;
-        alvo.innerHTML = tabelaDeItens(s.itens) +
+        const guardados = (estado.ajustes.ultimosItens || {})[s.id] || [];
+        const itens = s.itens.length ? s.itens : guardados;
+        alvo.innerHTML = (s.itens.length ? "" :
+            `<p class="nota">Isto era o que estava aqui antes de você
+             resolver:</p>`) +
+          (itens.length ? tabelaDeItens(itens)
+            : '<p class="nota">Nada ficou registrado deste bloco.</p>') +
           '<div class="acoes"></div>';
         const acoes = $(".acoes", alvo);
         acoes.innerHTML = `<button type="button" class="mini claro">
@@ -2084,6 +2156,15 @@
           pInfo.hidden = !abrindo;
           bInfo.textContent = abrindo ? "fechar" : "o que acontece";
           if (abrindo) preencherSaidas(s);
+        };
+      }
+      const bLista = $(`[data-lista="${s.id}"]`);
+      const pLista = $("#lista-" + s.id);
+      if (bLista && pLista) {
+        bLista.onclick = () => {
+          const abrindo = pLista.hidden;
+          pLista.hidden = !abrindo;
+          bLista.textContent = abrindo ? "esconder" : (s.rotuloVer || "ver a lista");
         };
       }
       const bFix = $(`[data-resolver="${s.id}"]`);
