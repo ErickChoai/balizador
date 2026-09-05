@@ -1225,7 +1225,9 @@
         sequencia.forEach((seq, idx) => {
           if (!seq.doPrograma) return;
           const [d, e, cat, n] = seq.partes;
-          if (!cats.includes(chaveCategoria(cat))) return;
+          // a prova do programa é absorvida se qualquer parte dela estiver no
+          // grupo: quem junta PARALÍMPICO "A" com "C" mira a prova A + B também
+          if (!partesDaCategoria(cat).some((p) => cats.includes(p))) return;
           if (g.distancias && g.distancias.length && !g.distancias.includes(d)) return;
           if (g.estilos && g.estilos.length && !g.estilos.includes(e)) return;
           const k = [d, e, n].join("|");

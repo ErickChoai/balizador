@@ -3762,7 +3762,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         sequencia.forEach((seq, idx) => {
           if (!seq.doPrograma) return;
           const [d, e, cat, n] = seq.partes;
-          if (!cats.includes(chaveCategoria(cat))) return;
+          // a prova do programa é absorvida se qualquer parte dela estiver no
+          // grupo: quem junta PARALÍMPICO "A" com "C" mira a prova A + B também
+          if (!partesDaCategoria(cat).some((p) => cats.includes(p))) return;
           if (g.distancias && g.distancias.length && !g.distancias.includes(d)) return;
           if (g.estilos && g.estilos.length && !g.estilos.includes(e)) return;
           const k = [d, e, n].join("|");
@@ -6135,17 +6137,56 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const prog = estado.perfil.programa || [];
     const m = new Map();
     for (const p of prog) {
-      const rot = p.rotulo || p.categoria;
-      if (rot) m.set(D.chaveCategoria(rot), rot);
+      // categoria com "+" já é junção pronta: o que serve de peça aqui são
+      // as partes dela, que é como as categorias vêm escritas nos inscritos
+      for (const parte of partesVisiveis(p.rotulo || p.categoria)) {
+        if (parte) m.set(D.chaveCategoria(parte), parte);
+      }
     }
     return [...m.values()];
+  }
+
+  // a letra no fim, com ou sem aspas, precedida de espaço: PARALÍMPICO "A"
+  const LETRA_NO_FIM = /^(.*?)\s+("?[A-Za-zÀ-ÿ]"?)$/;
+
+  /* 'PARALÍMPICO "A" + "B"' vira ['PARALÍMPICO "A"', 'PARALÍMPICO "B"'],
+     mantendo o jeito que o programa escreveu. A parte que é só a letra herda
+     a palavra da primeira. */
+  function partesVisiveis(categoria) {
+    const t = String(categoria == null ? "" : categoria).trim();
+    if (t.indexOf("+") < 0) return [t];
+    const cruas = t.split("+").map((x) => x.trim()).filter(Boolean);
+    const m = cruas[0].match(LETRA_NO_FIM);
+    const base = m ? m[1].trim() : "";
+    return cruas.map((p, i) => {
+      if (i === 0) return p;
+      return base && /^"?[A-Za-zÀ-ÿ]"?$/.test(p) ? base + " " + p : p;
+    });
+  }
+
+  /* O nome da prova que sai de um agrupamento. Quando as categorias só se
+     diferenciam pela letra, sai no formato do programa, PARALÍMPICO "A" + "B",
+     e por isso volta a casar com a prova que já existe lá. */
+  function nomeDoGrupo(cats) {
+    const c = (cats || []).filter(Boolean);
+    if (c.length < 2) return c[0] || "";
+    const pedacos = c.map((x) => x.match(LETRA_NO_FIM));
+    if (pedacos.every(Boolean)) {
+      const base = pedacos[0][1].trim();
+      if (base && pedacos.every((m) => m[1].trim() === base)) {
+        return base + " " + pedacos.map((m) => m[2]).join(" + ");
+      }
+    }
+    return c.join(" + ");
   }
 
   function provasDoGrupo(cats) {
     const chaves = (cats || []).map(D.chaveCategoria).filter(Boolean);
     if (!chaves.length) return estado.perfil.programa || [];
+    // a prova do programa entra se qualquer parte dela for uma das escolhidas:
+    // quem escolhe PARALÍMPICO "A" está mirando a prova A + B também
     return (estado.perfil.programa || []).filter((p) =>
-      chaves.includes(D.chaveCategoria(p.rotulo || p.categoria)));
+      D.partesDaCategoria(p.categoria).some((parte) => chaves.includes(parte)));
   }
 
   function opcoes(valores, escolhido, vazio) {
@@ -6162,7 +6203,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const cartao = document.createElement("div");
     cartao.className = "grupo-cartao";
     const cats = g.categorias || [];
-    const quantas = Math.max(2, cats.length || 2);
+    // quantas caixas mostrar é escolha do árbitro, não do que ele já
+    // preencheu: senão nunca dava para subir de duas para três
+    const quantas = Math.max(2, g.quantas || cats.length || 2);
     const doGrupo = provasDoGrupo(cats.filter(Boolean));
     const distEscolhida = (g.distancias || [])[0] || "";
     const estilosPossiveis = doGrupo
@@ -6204,14 +6247,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       alvo.classList.remove("alerta-inline");
       const onde = distEscolhida ? " nos " + distEscolhida.toLowerCase() : "";
       const est = (g.estilos || [])[0];
-      alvo.innerHTML = `Vai sair como <b>${AT(c.join(" + "))}</b>${onde}${
+      alvo.innerHTML = `Vai sair como <b>${AT(nomeDoGrupo(c))}</b>${onde}${
         est ? ", só no " + AT(est.toLowerCase()) : ""}.`;
     };
 
     const guardar = () => {
       const c = escolhidas();
       g.categorias = c;
-      g.rotulo = c.join(" + ");
+      g.rotulo = nomeDoGrupo(c);
       const d = $("[data-c=distancia]", cartao).value;
       const e = $("[data-c=estilo]", cartao).value;
       g.distancias = d ? [d] : [];
@@ -6221,8 +6264,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     $$("select", cartao).forEach((sel) => {
       sel.onchange = () => {
         if (sel.dataset.c === "quantas") {
-          const c = escolhidas();
-          g.categorias = c.slice(0, parseInt(sel.value, 10));
+          g.quantas = parseInt(sel.value, 10) || 2;
+          g.categorias = escolhidas().slice(0, g.quantas);
+          g.rotulo = nomeDoGrupo(g.categorias);
           renderGrupos();
           return;
         }
