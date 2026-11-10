@@ -3578,6 +3578,7 @@
       alvo.hidden = true;
       alvo.dataset.qual = "";
       marcarPrevia(null);
+      limparPrevia();
       return;
     }
     alvo.dataset.qual = qual;
@@ -3589,7 +3590,7 @@
       <button type="button" class="mini claro" id="fecharPrevia">fechar</button>
     </div><div class="previa-corpo"><p class="nota">Montando...</p></div>`;
     ao("fecharPrevia", "click", () => {
-      alvo.hidden = true; alvo.dataset.qual = ""; marcarPrevia(null);
+      alvo.hidden = true; alvo.dataset.qual = ""; marcarPrevia(null); limparPrevia();
     });
 
     // deixa o navegador pintar o "montando" antes de travar no gerador
@@ -3598,13 +3599,11 @@
       try {
         const saida = montarSaida(qual);
         if (saida.tipo === "pdf") {
-          // blob, e não data:. O Chrome recusa PDF em data: dentro de iframe,
-          // e um PDF de 100 KB viraria um atributo src gigante na página.
-          if (estado.urlPrevia) URL.revokeObjectURL(estado.urlPrevia);
-          estado.urlPrevia = URL.createObjectURL(saida.doc.output("blob"));
-          corpo.innerHTML = `<iframe title="prévia do ${ROTULO_SAIDA[qual]}"
-            src="${estado.urlPrevia}"></iframe>`;
+          const blob = saida.doc.output("blob");
+          // as páginas desenhadas como imagem; se o pdf.js não vier, o leitor do navegador
+          desenharPdf(blob, corpo).catch(() => pdfNoQuadro(blob, corpo, qual));
         } else {
+          limparPrevia();
           const aba = saida.wb.SheetNames[0];
           corpo.innerHTML = `<div class="scroll-x">${
             XLSX.utils.sheet_to_html(saida.wb.Sheets[aba], { id: "previaPlanilha" })
@@ -3617,6 +3616,121 @@
       }
       mostrarResultado("previa");
     }, 30);
+  }
+
+  /* --- a prévia do PDF, página por página ---
+     O leitor de PDF do navegador não abre dentro de um quadro no app do
+     Claude para iPhone: o quadro fica em branco. Então cada página é
+     desenhada pelo pdf.js e vira uma imagem, que aparece em qualquer lugar.
+     As páginas são desenhadas conforme a pessoa rola, uma de cada vez, num
+     só quadro de desenho reaproveitado: um PDF de cem papeletas não pesa no
+     celular. Sem internet o pdf.js não carrega, e a prévia volta ao leitor
+     do navegador. */
+  const PDFJS = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+  let pdfjsVindo = null;
+  function carregarScript(src) {
+    return new Promise((ok, falha) => {
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = ok;
+      s.onerror = falha;
+      document.head.appendChild(s);
+    });
+  }
+  function carregarPdfjs() {
+    if (window.pdfjsLib && window.pdfjsWorker) return Promise.resolve(window.pdfjsLib);
+    if (!pdfjsVindo) {
+      // o trabalhador primeiro: com ele já na página, o pdf.js roda sem Worker,
+      // que o claude.ai não deixa criar a partir de outro endereço
+      pdfjsVindo = carregarScript(PDFJS + "pdf.worker.min.js")
+        .then(() => carregarScript(PDFJS + "pdf.min.js"))
+        .then(() => {
+          if (!window.pdfjsLib) throw new Error("pdf.js não veio");
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.js";
+          return window.pdfjsLib;
+        })
+        .catch((e) => { pdfjsVindo = null; throw e; });
+    }
+    return pdfjsVindo;
+  }
+
+  function limparPrevia() {
+    for (const u of estado.urlsPrevia || []) URL.revokeObjectURL(u);
+    estado.urlsPrevia = [];
+    if (estado.urlPrevia) { URL.revokeObjectURL(estado.urlPrevia); estado.urlPrevia = null; }
+  }
+
+  async function desenharPdf(blob, corpo) {
+    const lib = await carregarPdfjs();
+    const doc = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()), isEvalSupported: false }).promise;
+    if (!corpo.isConnected) return;
+    limparPrevia();
+    const primeira = (await doc.getPage(1)).getViewport({ scale: 1 });
+    corpo.innerHTML = `<div class="paginas-pdf" role="group" aria-label="Páginas do PDF"></div>
+      <p class="nota">${doc.numPages === 1 ? "1 página" : doc.numPages + " páginas"}.</p>`;
+    const caixa = $(".paginas-pdf", corpo);
+    const imagens = [];
+    for (let n = 1; n <= doc.numPages; n++) {
+      const img = document.createElement("img");
+      img.alt = `Página ${n} de ${doc.numPages}`;
+      img.dataset.n = n;
+      img.style.aspectRatio = `${primeira.width} / ${primeira.height}`;
+      caixa.appendChild(img);
+      imagens.push(img);
+    }
+    const tela = document.createElement("canvas");
+    const nitidez = Math.min(window.devicePixelRatio || 1, 2);
+    let fila = Promise.resolve();
+    const desenhar = (img) => {
+      if (img.dataset.pedida) return;
+      img.dataset.pedida = "1";
+      fila = fila.then(async () => {
+        if (!img.isConnected) return;
+        const pagina = await doc.getPage(Number(img.dataset.n));
+        const base = pagina.getViewport({ scale: 1 });
+        const largura = Math.max(caixa.clientWidth - 16, 300);
+        const vista = pagina.getViewport({ scale: (largura / base.width) * nitidez });
+        tela.width = Math.round(vista.width);
+        tela.height = Math.round(vista.height);
+        const ctx = tela.getContext("2d");
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, tela.width, tela.height);
+        await pagina.render({ canvasContext: ctx, viewport: vista }).promise;
+        const pronto = await new Promise((ok) => tela.toBlob(ok, "image/jpeg", 0.88));
+        if (!pronto || !img.isConnected) return;
+        const url = URL.createObjectURL(pronto);
+        estado.urlsPrevia.push(url);
+        img.style.aspectRatio = `${base.width} / ${base.height}`;
+        img.src = url;
+        pagina.cleanup();
+      }).catch(() => { /* uma página que falhou não para as outras */ });
+    };
+    // as páginas perto da parte visível da caixa entram na fila; a conta é
+    // feita na rolagem, sem depender de observador, que nem todo app roda
+    const perto = () => {
+      const topo = caixa.scrollTop, fim = topo + caixa.clientHeight;
+      for (const img of imagens) {
+        const y = img.offsetTop - caixa.offsetTop;
+        if (y + img.offsetHeight >= topo - 900 && y <= fim + 900) desenhar(img);
+      }
+    };
+    caixa.addEventListener("scroll", perto, { passive: true });
+    imagens.slice(0, 2).forEach(desenhar);
+    perto();
+  }
+
+  // o jeito antigo: o leitor de PDF do navegador num quadro
+  function pdfNoQuadro(blob, corpo, qual) {
+    if (!corpo.isConnected) return;
+    limparPrevia();
+    // blob, e não data:. O Chrome recusa PDF em data: dentro de iframe,
+    // e um PDF de 100 KB viraria um atributo src gigante na página.
+    estado.urlPrevia = URL.createObjectURL(blob);
+    const iphone = /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    corpo.innerHTML = `<iframe title="prévia do ${ROTULO_SAIDA[qual]}" src="${estado.urlPrevia}"></iframe>
+      ${iphone && claudeApp.noClaude ? `<p class="nota">Se a prévia ficar em branco, abra o Balizador
+        no navegador: <a href="${LINK_CLAUDE}" target="_blank" rel="noopener">abrir no navegador</a>.</p>` : ""}`;
   }
 
   function marcarPrevia(qual) {

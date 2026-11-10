@@ -1784,3 +1784,15 @@ h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:normal}
 .anexar,.noite .anexar{border:0;background:none;border-radius:0;color:var(--tinta);text-decoration:underline;
   text-underline-offset:3px;text-decoration-thickness:1px}
 .anexar:hover{color:var(--agua)}
+/* a prévia do PDF em páginas desenhadas, que abre em qualquer aparelho */
+.paginas-pdf{display:flex;flex-direction:column;gap:.6rem;max-height:min(78vh,62rem);overflow:auto;
+  padding:.5rem;border:1px solid var(--linha);border-radius:6px;background:#DDE5E8;-webkit-overflow-scrolling:touch}
+.paginas-pdf img{display:block;width:100%;height:auto;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+/* no celular, os cinco passos da tela completa numa linha só: o atual com o
+   nome, os outros só com o número */
+@media (max-width:640px){
+  .passos{flex-wrap:nowrap;gap:.15rem;justify-content:space-between}
+  .passo{padding:.5rem .3rem;gap:.35rem;min-width:0;white-space:nowrap}
+  .passo:not(.ativo){font-size:0;gap:0}
+  .passo:not(.ativo) b{font-size:.85rem}
+}
