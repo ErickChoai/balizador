@@ -13,8 +13,11 @@
    as funções de window.BalizadorApp, as mesmas dos botões dos cinco passos,
    e por isso o balizamento sai igual de um jeito ou de outro.
 
-   Quem preferir fazer sozinho troca para "Fazer eu mesmo" no topo. Fora do
-   claude.ai não há Claude, e o app abre direto nos cinco passos.
+   A conversa abre numa tela com dois caminhos: a demonstração guiada ou as
+   planilhas da pessoa. A tela completa dos cinco passos só aparece quando a
+   conversa manda para lá (revisão, agrupamentos, prévia), com "Voltar à
+   conversa" no topo. Fora do claude.ai não há Claude, e o app abre direto nos
+   cinco passos.
 
    Nome de atleta nunca vai para o Claude: o resumo da tela que segue em
    cada mensagem troca nomes por PESSOA 1, PESSOA 2, e o nome volta só aqui.
@@ -28,14 +31,13 @@
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const AT = (t) => String(t == null ? "" : t).replace(/&/g, "&amp;")
     .replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  const CHAVE_MODO = "balizador.modo";
   const NAIPE = { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" };
 
   const conv = {
     sample: null, ligada: false, ferramentas: false,
     turnos: [], controle: null, fila: [], pendentes: [],
     mascara: IA ? IA.novaMascara() : null, voc: null,
-    esperando: "programa", exemplo: null, baixados: new Set(), numero: 0,
+    esperando: "programa", exemplo: null, baixados: new Set(), numero: 0, comecou: false,
     // correções que a pessoa respondeu Não: não voltam a ser oferecidas
     recusadas: new Set(),
   };
@@ -201,23 +203,205 @@
     $$("[data-acao]", el).forEach((b) => (b.onclick = () => acao(b.dataset.acao, b)));
   }
 
-  function cartaoInicio() {
-    return cartao("inicio", "Começo", "O que vamos balizar hoje?", `
-      <p>Eu conduzo o balizamento com você, do programa de provas até as
-        papeletas. Leio as planilhas, ajudo a configurar a competição, explico
-        cada problema da conferência e organizo inscrições que chegam fora do
-        formato. Séries e raias saem sempre pelas regras do app, as mesmas de
-        sempre.</p>
-      <div class="opcoes">
-        <button type="button" class="opcao" data-acao="enviar_programa">
-          <b>Tenho o programa de provas</b><span>Envie a planilha e eu leio com você</span></button>
-        <button type="button" class="opcao" data-acao="exemplo">
-          <b>Quero ver um exemplo</b><span>Um campeonato escolar inventado, do começo ao fim</span></button>
-        <button type="button" class="opcao" data-acao="baguncada">
-          <b>Tenho uma planilha bagunçada</b><span>Veja a IA organizar inscrições fora do formato</span></button>
-        <button type="button" class="opcao" data-acao="manual">
-          <b>Prefiro fazer eu mesmo</b><span>Os cinco passos, sem conversa</span></button>
-      </div>`, "Começo", ligarAcoes);
+  /* ---------------- a abertura ----------------
+     A primeira tela: o que é o Balizador e dois caminhos, a demonstração ou
+     as planilhas da pessoa. "Início", no topo, volta para cá a qualquer
+     momento. Começar de novo recarrega a página e lembra o caminho escolhido. */
+  const CHAVE_COMECAR = "balizador.comecar";
+
+  // o nadador de crawl, usado na abertura e enquanto o Claude pensa
+  const NADADOR = `<svg class="nadador-svg" viewBox="0 0 48 20" aria-hidden="true">
+    <path class="esteira" d="M1 13c3-2 5-2 8 0s5 2 8 0"/>
+    <path class="corpo" d="M10 12.5C19 11 27 11 33 12"/>
+    <path class="braco" d="M30 11.5c2-6 7-8 12-6"/>
+    <circle class="touca" cx="36" cy="11.5" r="4.6"/></svg>`;
+
+  function montarAbertura() {
+    const alvo = $("#piscinaAbertura");
+    if (!alvo || alvo.childElementCount) return;
+    alvo.innerHTML = ETAPAS.map(([, rot], k) => `
+      <div class="faixa" style="--k:${k}"><span class="rotulo"><b>${k + 1}</b>${rot}</span>
+        <span class="nada">${NADADOR}</span><span class="chegada">✓</span></div>`).join("");
+  }
+
+  function mostrarAbertura() {
+    montarAbertura();
+    document.body.classList.add("na-abertura");
+    $("#recomecar").hidden = true;
+    $("#continuarConversa").hidden = !conv.comecou;
+    window.scrollTo(0, 0);
+  }
+
+  function escolherCaminho(caminho) {
+    if (conv.comecou) {
+      // já tem coisa feita: começar de novo é recarregar, com a escolha guardada
+      const box = $("#recomecar");
+      box.hidden = false;
+      $("#recomecarSim").onclick = () => {
+        try { sessionStorage.setItem(CHAVE_COMECAR, caminho); } catch (e) { /* sem memória */ }
+        window.location.reload();
+      };
+      $("#recomecarNao").onclick = () => (box.hidden = true);
+      return;
+    }
+    comecar(caminho);
+  }
+
+  /* ---------------- a demonstração guiada ----------------
+     Um campeonato inventado, com erros plantados de propósito, andando
+     sozinho e parando só nos Sim e Não. O guia é texto do app, com visual
+     próprio, e nunca aparece como fala do Claude. O Claude de verdade faz o
+     trabalho de IA e comenta; se ele demorar ou falhar, entra a resposta de
+     reserva preparada para estas planilhas, com aviso na tela. */
+  const DEMO_FALA = { semFerramentas: true, limite: 30000, silencioso: true };
+  const DEMO_PRAZO = 40000;
+  const pausa = (ms) => new Promise((ok) => setTimeout(ok, ms));
+  const TOTAL_DEMO = 5;
+
+  function guia(n, titulo, texto) {
+    const div = document.createElement("div");
+    div.className = "guia";
+    div.innerHTML = `<span class="guia-passo">Demonstração · passo ${n} de ${TOTAL_DEMO}</span>
+      <b>${AT(titulo)}</b><p>${AT(texto)}</p>`;
+    return adicionar(div);
+  }
+
+  // a planilha como ela chegou, numa folha branca, com os erros marcados
+  function folha(d) {
+    const ws = d.wb.Sheets[d.wb.SheetNames[0]];
+    const linhas = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "", blankrows: true }).slice(0, 22);
+    const ncol = Math.max(...linhas.map((l) => l.length));
+    const erro = new Set(d.erros.map((e) => (e.linha - 1) + "," + e.coluna));
+    const notas = d.erros.filter((e) => e.nota);
+    const cols = Array.from({ length: ncol }, (_, c) => XLSX.utils.encode_col(c));
+    const corpo = linhas.map((l, r) => `<tr style="--d:${Math.min(r, 18) * 0.05}s"><td class="lin">${r + 1}</td>${
+      cols.map((_, c) => `<td class="${erro.has(r + "," + c) ? "erro" : ""}">${AT(l[c] == null ? "" : l[c])}</td>`).join("")}</tr>`).join("");
+    const el = document.createElement("figure");
+    el.className = "folha-conv";
+    el.innerHTML = `<figcaption><span class="arquivo">${AT(d.nome)}</span>
+        <span class="aba-nome">${AT(d.wb.SheetNames[0])}</span>
+        ${d.wb.SheetNames.length > 1 ? `<span class="apagado">e mais ${d.wb.SheetNames.length - 1} aba(s)</span>` : ""}</figcaption>
+      <div class="scroll-x"><table><thead><tr><th class="lin"></th>${cols.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
+        <tbody>${corpo}</tbody></table></div>
+      ${notas.length ? `<ol class="notas-folha">${notas.map((e) => `<li><b>linha ${e.linha}</b> ${AT(e.nota)}</li>`).join("")}</ol>` : ""}`;
+    return adicionar(el);
+  }
+
+  async function iniciarDemo() {
+    conv.demo = { passo: 1 };
+    conv.exemplo = { comp: "ESCOLAR", inscritos: null };
+    bolha("eu", formatar("Quero ver a demonstração."));
+    guia(1, "O programa de provas",
+      "Este é o programa de um campeonato escolar inventado. Duas linhas foram estragadas de propósito: " +
+      "numa, o estilo foi escrito junto com a distância; na outra, sobrou um total no fim.");
+    const d = E.demoPrograma();
+    folha(d);
+    await pausa(1600);
+    const r = await app().carregarPrograma(arquivoDe(d.wb, d.nome));
+    const sug = E.perfilSugerido("ESCOLAR");
+    preencher({ nome: sug.nome, tem_tempo: sug.temTempo, tem_revezamento: sug.temRevezamento,
+                tem_paradesporto: sug.temPara });
+    renderTrilha();
+    cartaoPrograma();
+    const ruins = (r && r.linhas || []).filter((l) => !l.ok);
+    await evento(`Demonstração guiada, passo 1. O app leu ${r ? r.provas.length : 0} provas do programa e não entendeu ` +
+      `${ruins.length} linhas: ${ruins.map((l) => `linha ${l.linha} "${l.texto}" (${l.motivo})`).join("; ")}. ` +
+      "Explique em uma ou duas frases por que o app recusa em vez de adivinhar, e diga que você pode corrigir essas linhas, com Sim e Não para cada uma.");
+    cartaoPropostaPrograma();
+  }
+
+  function demoCompeticao() {
+    conv.demo.passo = 2;
+    renderTrilha();
+    guia(2, "A competição",
+      "Os valores vêm do programa e do que o organizador diz. Aqui: 6 raias e no máximo 2 provas " +
+      "individuais por atleta. Confira e confirme.");
+    preencher({ raias: 6, limite_individual: 2, local: "Piscina do exemplo" });
+    cartaoCompeticao();
+  }
+
+  async function demoInscritos() {
+    conv.demo.passo = 3;
+    guia(3, "Os inscritos",
+      "Cada escola mandou a ficha do jeito dela: uma aba por escola, prova marcada com X ou com o tempo, " +
+      "total e assinatura no fim. O app não lê isso sozinho. E plantamos mais dois erros, marcados em vermelho.");
+    const d = E.demoInscritos();
+    folha(d);
+    await pausa(1800);
+    return receberArquivo(arquivoDe(d.wb, d.nome), "inscritos");
+  }
+
+  // quando não sobra correção para responder, a demonstração segue para o fim
+  function demoTalvezFim() {
+    if (!conv.demo || conv.demo.passo !== 4) return;
+    const a = app();
+    const resta = a.propostasDeCorrecao().filter((p) => !conv.recusadas.has(p.id)).length;
+    if (resta || !a.geracaoLiberada()) return;
+    conv.demo.passo = 5;
+    setTimeout(demoFinal, 900);
+  }
+
+  function demoFinal() {
+    const e = app().estado;
+    guia(5, "Raias e arquivos",
+      "Séries e raias saem pela regra da natação: do centro para fora, com o melhor tempo na raia central " +
+      "da última série. A IA não decide nada aqui. Os arquivos estão prontos.");
+    const comTempo = (p) => p.series.reduce((s, x) => s + x.linhas.filter((l) => l.item.tempo != null).length, 0);
+    const prova = e.provas.filter((p) => p.series.length && !p.revezamento).sort((x, y) => comTempo(y) - comTempo(x))[0];
+    cartaoRaias(prova ? prova.numero : undefined);
+    cartaoArquivos();
+    cartao("fim-demo", "Fim", "Agora com as suas planilhas?", `
+      <p>Foi isso: a IA corrigiu o programa e reescreveu as fichas das escolas, o app conferiu tudo
+        pelas regras, e nada mudou sem o seu Sim. Com as suas planilhas o caminho é o mesmo.</p>
+      <div class="acoes-cartao">
+        <button type="button" class="botao" data-recomecar="minhas">Começar com as minhas planilhas</button>
+        <button type="button" class="mini claro" data-recomecar="demo">Ver a demonstração de novo</button>
+      </div>`, "Fim da demonstração", (el) => {
+      $$("[data-recomecar]", el).forEach((b) => (b.onclick = () => {
+        try { sessionStorage.setItem(CHAVE_COMECAR, b.dataset.recomecar); } catch (err) { /* sem memória */ }
+        window.location.reload();
+      }));
+    });
+    return evento("Demonstração guiada, último passo: as raias e os arquivos estão na tela. Em duas frases, resuma o que a IA fez e o que o app fez nesta demonstração, e convide a pessoa a usar as próprias planilhas.");
+  }
+
+  /* O pedido à IA. Na demonstração, com prazo: passou de DEMO_PRAZO ou deu
+     erro, entra a resposta de reserva, pelo mesmo validador, e o cartão avisa. */
+  async function pedirIA(pedido, el) {
+    const reserva = conv.demo ? E.reservaDaDemo(pedido, IA) : null;
+    if (!reserva) return IA.chamar(conv.sample, pedido);
+    const controle = new AbortController();
+    let prazo = null;
+    try {
+      return await Promise.race([
+        IA.chamar(conv.sample, Object.assign({}, pedido, { sinal: controle.signal })),
+        new Promise((_, nao) => { prazo = setTimeout(() => nao(new Error("prazo")), DEMO_PRAZO); }),
+      ]);
+    } catch (err) {
+      controle.abort();
+      if (el) {
+        const p = document.createElement("p");
+        p.className = "aviso-reserva";
+        p.textContent = (err && err.message === "prazo"
+          ? "O Claude não respondeu em 40 segundos." : "O Claude não respondeu desta vez.") +
+          " Entrou a resposta de reserva, preparada para esta demonstração e conferida pelo mesmo validador.";
+        $(".corpo", el).appendChild(p);
+      }
+      return IA.conferirResposta(reserva, pedido.esquema);
+    } finally {
+      clearTimeout(prazo);
+    }
+  }
+
+  function comecar(caminho) {
+    conv.comecou = true;
+    document.body.classList.remove("na-abertura");
+    seguindo = true;
+    renderTrilha();
+    if (caminho === "demo") return iniciarDemo();
+    bolha("eu", formatar("Quero balizar com as minhas planilhas."));
+    cartaoArquivo("programa");
+    return evento("A pessoa escolheu começar com as próprias planilhas. O cartão para enviar o programa de provas já está na tela. Dê boas-vindas em uma frase e diga o que vem.");
   }
 
   function cartaoArquivo(tipo) {
@@ -421,6 +605,10 @@
   }
 
   const NIVEL = { critico: ["vermelho", "critico"], aviso: ["aviso", "aviso"], info: ["informativo", "info"] };
+  const CHECAGENS = [["duplicados", "Atleta repetido na prova"], ["limites", "Limite de provas por atleta"],
+    ["tempos", "Tempo impossível"], ["categorias", "Atleta em duas categorias"],
+    ["naipes", "Feminino e masculino juntos"], ["foraPrograma", "Prova fora do programa"],
+    ["regulamento", "Inscrição contra o regulamento"], ["idades", "Idade e categoria"]];
 
   function cartaoConferencia(noLugar) {
     const a = app(), e = a.estado;
@@ -457,7 +645,8 @@
     const correcoes = props.length ? `<div class="correcoes">
       <p class="correcoes-titulo"><b>Posso corrigir ${props.length === 1 ? "este caso" : `estes ${props.length} casos`} para você</b>
         <span class="apagado">nada muda sem o seu Sim</span></p>
-      ${props.map((p) => `<div class="correcao" data-correcao="${AT(p.id)}">
+      ${props.map((p, k) => `<div class="correcao" data-correcao="${AT(p.id)}" style="--d:${0.6 + k * 0.15}s">
+        <span class="rot">CORREÇÃO PROPOSTA</span>
         <p class="caso">${AT(p.caso)}</p>
         <p class="pergunta"><b>${AT(p.pergunta)}</b></p>
         <div class="acoes-cartao">
@@ -469,7 +658,11 @@
     </div>` : "";
     const titulo = vermelhos.length ? `Tem ${vermelhos.length} problema(s) para você decidir`
                                     : "A conferência não achou nada que trave";
+    const achou = new Set(secoes.filter((s) => !aceito(s)).map((s) => s.id));
+    const checagens = `<ul class="checagens-conv ${noLugar ? "" : "entra"}">${CHECAGENS.map(([id, rot], k) =>
+      `<li class="${achou.has(id) ? "achou" : ""}" style="--d:${k * 0.12}s">${rot}</li>`).join("")}</ul>`;
     const corpo = `
+      ${checagens}
       <div class="numeros">
         <div class="${vermelhos.length ? "ruim" : "bom"}"><b>${vermelhos.length}</b><span>vermelhos para decidir</span></div>
         <div><b>${props.length}</b><span>correções prontas para o seu Sim</span></div>
@@ -503,13 +696,19 @@
     const pos = comGente.indexOf(p);
     const raias = p.nRaias || e.perfil.raias || 6;
     const cab = Array.from({ length: raias }, (_, k) => `<span class="nraia">${k + 1}</span>`).join("");
-    const series = p.series.map((s) => {
+    const ordem = [];
+    for (let a = Math.ceil(raias / 2), b = a + 1; ordem.length < raias;) {
+      if (a >= 1) ordem.push(a--);
+      if (b <= raias && ordem.length < raias) ordem.push(b++);
+    }
+    const series = p.series.map((s, si) => {
       const porRaia = new Map(s.linhas.map((l) => [l.raia, l.item]));
       const celulas = Array.from({ length: raias }, (_, k) => {
         const it = porRaia.get(k + 1);
         if (!it) return `<div class="raia vazia"></div>`;
         const nome = p.revezamento ? it.equipe : it.nome;
-        return `<div class="raia ${it.marcado ? "marcada" : ""}" title="${AT(nome)}">
+        const d = (si * raias + ordem.indexOf(k + 1)) * 0.09;
+        return `<div class="raia ${it.marcado ? "marcada" : ""}" title="${AT(nome)}" style="--d:${Math.min(d, 4).toFixed(2)}s">
           <b>${AT(nome)}</b>
           ${p.revezamento ? "" : `<span>${AT(it.equipe || "")}</span>`}
           <em>${it.tempo != null ? B.formatarTempo(it.tempo) : "sem tempo"}</em></div>`;
@@ -658,7 +857,7 @@
     conv.controleOrg = new AbortController();
     try {
       marcar(el, 0, "fazendo");
-      const r = await IA.chamar(conv.sample, Object.assign({}, o.pedido, { sinal: conv.controleOrg.signal }));
+      const r = await pedirIA(Object.assign({}, o.pedido, { sinal: conv.controleOrg.signal }), el);
       marcar(el, 0, "feito");
       const conf = IA.conferirMapa(r.dados, o.grades);
       if (conf.erros.length) {
@@ -763,7 +962,7 @@
       ["Nomes de prova enviados, sem dado de atleta", "Cada prova conferida contra o programa"]);
     try {
       marcar(el, 0, "fazendo");
-      const r = await IA.chamar(conv.sample, o.pedidoProvas);
+      const r = await pedirIA(o.pedidoProvas, el);
       marcar(el, 0, "feito");
       IA.aplicarProvas(r.dados, o.pendentes, o.mascara);
       marcar(el, 1, "feito");
@@ -779,12 +978,14 @@
   function cartaoOrganizada(primeira) {
     const o = org, prog = app().lerConfig().programa || [];
     const itens = o.linhas.map((l) => ({ l, r: IA.interpretar(l, prog) }));
+    let ordemDeEntrada = 0;
     const conta = { ok: 0, incerto: 0, erro: 0, fora: 0 };
     for (const x of itens) conta[x.l.excluida ? "fora" : x.r.estado]++;
     const peso = (x) => (x.l.excluida ? 3 : { erro: 0, incerto: 1, ok: 2 }[x.r.estado]);
     const ordem = itens.slice().sort((x, y) => peso(x) - peso(y));
     const linha = (x) => {
       const { l, r } = x;
+      x.k = ordemDeEntrada++;
       const est = l.excluida ? "fora" : r.estado;
       let vai = '<span class="apagado">fora do balizamento</span>';
       if (!l.excluida && r.inscricao) {
@@ -802,7 +1003,7 @@
           ? `<button type="button" class="mini claro" data-linha-nao="${AT(l.id)}">Tirar</button>
              <button type="button" class="link" data-acao="org_tela">corrigir na tela completa</button>`
           : est === "fora" ? `<button type="button" class="link" data-linha-volta="${AT(l.id)}">voltar</button>` : "";
-      return `<div class="linha-org ${est}">
+      return `<div class="linha-org ${est}" style="--d:${Math.min(x.k || 0, 14) * 0.06}s">
         <div class="org-origem">${AT(l.origem.aba)}<b>linha ${l.origem.linha}</b></div>
         <div class="org-de">${(l.original || []).filter(Boolean).map(AT).join('<span class="sep"> · </span>')}</div>
         <div class="org-para">${vai}
@@ -819,7 +1020,7 @@
         <div class="${conta.erro ? "ruim" : ""}"><b>${conta.erro}</b><span>que não entram assim</span></div>
         <div><b>${o.ignoradas.length}</b><span>linhas que não eram inscrição</span></div>
       </div>
-      <div class="tabela-org">
+      <div class="tabela-org ${primeira ? "entra" : ""}">
         <div class="linha-org cabeca"><div>DE ONDE VEIO</div><div>NA PLANILHA</div><div>NO MODELO DO APP</div></div>
         ${marcadas.map(linha).join("")}
         ${prontas.slice(0, 6).map(linha).join("")}
@@ -873,6 +1074,12 @@
     nota(`As ${n} inscrições reescritas entraram e passaram pelas conferências de sempre.`);
     renderTrilha();
     cartaoInscritos();
+    if (conv.demo) {
+      conv.demo.passo = 4;
+      guia(4, "A conferência",
+        "As regras do app conferem tudo e acham os dois erros plantados. Cada correção vem pronta, " +
+        "e só acontece com o seu Sim.");
+    }
     cartaoConferencia();
     return evento(`A pessoa confirmou a tabela reescrita pela IA: ${n} inscrições entraram e já passaram pelas conferências. ` +
       "Os cartões dos inscritos e da conferência já estão na tela. Resuma a conferência, começando pelos vermelhos e pelas correções propostas.");
@@ -906,7 +1113,7 @@
       ["Linhas enviadas", "Correções conferidas com as regras do programa"]);
     try {
       marcar(el, 0, "fazendo");
-      const r = await IA.chamar(conv.sample, c.pedido);
+      const r = await pedirIA(c.pedido, el);
       marcar(el, 0, "feito");
       c.itens = IA.correcoesDoPrograma(r.dados, c.ruins);
       marcar(el, 1, "feito", `${c.itens.filter((x) => x.prova || x.naoEProva).length} correção(ões)`);
@@ -998,15 +1205,9 @@
     seguindo = true;
     const bloco = botao && botao.closest("[data-bloco]");
     const cartaoAtual = botao && botao.closest(".cartao-conversa");
-    // escolheu um caminho no começo: o cartão de boas-vindas fecha numa linha
-    if (cartaoAtual && cartaoAtual.dataset.tipo === "inicio") {
-      cartaoAtual.classList.add("antigo");
-      cartaoAtual.setAttribute("inert", "");
-    }
     switch (nome) {
       case "enviar_programa": return cartaoArquivo("programa");
       case "enviar_inscritos": return cartaoArquivo("inscritos");
-      case "manual": return definirModo("tela");
       case "exemplo": case "baguncada": {
         conv.exemplo = { comp: "ESCOLAR", inscritos: nome === "baguncada" ? "MATRIZ" : null };
         bolha("eu", formatar(nome === "exemplo" ? "Quero ver um exemplo."
@@ -1035,6 +1236,7 @@
                                    : "Certo: cada caso vai ser perguntado na conferência.");
         return;
       case "programa_ok":
+        if (conv.demo) return demoCompeticao();
         renderTrilha();
         cartaoCompeticao();
         return evento("A pessoa confirmou o programa. O cartão da competição já está na tela: proponha os valores com base no programa e pergunte o que falta.");
@@ -1047,6 +1249,7 @@
         if (!r.ok) return cartaoCompeticao(r.falta);
         nota("Competição confirmada.");
         renderTrilha();
+        if (conv.demo) return demoInscritos();
         cartaoArquivo("inscritos");
         return evento("A pessoa confirmou a competição. O cartão para enviar os inscritos já está na tela.");
       }
@@ -1078,7 +1281,7 @@
       }
       case "org_tela":
         a.revisarOrganizacao(org);
-        return definirModo("tela", true);
+        return definirModo("tela");
       case "corrigir_programa": return cartaoPropostaPrograma();
       case "prog_sim": fechar("proposta-programa"); fechar("erro-ia"); return corrigirPrograma();
       case "prog_nao": fechar("proposta-programa"); return nota("Certo, o programa fica como está.");
@@ -1092,7 +1295,12 @@
         const id = botao.closest("[data-correcao]").dataset.correcao;
         const p = a.propostasDeCorrecao().find((x) => x.id === id);
         if (!p) return cartaoConferencia();
-        if (nome === "correcao_nao") { conv.recusadas.add(id); return cartaoConferencia(true); }
+        if (nome === "correcao_nao") { conv.recusadas.add(id); cartaoConferencia(true); return demoTalvezFim(); }
+        // a folha da correção mostra o "feito" antes de a conferência se refazer
+        const box = botao.closest(".correcao");
+        box.classList.add("feita");
+        $(".acoes-cartao", box).innerHTML = `<p class="feito-ok">${AT(p.feito)}</p>`;
+        await pausa(900);
         return aplicarCorrecoes([p]);
       }
       case "correcao_todas":
@@ -1147,6 +1355,7 @@
     renderTrilha();
     cartaoConferencia(true);
     const depois = vermelhosPendentes();
+    if (conv.demo) return demoTalvezFim();
     if (antes && !depois) {
       return evento("A pessoa aceitou as correções e a conferência ficou sem nenhum vermelho: os arquivos estão liberados. Diga isso e mostre o cartão dos arquivos.");
     }
@@ -1216,7 +1425,7 @@
       "O cartão do programa já está na tela. Diga em uma ou duas frases o que viu e peça para a pessoa conferir e confirmar.");
   }
 
-  function depoisDosInscritos(st, nome) {
+  async function depoisDosInscritos(st, nome) {
     renderTrilha();
     const e = app().estado;
     cartaoInscritos();
@@ -1226,6 +1435,11 @@
         "Os cartões dos inscritos e da conferência já estão na tela. Resuma a conferência, começando pelos vermelhos.");
     }
     if (st && st.recusada) {
+      if (conv.demo) {
+        await evento(`Demonstração guiada, passo 3. A ficha das escolas ${nome} foi recusada: ${e.recusa.abas.map((a) => `aba ${a.aba}: ${a.motivo}`).join("; ")}. ` +
+          "Explique em duas frases, sem jargão, por que o app recusa e que você pode reescrever a ficha no modelo do app, mandando só uma amostra com os nomes trocados por código.");
+        return cartaoPropostaOrganizar();
+      }
       return evento(`A planilha de inscritos ${nome} foi recusada: ${e.recusa.abas.map((a) => `aba ${a.aba}: ${a.motivo}`).join("; ")}. ` +
         "O cartão com o motivo e o botão de organizar com IA já está na tela. Explique em palavras simples e ofereça organizar com IA.");
     }
@@ -1543,43 +1757,67 @@ Regras:
   }
 
   // o app contando ao Claude o que aconteceu na tela
-  function evento(texto) {
-    if (!conv.sample) return;
-    return chamar("[evento do app] " + texto);
+  function evento(texto, extra) {
+    if (!conv.sample) return Promise.resolve();
+    return chamar("[evento do app] " + texto, Object.assign({}, conv.demo ? DEMO_FALA : null, extra));
   }
 
-  async function chamar(conteudo) {
-    if (!conv.sample) return;
-    if (conv.controle) { conv.fila.push(conteudo); return; }
+  /* extra: semFerramentas (só comentar), limite (ms até desistir), silencioso
+     (sem resposta, a fala some), antes (pôr a fala antes deste cartão).
+     Devolve uma promessa que se cumpre quando a resposta termina. */
+  function chamar(conteudo, extra) {
+    if (!conv.sample) return Promise.resolve();
+    return new Promise((pronto) => {
+      const x = Object.assign({}, extra, { pronto });
+      if (conv.controle) conv.fila.push({ conteudo, extra: x });
+      else falar(conteudo, x);
+    });
+  }
+
+  async function falar(conteudo, extra) {
     conv.turnos.push({ role: "user", content: conteudo });
     const recentes = conv.turnos.slice(-14);
     const envio = [{ role: "user", content: INSTRUCOES }].concat(recentes.map((t, k) =>
       k === recentes.length - 1
         ? { role: "user", content: t.content + "\n\n---\nResumo da tela agora, feito pelo app:\n" + situacao() }
         : t));
-    const fala = bolha("claude pensando", '<span class="digitando"><i></i><i></i><i></i></span>');
+    // enquanto o Claude pensa, o nadador vai e volta na raia
+    const fala = bolha("claude pensando", RAIA_PENSANDO);
+    if (extra.antes && extra.antes.isConnected) $("#fio").insertBefore(fala, extra.antes);
     conv.controle = new AbortController();
+    const prazo = extra.limite ? setTimeout(() => conv.controle && conv.controle.abort(), extra.limite) : null;
     trancarCompositor(true);
     let parcial = "";
+    const escrever = (t, fim) => {
+      $(".texto", fala).innerHTML = formatar(t) + (fim || "");
+      rolar(fala, true);
+    };
     try {
       const opcoes = {
         cache: false, effort: "low", signal: conv.controle.signal,
         onText: ({ text }) => {
           parcial = text;
-          fala.classList.remove("pensando");
-          $(".texto", fala).innerHTML = formatar(text);
-          rolar(fala, true);
+          // a resposta chegou: o nadador bate na borda e o texto aparece
+          if (fala.classList.contains("pensando")) {
+            chegar(fala).then(() => { fala.classList.remove("pensando"); escrever(parcial); });
+            return;
+          }
+          escrever(text);
         },
       };
-      if (conv.ferramentas) opcoes.tools = ferramentas();
+      if (conv.ferramentas && !extra.semFerramentas) opcoes.tools = ferramentas();
       const r = await conv.sample(envio, opcoes);
+      await chegar(fala);
       fala.classList.remove("pensando");
-      $(".texto", fala).innerHTML = formatar(r.text) +
-        (r.truncated ? '<p class="apagado">A resposta foi cortada. Peça uma parte de cada vez.</p>' : "");
+      escrever(r.text, r.truncated ? '<p class="apagado">A resposta foi cortada. Peça uma parte de cada vez.</p>' : "");
       conv.turnos.push({ role: "assistant", content: r.text });
     } catch (e) {
       fala.classList.remove("pensando");
-      if (e && e.code === "cancelled") {
+      if (extra.silencioso && !parcial) {
+        // na demonstração, a fala que não veio a tempo simplesmente não aparece
+        fala.remove();
+        conv.turnos.pop();
+      } else if (e && e.code === "cancelled") {
         $(".texto", fala).innerHTML = parcial ? formatar(parcial) : '<p class="apagado">Parado.</p>';
         if (parcial) conv.turnos.push({ role: "assistant", content: parcial });
       } else {
@@ -1589,13 +1827,38 @@ Regras:
         // a conversa fica com um turno do usuário sem resposta: é permitido
       }
     } finally {
+      clearTimeout(prazo);
       conv.controle = null;
       trancarCompositor(false);
       cumprirPendentes();
       renderTrilha();
       rolar();
-      if (conv.fila.length) chamar(conv.fila.shift());
+      if (extra.pronto) extra.pronto();
+      // a próxima da fila já traz a promessa de quem pediu
+      if (conv.fila.length) { const p = conv.fila.shift(); falar(p.conteudo, p.extra); }
     }
+  }
+
+  const RAIA_PENSANDO = `<div class="raia-ia"><span class="nadador-ia">${NADADOR}</span></div>
+    <span class="legenda-raia">nadando até a resposta</span>`;
+
+  // o nadador acelera até a borda, toca, e só então a resposta aparece
+  function chegar(fala) {
+    if (fala._chegada) return fala._chegada;
+    const n = $(".nadador-ia", fala);
+    const calmo = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    fala._chegada = new Promise((pronto) => {
+      if (!n || calmo) return pronto();
+      const x = n.offsetLeft;
+      n.style.animation = "none";
+      n.style.left = x + "px";
+      n.style.transform = "translateY(-50%)";
+      void n.offsetWidth;
+      n.style.transition = "left .45s ease-in";
+      n.style.left = "calc(100% - 3.3rem)";
+      setTimeout(() => { fala.classList.add("tocou"); setTimeout(pronto, 320); }, 450);
+    });
+    return fala._chegada;
   }
 
   function trancarCompositor(ocupado) {
@@ -1614,14 +1877,10 @@ Regras:
       e.ajustes.removidas.size]);
   }
 
-  function definirModo(modo, guardar) {
+  function definirModo(modo) {
     const conversa = modo === "conversa" && !!conv.sample;
     const antes = document.body.classList.contains("modo-conversa");
     document.body.classList.toggle("modo-conversa", conversa);
-    $$("[data-modo]").forEach((b) => b.classList.toggle("ativo", b.dataset.modo === (conversa ? "conversa" : "tela")));
-    if (guardar !== true) {
-      try { localStorage.setItem(CHAVE_MODO, conversa ? "conversa" : "tela"); } catch (e) { /* sem memória */ }
-    }
     if (!conversa) {
       if (antes) retrato = retratar();
       window.scrollTo(0, 0);
@@ -1639,13 +1898,22 @@ Regras:
   }
 
   function irParaTela(passo) {
-    definirModo("tela", true);
+    definirModo("tela");
     app().irPara(passo);
   }
 
   /* ---------------- ligação com o app ---------------- */
   function ligar() {
-    $$("[data-modo]").forEach((b) => (b.onclick = () => definirModo(b.dataset.modo)));
+    $$("[data-modo]").forEach((b) => (b.onclick = () => {
+      if (b.dataset.modo === "inicio") return mostrarAbertura();
+      definirModo("conversa");
+    }));
+    $$("[data-caminho]").forEach((b) => (b.onclick = () => escolherCaminho(b.dataset.caminho)));
+    $("#continuarConversa").onclick = () => {
+      document.body.classList.remove("na-abertura");
+      renderTrilha();
+      rolar();
+    };
     const form = $("#compositor"), caixa = $("#mensagem"), anexo = $("#anexo");
     form.addEventListener("submit", (ev) => {
       ev.preventDefault();
@@ -1688,21 +1956,24 @@ Regras:
       return;
     }
     conv.ligada = true;
+    // no claude.ai, o Balizador veste a noite na piscina da página de entrada
+    document.documentElement.classList.add("noite");
     const lim = await conv.sample.limits().catch(() => null);
     conv.ferramentas = !!(lim && lim.tools);
     $("#modos").hidden = false;
     ligar();
-    cartaoInicio();
-    renderTrilha();
-    let modo = "conversa";
-    try { modo = localStorage.getItem(CHAVE_MODO) || "conversa"; } catch (e) { /* sem memória */ }
-    definirModo(modo, true);
+    definirModo("conversa");
+    // quem pediu para começar de novo volta direto no caminho que escolheu
+    let caminho = null;
+    try { caminho = sessionStorage.getItem(CHAVE_COMECAR); sessionStorage.removeItem(CHAVE_COMECAR); } catch (e) { /* sem memória */ }
+    if (caminho === "demo" || caminho === "minhas") return comecar(caminho);
+    mostrarAbertura();
   }
 
   // o app avisa daqui o que aconteceu numa tela que a conversa abriu
   function eventoDoApp(nome, dados) {
     if (nome !== "revisao_confirmada") return false;
-    definirModo("conversa", true);
+    definirModo("conversa");
     retrato = null;
     nota(`A revisão foi confirmada: ${dados.inscricoes} inscrições organizadas pela IA entraram.`);
     cartaoInscritos();

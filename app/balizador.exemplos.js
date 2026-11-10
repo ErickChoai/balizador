@@ -401,8 +401,9 @@
   /* 1. Uma ficha por escola, cada uma numa aba. O nome da escola está num
      título, as provas são colunas com X ou com o tempo, o cabeçalho ocupa
      duas linhas mescladas e embaixo vêm o total e a assinatura. */
-  function baguncadaMatriz() {
+  function baguncadaMatriz(plantar) {
     const rnd = sorteio(51001);
+    const plantados = [];
     const novoNome = fabricaDeNomes(rnd);
     const wb = XLSX.utils.book_new();
     const gabarito = [];
@@ -439,6 +440,7 @@
         });
         linhas.push(linha);
       });
+      if (plantar && !plantados.length) plantarNaFicha(linhas, plantados);
       linhas.push([]);
       linhas.push([`TOTAL DE ATLETAS: ${atletas.length}`]);
       linhas.push(["Assinatura do responsável: ______________________________"]);
@@ -448,7 +450,112 @@
          "F4:J4", `A${fim - 1}:E${fim - 1}`, `A${fim}:J${fim}`],
         [5, 34, 8, 12, 13, 11, 11, 11, 11, 11]);
     }
-    return { wb, gabarito };
+    return { wb, gabarito, plantados };
+  }
+
+  /* Os dois erros da demonstração, na ficha da primeira escola: um tempo de
+     50 m escrito sem a vírgula ("3120", que o app leria como 52 minutos) e
+     um atleta digitado duas vezes. As colunas G, I e J são as provas de 50 m. */
+  function plantarNaFicha(linhas, plantados) {
+    const atletas = [];
+    for (let i = 5; i < linhas.length; i++) if (linhas[i][1]) atletas.push(i);
+    const marcada = (l, c) => String(l[c] || "").trim() !== "";
+    const comX = atletas.find((i) => [6, 8, 9].some((c) => /^x$/i.test(String(linhas[i][c]).trim())));
+    if (comX != null) {
+      const c = [6, 8, 9].find((x) => /^x$/i.test(String(linhas[comX][x]).trim()));
+      linhas[comX][c] = "3120";
+      plantados.push({ linha: comX + 1, coluna: c, nota: `"3120" sem a vírgula: seriam 52 minutos num 50 m` });
+    }
+    const umaProva = atletas.find((i) => i !== comX && [5, 6, 7, 8, 9].filter((c) => marcada(linhas[i], c)).length === 1);
+    if (umaProva != null) {
+      linhas.splice(umaProva + 1, 0, linhas[umaProva].slice());
+      // a linha nova empurra para baixo o "3120", se ele vinha depois
+      if (comX != null && comX > umaProva) plantados[0].linha++;
+      plantados.push({ linha: umaProva + 2, coluna: 1, nota: "o mesmo atleta digitado duas vezes" });
+    }
+  }
+
+  /* ---------------- a demonstração guiada ----------------
+     O programa do JEPB com dois erros de propósito (o estilo escrito junto com
+     a distância na 11ª prova, e uma linha de total no fim) e a ficha por escola
+     com os dois erros de plantarNaFicha. Para o caso de o Claude demorar ou
+     falhar, cada pedido da demonstração tem uma resposta de reserva, preparada
+     aqui para estas planilhas e conferida pelo mesmo validador da resposta
+     de verdade. A conversa avisa quando a reserva entra. */
+  function demoPrograma() {
+    const comp = COMPETICOES.ESCOLAR;
+    const linhas = [["Nº", "DISTÂNCIA", "ESTILO", "CATEGORIA", "NAIPE", "ETAPA"]];
+    comp.programa.forEach((p, i) => linhas.push(i === 10
+      ? [i + 1, "50m peito", "", p[2], p[3], p[4]]
+      : [i + 1, p[0], p[1], p[2], p[3], p[4]]));
+    linhas.push(["TOTAL: 15 provas"]);
+    const ws = XLSX.utils.aoa_to_sheet(linhas);
+    ws["!cols"] = [{ wch: 16 }, { wch: 12 }, { wch: 11 }, { wch: 15 }, { wch: 12 }, { wch: 10 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "PROGRAMA");
+    return { wb, nome: "PROGRAMA DO CAMPEONATO.xlsx", erros: [
+      { linha: 12, coluna: 1, nota: "o estilo foi escrito junto com a distância" },
+      { linha: 12, coluna: 2, nota: null },
+      { linha: 17, coluna: 0, nota: "sobrou uma linha de total, que não é prova" }] };
+  }
+
+  function demoInscritos() {
+    const r = baguncadaMatriz(true);
+    return { wb: r.wb, nome: "FICHAS DAS ESCOLAS.xlsx", erros: r.plantados };
+  }
+
+  const ESCOLAS_DEMO = { "COL AURORA": "COLÉGIO AURORA", "ESC MODELO": "ESCOLA MODELO",
+                         "INST COREE": "INSTITUTO COREE" };
+
+  function reservaDoMapa(texto) {
+    const abas = [...texto.matchAll(/ABA "([^"]+)"/g)].map((m) => m[1]);
+    return { abas: abas.map((aba) => ({
+      aba, usar: true, layout: "provas_em_colunas", linha_cabecalho: 5, primeira_linha_de_dados: 6,
+      colunas: { nome: "B", equipe: null, prova: null, distancia: null, estilo: null, categoria: "E",
+                 naipe: "C", tempo: null, nascimento: "D", classe: null, segmento: null },
+      provas_em_colunas: ["25m LIVRE", "50m LIVRE", "25m COSTAS", "50m COSTAS", "50m PEITO"]
+        .map((prova, k) => ({ coluna: "FGHIJ"[k], prova, coluna_tempo: null })),
+      prova_da_aba: null, categoria_da_aba: null, naipe_da_aba: null,
+      equipe_da_aba: ESCOLAS_DEMO[aba] || null,
+      textos_de_lixo: ["TOTAL DE ATLETAS", "Assinatura do responsável"], incertezas: [] })) };
+  }
+
+  function reservaDasProvas(texto) {
+    const B = raiz.Balizador || require("./balizador.core.js");
+    const provas = [];
+    for (const linha of texto.split("\n")) {
+      const m = linha.match(/^(P\d+): (.*)$/);
+      if (!m) continue;
+      const campos = {};
+      for (const x of m[2].matchAll(/(prova|distância|estilo|categoria|naipe) "([^"]*)"/g)) campos[x[1]] = x[2];
+      const tudo = B.normalizar(Object.values(campos).join(" "));
+      const dist = (tudo.match(/\b(\d+)\s*M?\b/) || [])[1];
+      const estilo = /CRAWL|LIVRE/.test(tudo) ? "LIVRE" : /COSTA/.test(tudo) ? "COSTAS" : /PEITO/.test(tudo) ? "PEITO" : null;
+      const n = B.normalizar(campos.naipe || "");
+      const naipe = n.startsWith("F") ? "FEM" : n.startsWith("M") ? "MASC" : null;
+      const c = B.normalizar(campos.categoria || "");
+      const categoria = /PMB|PRE.?MIRIM/.test(c) ? 'PRÉ-MIRIM "B"' : /MIRIM/.test(c) ? "MIRIM" : /INF/.test(c) ? "INFANTIL" : null;
+      provas.push({ id: m[1], numero_programa: null, distancia: dist ? dist + "M" : null, estilo, categoria, naipe,
+                    incerto: !(dist && estilo && categoria && naipe), motivo: null });
+    }
+    return { provas };
+  }
+
+  function reservaDoPrograma(texto) {
+    const linhas = [...texto.matchAll(/^linha (\d+): "([^"]*)"/gm)].map((m) => [Number(m[1]), m[2]]);
+    return { linhas: linhas.map(([linha, t]) => /TOTAL/i.test(t)
+      ? { linha, e_prova: false, distancia: null, estilo: null, categoria: null, naipe: null,
+          incerto: false, motivo: "é o total de provas no fim da planilha, não uma prova" }
+      : { linha, e_prova: true, distancia: "50M", estilo: "PEITO", categoria: "INFANTIL", naipe: "FEM",
+          incerto: false, motivo: "o estilo estava escrito junto com a distância: 50m peito" }) };
+  }
+
+  // a resposta de reserva para um pedido da demonstração, ou null se não houver
+  function reservaDaDemo(pedido, ia) {
+    if (pedido.sistema === ia.SISTEMA_MAPA) return reservaDoMapa(pedido.texto);
+    if (pedido.sistema === ia.SISTEMA_PROVAS) return reservaDasProvas(pedido.texto);
+    if (pedido.sistema === ia.SISTEMA_PROGRAMA) return reservaDoPrograma(pedido.texto);
+    return null;
   }
 
   /* 2. A lista corrida: uma linha por inscrição, com os cabeçalhos que cada
@@ -653,6 +760,7 @@
     COMPETICOES, listaDeExemplos, nomeDoArquivo, perfilSugerido,
     planilhaDoPrograma, planilhaDeInscritos,
     listaDeBaguncadas, planilhaBaguncada, nomeDaBaguncada,
+    demoPrograma, demoInscritos, reservaDaDemo,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else raiz.BalizadorExemplos = api;

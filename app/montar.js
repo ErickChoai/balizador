@@ -99,6 +99,7 @@ ${SCRIPTS}
 
 // o claude.ai procura o título nos primeiros 8 KB: ele vem antes de tudo
 const artifact = `<title>Balizador</title>
+<script>document.documentElement.classList.add("noite")</script>
 ${FONTES}
 <style>
 ${partes.css}

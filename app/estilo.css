@@ -1143,3 +1143,212 @@ details.mais summary{color:var(--agua);font-size:.98rem}
   .linha-org{grid-template-columns:1fr;gap:.35rem}
   .linha-org.cabeca{display:none}
 }
+
+/* =====================================================================
+   A noite na piscina
+
+   No claude.ai o Balizador veste o visual da página de entrada: o azul
+   fundo da água, o amarelo da corda de raia como cor de ação e o branco do
+   placar. Só os tokens mudam; os componentes são os mesmos do app.
+   ===================================================================== */
+:root.noite{
+  color-scheme:dark;
+  --fundo:#06222B; --papel:#0A3340; --papel2:#0F4656;
+  --tinta:#E9F4F6; --suave:#9DBCC5; --linha:#1E4B58;
+  --agua:#F2C14E; --agua-fraca:#26403C;
+  --ambar:#F5A65B; --ambar-fraca:#3A2E22;
+  --grave:#F0776C; --grave-fraca:#3B2226;
+  --info:#4FA3D9; --info-fraca:#123A52;
+  --bom:#3FBF8F; --bom-fraca:#12392F;
+  --brilho-a:rgba(79,163,217,.10); --brilho-b:rgba(63,191,143,.07);
+  --brilho-c:rgba(242,193,78,.06); --risca:rgba(255,255,255,.03);
+  --vidro:rgba(6,34,43,.88);
+  --corda:repeating-linear-gradient(90deg,#F2C14E 0 14px,#FFFFFF 14px 18px);
+}
+/* a corda de raia embaixo do topo */
+.noite .topo{border-bottom:0;
+  background:var(--corda) bottom/100% 5px no-repeat,var(--vidro);padding-bottom:5px}
+.noite .marca p{display:none}
+.noite .botao:hover:not(:disabled){filter:brightness(1.08)}
+.noite .cartao-conversa{box-shadow:0 24px 50px -30px rgba(0,0,0,.85)}
+
+/* Início e Voltar à conversa: cada um só onde faz sentido */
+.modos button{border:1px solid transparent}
+body.modo-conversa .modos [data-modo="conversa"],
+body:not(.modo-conversa) .modos [data-modo="inicio"],
+body.na-abertura .modos [data-modo="inicio"]{display:none}
+.modos [data-modo="conversa"]{background:var(--agua);color:var(--papel);font-weight:600}
+
+/* ---------- a abertura ---------- */
+body:not(.na-abertura) .abertura-conv{display:none}
+body.na-abertura #fio,body.na-abertura #compositor,
+body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
+.abertura-conv{display:flex;flex-direction:column;gap:1.3rem;padding:2.2rem 0 3rem}
+.abertura-conv .olho{font-family:"JetBrains Mono",monospace;font-size:.78rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--agua)}
+.abertura-conv h2{font-size:clamp(2rem,5vw,3.4rem);line-height:1.04;font-weight:800;max-width:17ch;margin:0}
+.abertura-conv h2 em{font-style:normal;color:var(--agua)}
+.abertura-conv .linha-fina{font-size:1.12rem;color:var(--suave);max-width:44rem}
+.abertura-conv .garantia{font-size:.92rem;color:var(--suave)}
+.abertura-conv > .link{align-self:flex-start;font-size:1rem}
+
+/* a piscina da abertura: cada etapa uma raia, o nadador atravessa e bate */
+.piscina-abertura{border-radius:18px;overflow:hidden;border:1px solid var(--linha);
+  background:linear-gradient(180deg,#0E4C5E,#0A3340 60%,#072631)}
+.faixa{position:relative;height:2.7rem;display:flex;align-items:center}
+.faixa + .faixa::before{content:"";position:absolute;left:0;right:0;top:-2px;height:4px;
+  background:repeating-linear-gradient(90deg,var(--c,#4FA3D9) 0 12px,#FFFFFF 12px 16px);opacity:.75}
+.faixa:nth-child(3)::before,.faixa:nth-child(4)::before{--c:#F2C14E}
+.faixa .rotulo{position:relative;z-index:1;display:flex;align-items:center;gap:.55rem;width:9.5rem;flex:none;
+  padding-left:.8rem;font-size:.92rem;color:var(--tinta)}
+.faixa .rotulo b{font-family:"JetBrains Mono",monospace;font-size:.78rem;color:var(--agua);
+  width:1.3rem;height:1.3rem;border-radius:50%;border:1px solid var(--agua);display:grid;place-items:center}
+.faixa .nada{position:absolute;top:50%;left:9.5rem;width:2.9rem;transform:translateY(-50%);
+  animation:travessia 6.5s calc(var(--k) * .55s) ease-in-out infinite both}
+.faixa .chegada{position:absolute;right:.7rem;top:50%;margin-top:-.75rem;width:1.5rem;height:1.5rem;border-radius:50%;
+  display:grid;place-items:center;background:#3FBF8F;color:#06221A;font-weight:800;font-size:.85rem;
+  animation:bateu 6.5s calc(var(--k) * .55s) ease-in-out infinite both}
+@keyframes travessia{
+  0%{left:9.5rem;opacity:0}
+  6%{opacity:1}
+  60%,88%{left:calc(100% - 5.4rem);opacity:1}
+  100%{left:calc(100% - 5.4rem);opacity:0}}
+@keyframes bateu{0%,58%{opacity:0;transform:scale(.5)}64%,90%{opacity:1;transform:none}100%{opacity:0}}
+
+/* o nadador de crawl: touca amarela, braçada girando no ombro */
+.nadador-svg{display:block;width:100%;height:auto;overflow:visible}
+.nadador-svg .corpo{fill:none;stroke:#E9F4F6;stroke-width:4.2;stroke-linecap:round}
+.nadador-svg .braco{fill:none;stroke:#E9F4F6;stroke-width:2.6;stroke-linecap:round;
+  transform-origin:30px 11.5px;animation:bracada .75s linear infinite}
+.nadador-svg .touca{fill:#F2C14E}
+.nadador-svg .esteira{fill:none;stroke:rgba(255,255,255,.55);stroke-width:1.6;stroke-linecap:round;
+  animation:esteira .75s linear infinite}
+@keyframes bracada{to{transform:rotate(-360deg)}}
+@keyframes esteira{0%{opacity:.2;transform:translateX(2px)}50%{opacity:.8}100%{opacity:.2;transform:translateX(-3px)}}
+
+.caminhos{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:.9rem}
+.caminho{font:inherit;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:.35rem;
+  padding:1.3rem 1.4rem;border-radius:18px;border:1.5px solid var(--linha);background:var(--papel);color:var(--tinta);
+  transition:border-color .15s,transform .15s,background .15s}
+.caminho b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.4rem;line-height:1.15}
+.caminho > span:last-child{color:var(--suave);font-size:1rem;line-height:1.45}
+.caminho:hover,.caminho:focus-visible{border-color:var(--agua);transform:translateY(-3px)}
+.caminho.principal{background:linear-gradient(150deg,rgba(242,193,78,.16),var(--papel) 70%);border-color:var(--agua)}
+.selo-caminho{align-self:flex-start;font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--papel);background:var(--agua);border-radius:999px;padding:.15rem .6rem}
+.recomecar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;padding:.9rem 1rem;border-radius:14px;
+  background:var(--grave-fraca);border:1px solid var(--grave)}
+.recomecar p{flex-basis:100%;margin:0}
+
+@media (max-width:640px){
+  .faixa .rotulo{width:7.6rem;font-size:.82rem}
+  .faixa .nada{left:7.6rem;width:2.5rem}
+  @keyframes travessia{
+    0%{left:7.6rem;opacity:0}
+    6%{opacity:1}
+    60%,88%{left:calc(100% - 5rem);opacity:1}
+    100%{left:calc(100% - 5rem);opacity:0}}
+}
+@media (prefers-reduced-motion:reduce){
+  .faixa .nada,.faixa .chegada,.nadador-svg .braco,.nadador-svg .esteira{animation:none}
+  .faixa .nada{left:calc(100% - 5.4rem)}
+}
+
+/* =====================================================================
+   A conversa em movimento: o nadador enquanto o Claude pensa, o guia da
+   demonstração, a planilha numa folha branca, as correções como folhas com
+   Sim e Não, as conferências acendendo e os nadadores mergulhando nas raias.
+   ===================================================================== */
+.faixa .nada{width:3.3rem}
+
+/* o Claude pensando: o nadador vai e volta; com a resposta, bate na borda */
+.fala.pensando .texto{padding:.6rem .75rem;gap:.35rem}
+.raia-ia{position:relative;width:min(17rem,64vw);height:2.4rem;border-radius:10px;overflow:hidden;
+  background:linear-gradient(180deg,#0E4C5E,#0A3340);border-right:4px solid #3FBF8F}
+.raia-ia::before,.raia-ia::after{content:"";position:absolute;left:0;right:0;height:3px;
+  background:repeating-linear-gradient(90deg,#F2C14E 0 10px,#FFFFFF 10px 13px);opacity:.8}
+.raia-ia::before{top:0}
+.raia-ia::after{bottom:0}
+.nadador-ia{position:absolute;top:50%;left:.3rem;width:2.7rem;transform:translateY(-50%);
+  animation:idaVolta 5.2s ease-in-out infinite}
+@keyframes idaVolta{
+  0%{left:.3rem;transform:translateY(-50%) scaleX(1)}
+  46%{left:calc(100% - 3.3rem);transform:translateY(-50%) scaleX(1)}
+  50%{left:calc(100% - 3.3rem);transform:translateY(-50%) scaleX(-1)}
+  96%{left:.3rem;transform:translateY(-50%) scaleX(-1)}
+  100%{left:.3rem;transform:translateY(-50%) scaleX(1)}}
+.fala.tocou .raia-ia{animation:toque .32s ease-out}
+@keyframes toque{50%{box-shadow:inset -18px 0 18px -8px rgba(242,193,78,.9)}}
+.legenda-raia{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.08em;
+  color:var(--suave);text-transform:uppercase}
+
+/* o guia da demonstração: texto do app, nunca fala do Claude */
+.guia{position:relative;align-self:stretch;display:flex;flex-direction:column;gap:.3rem;
+  padding:.9rem 1.1rem .95rem 1.4rem;border-radius:14px;border:1px dashed var(--agua);
+  background:linear-gradient(120deg,var(--agua-fraca),transparent 75%)}
+.guia::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:14px 0 0 14px;
+  background:repeating-linear-gradient(180deg,#F2C14E 0 10px,#FFFFFF 10px 13px)}
+.guia-passo{font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--agua)}
+.guia b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.3rem;line-height:1.2}
+.guia p{margin:0;color:var(--suave);font-size:1.02rem;line-height:1.5;max-width:64ch}
+
+/* a planilha como chegou, numa folha branca */
+.folha-conv{margin:0;align-self:stretch;background:#F4F7F8;color:#1A2B31;border-radius:14px;overflow:hidden;
+  box-shadow:0 24px 50px -28px rgba(0,0,0,.85);animation:chegaFolha .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes chegaFolha{from{transform:translateY(18px) rotate(-1deg);opacity:0}to{transform:none;opacity:1}}
+.folha-conv figcaption{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;padding:.55rem .9rem;
+  background:#DDE7EA;font-size:.9rem}
+.folha-conv .arquivo{font-weight:700}
+.folha-conv .aba-nome{font-family:"JetBrains Mono",monospace;font-size:.75rem;background:#FFFFFF;
+  border:1px solid #C9D6DA;border-radius:6px;padding:.05rem .5rem}
+.folha-conv .apagado{color:#56707A;font-size:.85rem}
+.folha-conv table{border-collapse:collapse;font-family:"JetBrains Mono",monospace;font-size:.78rem;min-width:100%}
+.folha-conv th{background:#E9EFF1;color:#8A9EA5;font-weight:500;padding:.2rem .5rem;border:1px solid #D2DDE0}
+.folha-conv td{padding:.22rem .55rem;border:1px solid #D2DDE0;white-space:nowrap;background:#FFFFFF;color:#1A2B31}
+.folha-conv td.lin,.folha-conv th.lin{background:#E9EFF1;color:#8A9EA5;text-align:center}
+.folha-conv tbody tr{animation:entraLinhaConv .35s var(--d,0s) ease both}
+.folha-conv td.erro{background:#FBD9D5;outline:2px solid #F0776C;outline-offset:-2px;
+  animation:piscaErro 1.4s 1.3s ease-in-out 3}
+@keyframes piscaErro{50%{background:#F6AFA7}}
+.notas-folha{margin:0;padding:.7rem 1rem .8rem 2.3rem;display:flex;flex-direction:column;gap:.25rem;
+  font-size:.96rem;background:#FDF1EF;color:#7A2A22}
+.notas-folha b{font-family:"JetBrains Mono",monospace;font-size:.85rem;margin-right:.35rem}
+@keyframes entraLinhaConv{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+
+/* as correções: folhas brancas com Sim e Não, como no quadro 3 */
+.noite .correcoes{background:rgba(255,255,255,.03);border-color:var(--linha)}
+.correcoes .correcao{background:#F4F7F8;color:#1A2B31;border:0;border-top:4px solid #0B7285;
+  box-shadow:0 18px 36px -22px rgba(0,0,0,.8);animation:chegaFolha .6s var(--d,0s) both}
+.correcoes .correcao .rot{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.08em;color:#0B7285}
+.correcoes .correcao .caso{color:#56707A}
+.correcoes .correcao .pergunta{color:#1A2B31}
+.correcoes .correcao .botao{background:#0B7285;color:#FFFFFF}
+.correcoes .correcao .mini.claro{background:#FFFFFF;color:#56707A;border-color:#C9D6DA}
+.correcoes .correcao.feita{border-top-color:#116149}
+.feito-ok{margin:0;color:#116149;font-weight:700;animation:entraLinhaConv .4s both}
+
+/* as conferências acendendo, uma a uma */
+.checagens-conv{list-style:none;margin:0;padding:0;display:grid;gap:.4rem;
+  grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))}
+.checagens-conv li{display:flex;gap:.55rem;align-items:center;font-size:.95rem;background:var(--papel2);
+  border:1px solid var(--linha);border-radius:10px;padding:.4rem .7rem}
+.checagens-conv li::before{content:"✓";width:1.35rem;height:1.35rem;border-radius:50%;display:grid;place-items:center;
+  background:#3FBF8F;color:#06221A;font-weight:800;font-size:.8rem;flex:none}
+.checagens-conv li.achou::before{content:"!";background:#F0776C;color:#2A0D0A}
+.checagens-conv.entra li{animation:entraLinhaConv .4s var(--d,0s) ease both}
+
+.tabela-org.entra .linha-org:not(.cabeca){animation:entraLinhaConv .4s var(--d,0s) ease both}
+.cartao-conversa .piscina .raia:not(.vazia){animation:mergulho .55s var(--d,0s) cubic-bezier(.2,.8,.2,1) both}
+@keyframes mergulho{from{opacity:0;transform:translateX(-14px) scale(.94)}to{opacity:1;transform:none}}
+.saida-conv{animation:chegaFolha .6s both}
+.saida-conv:nth-child(2){animation-delay:.15s}
+.saida-conv:nth-child(3){animation-delay:.3s}
+.aviso-reserva{margin:0;padding:.6rem .8rem;border-radius:10px;background:var(--ambar-fraca);
+  color:var(--ambar);font-size:.92rem;line-height:1.45}
+
+@media (prefers-reduced-motion:reduce){
+  .nadador-ia,.folha-conv,.folha-conv tbody tr,.folha-conv td.erro,.correcao,.feito-ok,
+  .checagens-conv.entra li,.tabela-org.entra .linha-org,.cartao-conversa .piscina .raia,
+  .saida-conv,.fala.tocou .raia-ia{animation:none}
+}
