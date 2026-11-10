@@ -21,36 +21,45 @@ logo abaixo.
 - Valida a classe funcional do paradesporto contra o mapa de provas
 - Gera a planilha do balizamento, o PDF e as papeletas de raia
 
-## Como usar
+## Onde está cada coisa
 
-Há dois jeitos de abrir, com o mesmo app:
+- **A página de entrada**, https://erickchoai.github.io/balizador/: conta a dor,
+  como o app resolve e onde a IA entra, num filme de cinco quadros animados.
+- **O Balizador com o Claude**, https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6:
+  o app inteiro como uma conversa. Quem abre entra com a própria conta Claude, e
+  o uso da IA sai dessa conta, sem chave nenhuma.
+- **O Balizador sem IA**, https://erickchoai.github.io/balizador/app/: os cinco
+  passos de sempre. Baixando o `app/index.html` e abrindo com duplo clique,
+  funciona igual, inclusive sem internet.
+- **A versão de antes da IA**, https://erickchoai.github.io/balizador/anterior/,
+  sem nenhuma mudança, e guardada no git na etiqueta `site-antes-da-ia`.
 
-- **Pelo link do claude.ai**
-  (https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6): quem abre entra com a
-  própria conta Claude, e aí
-  aparecem a conversa com o Claude e a etapa Organizar com IA. O uso da IA sai
-  da conta de quem está usando, sem chave nenhuma.
-- **Pelo site do GitHub Pages**, ou baixando o `index.html` e abrindo com duplo
-  clique: funciona igual, inclusive sem internet, só que sem a IA e sem a
-  conversa.
+## O balizamento por conversa
 
-A versão de antes da IA continua no ar, sem nenhuma mudança, em
-https://erickchoai.github.io/balizador/anterior/, e guardada no git na
-etiqueta `site-antes-da-ia`.
+No claude.ai o Balizador é um chat. O Claude conduz as cinco etapas, e cada uma
+chega como um cartão em que a pessoa age ali mesmo: arrasta a planilha, confere
+o formulário da competição, vê as raias de cada prova, baixa o PDF. Uma trilha no
+topo mostra o que já foi feito, e "Fazer eu mesmo" troca para os cinco passos.
 
-## A conversa com o Claude
+A IA não só conversa, ela edita, sempre com Sim e Não:
 
-No claude.ai, um painel ao lado dos cinco passos conversa com você. Ele diz por
-onde começar, o que falta para gerar os arquivos e o que cada bloco da
-conferência quer dizer. Quando você pede, ele preenche a tela da competição
-(raias, limites, datas, se tem tempo, revezamento ou paradesporto) e leva você
-ao passo certo.
+- **Reescreve a planilha de inscritos** que chegou fora do formato no modelo do
+  app e mostra a tabela nova, linha original ao lado da reescrita. O que ela não
+  teve certeza vem marcado para a pessoa responder. A tabela pode ser baixada no
+  modelo do app e, da próxima vez, entra direto.
+- **Corrige as linhas do programa** que o app não entendeu, uma por uma, e
+  depois oferece o programa inteiro no modelo do app.
+- **Propõe a correção de cada erro da conferência**: tirar a inscrição
+  repetida, ler o tempo "3120" como 31.20, juntar na prova que o programa manda,
+  tirar a prova que não está no programa, ficar com as primeiras provas do
+  atleta acima do limite, usar a mesma classe em todas as provas. Quem detecta é
+  o código; o Claude explica; a edição só acontece com o Sim.
+- **Preenche a competição** a partir do que a pessoa diz, e ela confirma no
+  cartão.
 
-Ele não monta séries nem raias, não gera arquivo e não manda planilha para a
-IA por conta própria: essas coisas continuam com o app e com você. Cada
-mensagem leva um resumo da tela, com os nomes dos atletas trocados por código,
-e o nome volta só na sua tela. Os cinco passos funcionam do mesmo jeito sem
-abrir a conversa.
+O Claude não monta séries nem raias e não decide nada no lugar da pessoa. Cada
+mensagem leva um resumo da tela com os nomes dos atletas trocados por código, e
+o nome volta só na tela de quem usa.
 
 ## Organizar com IA
 
@@ -158,16 +167,22 @@ inventados.
 - Lá dentro a página não baixa arquivo sozinha: o PDF, a planilha e as
   papeletas saem pela função `downloads` da plataforma, que mostra o nome do
   arquivo e pergunta antes de salvar.
-- A conversa usa a mesma função `sample`, com três funções da página que o
-  Claude pode chamar: preencher a competição, ir para um passo e abrir a tela
-  de organizar com IA.
-- `node app/montar.js` gera o `index.html` do site e, na pasta do projeto, o
-  `BALIZADOR.html` (offline) e o `BALIZADOR-CLAUDE.html`, que é o que vai para
-  o claude.ai.
+- A conversa usa a mesma função `sample`, com funções da página que o Claude
+  pode chamar: mostrar um cartão, preencher e confirmar a competição, usar o
+  exemplo, ver as raias de uma prova, seguir sem programa, abrir a tela
+  completa, organizar a planilha e corrigir o programa com IA. Tudo o que muda
+  dado passa por um cartão com Sim e Não antes de valer.
+- As propostas de correção da conferência são geradas por código
+  (`propostasDeCorrecao` em `app/balizador.app.js`), não pela IA: o Claude só
+  as explica, e o que vale é a regra do app.
+- `node app/montar.js` gera o `app/index.html` (o app sem IA) e, na pasta do
+  projeto, o `BALIZADOR.html` (offline) e o `BALIZADOR-CLAUDE.html`, que é o
+  que vai para o claude.ai. A página de entrada, `index.html`, é escrita à mão.
 - Código em `app/balizador.ia.js` (máscara, amostra, esquemas, validação,
-  aplicação do mapa e chamadas) e a tela em `app/balizador.app.js`. O destino
-  de tudo é o formato canônico de `app/balizador.dados.js`
-  (`inscricaoCanonica`), o mesmo de quem monta a planilha à mão nesse formato.
+  aplicação do mapa e chamadas), a conversa em `app/balizador.conversa.js` e a
+  tela dos cinco passos em `app/balizador.app.js`. O destino de tudo é o
+  formato canônico de `app/balizador.dados.js` (`inscricaoCanonica`), o mesmo
+  de quem monta a planilha à mão nesse formato.
 - Testado com respostas simuladas nas três planilhas de exemplo: o resultado
   é comparado com o gabarito de cada uma, e o texto enviado é conferido para
   não ter nenhum nome nem data de nascimento.

@@ -5,8 +5,10 @@
       <h1>Balizador</h1>
       <p>Balizamento, papeletas e conferência de erros para competições de natação</p>
     </div>
-    <button type="button" class="botao claro lancador-chat" id="abrirChat" hidden>
-      Conversar com o Claude</button>
+    <div class="modos" id="modos" role="group" aria-label="Como fazer o balizamento" hidden>
+      <button type="button" data-modo="conversa">Conversa com o Claude</button>
+      <button type="button" data-modo="tela">Fazer eu mesmo</button>
+    </div>
   </div>
   <nav class="passos">
     <button type="button" class="passo ativo" data-passo="programa"><b>1</b> Programa</button>
@@ -15,18 +17,34 @@
     <button type="button" class="passo bloqueado" data-passo="conferencia"><b>4</b> Conferência</button>
     <button type="button" class="passo bloqueado" data-passo="gerar"><b>5</b> Gerar</button>
   </nav>
+  <nav class="trilha" id="trilha" aria-label="Etapas do balizamento"></nav>
 </header>
 
 <main>
+  <!-- ============ A CONVERSA: só existe com o app aberto no claude.ai ============ -->
+  <section id="conversa" class="conversa" aria-label="Conversa com o Claude">
+    <div class="fio" id="fio" aria-live="polite"></div>
+    <form class="compositor" id="compositor">
+      <label class="anexar" title="Anexar uma planilha">
+        <input type="file" id="anexo" accept=".xlsx,.xlsm,.csv" hidden>
+        <span>Anexar planilha</span></label>
+      <textarea id="mensagem" rows="1" placeholder="Escreva para o Claude, ou arraste uma planilha para cá"></textarea>
+      <button type="submit" class="botao" id="enviarMensagem">Enviar</button>
+      <button type="button" class="mini claro" id="pararMensagem" hidden>Parar</button>
+    </form>
+    <p class="compositor-nota">O Claude usa a sua conta. O que você escreve e um
+      resumo da tela vão para ele, com os nomes dos atletas trocados por código.</p>
+  </section>
+
   <!-- ============ 1. PROGRAMA DE PROVAS ============ -->
   <section class="tela" data-tela="programa">
-    <div class="cartao convite-chat" id="conviteChat" hidden>
-      <h3>Quer fazer conversando?</h3>
-      <p class="nota">O Claude te guia pelos cinco passos, preenche a tela da
-        competição e explica cada problema da conferência. Ele usa a sua conta
-        Claude. Os passos abaixo continuam funcionando do jeito de sempre.</p>
-      <div class="acoes"><button type="button" class="botao" id="abrirChat2">
-        Abrir a conversa</button></div>
+    <div class="cartao convite-claude" id="conviteClaude" hidden>
+      <h3>Quer fazer o balizamento conversando?</h3>
+      <p class="nota">Aberto no claude.ai, o Balizador funciona como uma conversa
+        com o Claude, que conduz cada etapa com você e organiza planilhas fora do
+        formato. Aqui, os cinco passos funcionam do jeito de sempre.</p>
+      <p><a href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank"
+        rel="noopener">Abrir o Balizador no claude.ai</a></p>
     </div>
 
     <h2>Comece pelo programa de provas
@@ -445,24 +463,5 @@
   </section>
 
 </main>
-
-<!-- a conversa com o Claude: só aparece com o app aberto no claude.ai -->
-<aside id="chat" class="chat" hidden aria-label="Conversa com o Claude">
-  <div class="chat-topo">
-    <div><b>Claude</b><span>na sua conta, ajudando com o balizamento</span></div>
-    <button type="button" class="mini claro" id="fecharChat">fechar</button>
-  </div>
-  <div id="chatMensagens" class="chat-mensagens" aria-live="polite"></div>
-  <div id="chatSugestoes" class="chat-sugestoes"></div>
-  <form id="chatForm" class="chat-form">
-    <textarea id="chatTexto" rows="2" placeholder="Pergunte ou peça algo"></textarea>
-    <div class="chat-acoes">
-      <button type="submit" class="botao" id="chatEnviar">Enviar</button>
-      <button type="button" class="mini claro" id="chatParar" hidden>Parar</button>
-    </div>
-  </form>
-  <p class="chat-nota">O que você escreve e um resumo da tela vão para o Claude.
-    Os nomes dos atletas vão trocados por código.</p>
-</aside>
 
 <div id="aviso" class="aviso"></div>

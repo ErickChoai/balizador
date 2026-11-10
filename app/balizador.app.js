@@ -127,7 +127,13 @@
     if (passo === "inscritos") mostrarPainel("formato");
     if (passo === "conferencia") renderConferencia();
     if (passo === "gerar") renderGerar();
-    window.scrollTo(0, 0);
+    if (!naConversa()) window.scrollTo(0, 0);
+  }
+
+  // na conversa as telas de passo ficam escondidas: mexer nelas não pode
+  // rolar a página, senão a conversa pula para o topo a cada ação
+  function naConversa() {
+    return document.body.classList.contains("modo-conversa");
   }
 
   function mostrarPainel(qual) {
@@ -137,7 +143,7 @@
     const ia = $("#painelIA"), rev = $("#painelRevisao");
     if (ia) ia.hidden = qual !== "ia";
     if (rev) rev.hidden = qual !== "revisao";
-    window.scrollTo(0, 0);
+    if (!naConversa()) window.scrollTo(0, 0);
   }
 
   function liberar(passo, ok) {
@@ -150,7 +156,7 @@
      pegou. Então a página vai até o resultado sozinha. */
   function mostrarResultado(id) {
     const alvo = $("#" + id);
-    if (!alvo) return;
+    if (!alvo || naConversa()) return;
     // deixa o navegador pintar antes de medir a posição. Vai de setTimeout
     // porque requestAnimationFrame não roda com a aba em segundo plano.
     setTimeout(() => {
@@ -360,7 +366,7 @@
           <p>Ele precisa ser uma planilha <code>.xlsx</code>, <code>.xlsm</code>
              ou <code>.csv</code>. O que veio foi <b>${file.name}</b>.</p>
         </div>`);
-      return;
+      return null;
     }
     const r = D.lerProgramaPlanilha(wb);
     r.arquivo = file.name;
@@ -371,6 +377,8 @@
     renderResumoPrograma();
     renderEtapas();
     mostrarResultado("resultadoPrograma");
+    // a conversa usa o resultado para montar o cartão dela
+    return r;
   }
 
   function renderResultadoPrograma(r) {
@@ -1324,8 +1332,9 @@
       liberar("gerar", false);
       $("#irConferencia").disabled = true;
       const abasRuins = conf.abasRuins.map((a) => a.aba);
-      // o chat explica a recusa a partir daqui
+      // a conversa explica a recusa e pode chamar a IA a partir daqui
       estado.recusa = { arquivo: file.name, abas: conf.abasRuins };
+      estado.ultimaRecusa = { wb, arquivo: file.name, abas: abasRuins, base: null };
       $("#resumoArquivo").innerHTML = `
         <div class="recusa">
           <h3>Não posso usar esta planilha</h3>
@@ -1346,7 +1355,7 @@
       $("#btnVoltarFormato").onclick = () => mostrarPainel("formato");
       seHouver("btnOrganizarIA", "click", () => abrirIA(wb, file.name, abasRuins, null));
       mostrarResultado("resumoArquivo");
-      return;
+      return { aceita: false, recusada: true, parcial: false };
     }
 
     // a lista vertical é o formato que o app pede; os outros continuam
@@ -1371,7 +1380,7 @@
         <div class="recusa"><h3>Nenhuma inscrição encontrada</h3>
         <p>Os cabeçalhos foram reconhecidos, mas não há nomes de atleta
            abaixo deles.</p></div>`;
-      return;
+      return { aceita: false, recusada: false, vazia: true };
     }
     // as abas recusadas não entram: se a IA for chamada, é ela que as lê
     if (conf.parcial) {
@@ -1382,7 +1391,10 @@
       r.repetidas = (r.repetidas || []).filter((d) => !ruins.has(d.aba));
     }
     estado.recusa = conf.parcial ? { arquivo: file.name, abas: conf.abasRuins } : null;
+    estado.ultimaRecusa = conf.parcial ? { wb, arquivo: file.name,
+      abas: conf.abasRuins.map((a) => a.aba), base: { r, formato } } : null;
     aceitarLeitura(r, formato, file.name, conf, wb);
+    return { aceita: true, recusada: false, parcial: !!conf.parcial, formato };
   }
 
   /* O que vem depois de uma planilha lida: vale para a leitura de sempre e
@@ -1484,7 +1496,8 @@
       claudeApp.downloads = downloads;
     }
     claudeApp.pronto = true;
-    prepararChat();
+    // com o Claude disponível, o app abre na conversa (balizador.conversa.js)
+    if (window.BalizadorConversa) window.BalizadorConversa.iniciar();
   }
 
   /* ---------------- tela 3c: organizar com IA ----------------
@@ -2092,394 +2105,19 @@
     aceitarLeitura(r, "ia", ia.arquivo, null, null, { silencioso: true });
     ia.confirmada = true;
     estado.recusa = null;
+    estado.ultimaRecusa = null;
     mostrarPainel("envio");
-    irPara("conferencia");
+    // veio da conversa: volta para ela, que mostra a conferência e segue dali
+    if (!avisarConversa("revisao_confirmada", { inscricoes: inscricoes.length })) {
+      irPara("conferencia");
+    }
     aviso(`${inscricoes.length} inscrições organizadas entraram na conferência.`);
   }
 
-  /* ---------------- a conversa com o Claude ----------------
-     Um chat por cima dos cinco passos. Ele explica, aponta o que falta e,
-     quando a pessoa pede, preenche a tela da competição ou leva a um passo,
-     chamando funções desta página. Séries e raias continuam sendo montadas
-     pelo app. Os passos funcionam sem o chat, e o chat só existe com o app
-     aberto no claude.ai, na conta de quem usa.
-
-     Cada mensagem leva um resumo da tela. Nome de atleta vai trocado por
-     código, como na etapa de IA, e volta a ser nome só aqui na tela.
-  ----------------------------------------------------------- */
-  const chat = { turnos: [], controle: null, mascara: null, voc: null,
-                 ferramentas: false, preparado: false };
-  const CHAVE_CHAT = "balizador.chatFechado";
-
-  const INSTRUCOES_CHAT = `Você é o assistente do Balizador, um aplicativo que monta o balizamento de competições de natação: distribui os atletas em séries e raias, gera o PDF, a planilha e as papeletas de raia, e confere erros de inscrição. Quem fala com você é quase sempre um árbitro ou organizador de natação, não um programador.
-
-O app tem cinco passos, nesta ordem:
-1. Programa: a planilha do programa de provas, que dá a ordem e a numeração das provas.
-2. Competição: nome, local, datas, número de raias, limite de provas por atleta, se tem tempo de inscrição, revezamento e paradesporto, etapas e categorias que nadam juntas.
-3. Inscritos: a planilha dos inscritos. Se ela vier fora do formato, o app recusa e oferece Organizar com IA, numa tela em que a pessoa vê o que vai ser enviado e revisa tudo antes de seguir.
-4. Conferência: os problemas encontrados, em blocos. Bloco vermelho tranca a geração. Cada bloco tem "o que acontece" e, quando há conserto na tela, "resolver".
-5. Gerar: prévia e download do PDF do balizamento, da planilha e das papeletas.
-
-Regras:
-- Séries e raias são montadas pelo app, sempre pelas regras dele: ordem do centro para fora, últimas séries cheias, melhor tempo na raia central da última série. Nunca diga que você montou ou mudou o balizamento.
-- Você só sabe o que está no resumo da tela que vem junto de cada mensagem. Não invente atleta, prova, número nem regra de regulamento.
-- Nomes de atletas e algumas equipes chegam trocados por códigos como PESSOA 3. Escreva o código exatamente como veio: o app troca de volta pelo nome na tela da pessoa. Nunca tente adivinhar o nome.
-- Para agir na tela, use as ferramentas. Só diga que preencheu ou abriu algo depois de a ferramenta confirmar. Se a ferramenta devolver erro, explique o que falta.
-- Nunca envie planilha para a IA por conta própria: quem decide é a pessoa, na tela de organizar com IA.
-- Responda em português do Brasil, curto e direto, em frases simples. Não use travessão. Use lista curta quando ajudar. Quando indicar um botão, escreva o nome dele como aparece na tela.`;
-
-  const SUGESTOES_CHAT = ["Por onde eu começo?", "O que falta para gerar os arquivos?",
-    "Explique os problemas da conferência", "Configure 8 raias e limite de 2 provas"];
-
-  // HTML do detalhe da conferência virando texto simples
-  const textoSimples = (h) => String(h == null ? "" : h).replace(/<br\s*\/?>/gi, " ")
-    .replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
-    .replace(/\s+/g, " ").trim();
-
-  /* Todo nome de inscrito que aparecer no resumo vira código, inclusive no
-     meio de uma frase, como "parecido com JOÃO DA SILVA JUNIOR". */
-  function trocarNomesConhecidos(t) {
-    let s = String(t == null ? "" : t);
-    const nomes = new Set();
-    for (const i of estado.inscricoes) {
-      if (!i.revezamento && i.nome) nomes.add(String(i.nome).trim());
-      for (const a of (i.atletas || [])) nomes.add(String(a).trim());
-    }
-    [...nomes].filter((n) => n.length > 3).sort((a, b) => b.length - a.length)
-      .forEach((n) => { if (s.includes(n)) s = s.split(n).join(IA.mascararCelula(n, chat.mascara, chat.voc)); });
-    return s;
-  }
-
-  function situacaoParaChat() {
-    if (!chat.mascara) chat.mascara = IA.novaMascara();
-    chat.voc = IA.vocabulario(estado.perfil || {});
-    const troca = (t) => IA.mascararCelula(t, chat.mascara, chat.voc);
-    const sim = (b) => (b ? "sim" : "não");
-    const L = [];
-    const ativo = $(".passo.ativo");
-    const travados = $$(".passo.bloqueado").map((b) => b.dataset.passo);
-    L.push(`Passo na tela: ${ativo ? ativo.dataset.passo : "programa"}. ` +
-           `Passos trancados: ${travados.join(", ") || "nenhum"}.`);
-
-    const prog = (estado.programa && estado.programa.provas) || [];
-    if (prog.length) {
-      L.push(`Programa: ${prog.length} provas.`);
-      L.push(prog.slice(0, 60).map((x, k) => `${k + 1}. ` +
-        D.tituloProva(x.distancia, x.estilo, x.rotulo || x.categoria, x.naipe) +
-        (x.etapa ? ` (${x.etapa})` : "")).join("\n"));
-      if (prog.length > 60) L.push(`E mais ${prog.length - 60} provas.`);
-    } else if (estado.programa && estado.programa.sem) {
-      L.push("Programa: a pessoa escolheu seguir sem programa de provas.");
-    } else L.push("Programa: ainda não enviado.");
-
-    const c = lerConfig();
-    L.push(`Competição: nome "${c.nome}", local "${c.local}", datas ${c.data || "não informadas"}, ` +
-      `raias ${$("#raias").value || "não informadas"}, limite de provas individuais ` +
-      `${$("#limiteInd").value || "não informado"}` +
-      (c.temPara ? `, limite no paradesporto ${c.limiteIndPara}` : "") +
-      (c.limiteEquipe ? `, até ${c.limiteEquipe} atletas por equipe na prova` : "") +
-      `. Tem tempo de inscrição: ${sim(c.temTempo)}. Tem revezamento: ${sim(c.temRevezamento)}. ` +
-      `Tem paradesporto: ${sim(c.temPara)}` +
-      (c.temPara ? ` (classe ${c.tipoClasse === "FUNCIONAL" ? "funcional" : "por condição"})` : "") +
-      `. Etapas: ${(c.etapas || []).length}. Agrupamentos de categorias: ${(c.grupos || []).length}.`);
-    const falta = $("#faltando");
-    if (falta && !falta.hidden && falta.textContent.trim()) {
-      L.push("Na tela da competição: " + falta.textContent.replace(/\s+/g, " ").trim());
-    }
-
-    if (estado.inscricoes.length) {
-      const rev = estado.inscricoes.filter((i) => i.revezamento).length;
-      L.push(`Inscritos: ${estado.inscricoes.length} inscrições ` +
-        `(${estado.inscricoes.length - rev} individuais, ${rev} equipes de revezamento).`);
-    } else if (estado.recusa) {
-      L.push("Inscritos: a planilha enviada foi recusada. " +
-        estado.recusa.abas.map((a) => `Aba ${troca(a.aba)}: ${a.motivo}`).join(". ") + ".");
-    } else L.push("Inscritos: nenhuma planilha enviada ainda.");
-    if (estado.ia && !estado.ia.confirmada) {
-      L.push("Organizar com IA: aberto, " + (estado.ia.mapaFeito
-        ? "o mapa já voltou; falta a pessoa revisar e confirmar."
-        : "a amostra ainda não foi enviada."));
-    }
-
-    if (estado.inscricoes.length) {
-      if (!estado.provas.length) montar();
-      const secoes = montarSecoes().filter((s) => s.itens.length);
-      if (!secoes.length) L.push("Conferência: nenhum problema.");
-      for (const s of secoes) {
-        const aceito = estado.ajustes.aceitos.has(s.id);
-        const nivel = { critico: "vermelho", aviso: "aviso" }[s.nivel] || "informativo";
-        L.push(`Bloco da conferência "${s.titulo}" (${nivel}${aceito ? ", a pessoa aceitou seguir assim" : ""}` +
-               `${s.resolver ? ", tem o botão resolver" : ""}): ${s.itens.length} caso(s).`);
-        for (const e of s.itens.slice(0, 6)) {
-          L.push("  " + [e.prova ? e.prova + "ª " + (e.titulo || "") : (e.titulo || ""),
-            e.nome ? troca(e.nome) : "", e.equipe ? troca(e.equipe) : "",
-            trocarNomesConhecidos(textoSimples(e.detalhe))].filter(Boolean).join(" | "));
-        }
-        if (s.itens.length > 6) L.push(`  e mais ${s.itens.length - 6}.`);
-        if (s.explica) L.push("  O que acontece: " + trocarNomesConhecidos(textoSimples(s.explica)).slice(0, 600));
-      }
-    }
-    const gerar = $('.passo[data-passo="gerar"]');
-    L.push(`Gerar: ${gerar && !gerar.classList.contains("bloqueado") ? "liberado" : "trancado"}.`);
-    return L.join("\n");
-  }
-
-  /* As funções desta página que o Claude pode chamar. Nenhuma envia dado
-     nenhum para fora nem gera arquivo: elas só preenchem campos e mudam de
-     tela, coisas que a pessoa vê na hora e pode desfazer. */
-  function preencherCompeticao(x) {
-    const feito = [];
-    const texto = (id, v, rot) => {
-      if (v == null || v === "") return;
-      const el = $("#" + id);
-      el.value = String(v);
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-      feito.push(`${rot}: ${v}`);
-    };
-    const marca = (id, v, rot) => {
-      if (typeof v !== "boolean") return;
-      const el = $("#" + id);
-      if (el.checked !== v) { el.checked = v; el.dispatchEvent(new Event("change", { bubbles: true })); }
-      feito.push(`${rot}: ${v ? "sim" : "não"}`);
-    };
-    const data = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? v : null);
-    if (x.data_inicio && !data(x.data_inicio)) throw new Error("data_inicio precisa ser AAAA-MM-DD");
-    if (x.data_fim && !data(x.data_fim)) throw new Error("data_fim precisa ser AAAA-MM-DD");
-    const inteiro = (v, min, max) => {
-      if (v == null || v === "") return null;
-      const n = Number(v);
-      if (!Number.isInteger(n) || n < min || n > max) throw new Error(`valor fora do aceito: ${v}`);
-      return n;
-    };
-    texto("nomeComp", x.nome, "nome");
-    texto("local", x.local, "local");
-    texto("dataInicio", data(x.data_inicio), "começa em");
-    texto("dataFim", data(x.data_fim), "termina em");
-    texto("raias", inteiro(x.raias, 2, 12), "raias");
-    texto("limiteInd", inteiro(x.limite_individual, 1, 20), "limite individual");
-    texto("limiteIndPara", inteiro(x.limite_paradesporto, 1, 20), "limite no paradesporto");
-    texto("limiteEquipe", inteiro(x.limite_por_equipe, 1, 50), "atletas por equipe na prova");
-    marca("temTempo", x.tem_tempo, "tempo de inscrição");
-    marca("temRevezamento", x.tem_revezamento, "revezamento");
-    marca("temPara", x.tem_paradesporto, "paradesporto");
-    if (x.tipo_classe === "FUNCIONAL" || x.tipo_classe === "CONDICAO") {
-      const el = $("#tipoClasse");
-      el.value = x.tipo_classe;
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-      feito.push("classe: " + (x.tipo_classe === "FUNCIONAL" ? "funcional" : "por condição"));
-    }
-    if (x.data_inicio || x.data_fim) estado.perfil.datasDoPrograma = false;
-    atualizarPreviaData();
-    validarConfig();
-    const falta = $("#faltando");
-    return {
-      preenchido: feito,
-      ainda_falta: falta && !falta.hidden ? falta.textContent.replace(/\s+/g, " ").trim() : "nada",
-    };
-  }
-
-  function ferramentasChat() {
-    return [
-      {
-        name: "preencher_competicao",
-        description: "Preenche campos da tela da competição (passo 2) e devolve o que foi preenchido e o que ainda falta. Mande só os campos que a pessoa pediu.",
-        inputSchema: { type: "object", properties: {
-          nome: { type: "string" }, local: { type: "string" },
-          data_inicio: { type: "string", description: "AAAA-MM-DD" },
-          data_fim: { type: "string", description: "AAAA-MM-DD" },
-          raias: { type: "integer", description: "de 2 a 12" },
-          limite_individual: { type: "integer", description: "provas individuais por atleta" },
-          limite_paradesporto: { type: "integer", description: "provas individuais por atleta no paradesporto" },
-          limite_por_equipe: { type: "integer", description: "atletas de cada instituição na mesma prova" },
-          tem_tempo: { type: "boolean" }, tem_revezamento: { type: "boolean" },
-          tem_paradesporto: { type: "boolean" },
-          tipo_classe: { type: "string", enum: ["FUNCIONAL", "CONDICAO"],
-            description: "FUNCIONAL para S6, SB5, SM6; CONDICAO para TEA, DI, DA, DOWN" },
-        } },
-        execute: (x) => preencherCompeticao(x || {}),
-      },
-      {
-        name: "ir_para_passo",
-        description: "Mostra na tela um dos cinco passos do app. Passo trancado devolve erro dizendo que ainda falta o anterior.",
-        inputSchema: { type: "object", properties: { passo: { type: "string",
-          enum: ["programa", "competicao", "inscritos", "conferencia", "gerar"] } },
-          required: ["passo"] },
-        execute: (x) => {
-          const passo = String((x || {}).passo || "");
-          const el = $(`.passo[data-passo="${passo}"]`);
-          if (!el) throw new Error("não existe o passo " + passo);
-          if (el.classList.contains("bloqueado")) throw new Error(`o passo ${passo} ainda está trancado`);
-          irPara(passo);
-          return "a tela agora mostra o passo " + passo;
-        },
-      },
-      {
-        name: "abrir_organizar_com_ia",
-        description: "Abre a tela de organizar com IA a planilha de inscritos que o app recusou. Não envia nada: a pessoa vê o que vai e decide.",
-        execute: () => {
-          const b = $("#btnOrganizarIA");
-          if (!b) throw new Error("não há planilha recusada esperando a IA");
-          irPara("inscritos");
-          mostrarPainel("envio");
-          $("#btnOrganizarIA").click();
-          return "a tela de organizar com IA está aberta";
-        },
-      },
-    ];
-  }
-
-  // a resposta do Claude em HTML simples: listas, negrito, código, parágrafos
-  function formatarResposta(t) {
-    const limpo = IA.desmascarar(String(t || ""), chat.mascara || IA.novaMascara())
-      .replace(/\s*—\s*/g, ", ");
-    const linhas = AT(limpo).split(/\r?\n/);
-    const enfeita = (s) => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
-      .replace(/`([^`]+)`/g, "<code>$1</code>").replace(/^#{1,4}\s+(.*)$/, "<b>$1</b>");
-    let saida = "", lista = "";
-    const fecha = () => { if (lista) { saida += `</${lista}>`; lista = ""; } };
-    for (const l of linhas) {
-      const ul = l.match(/^\s*[-*•]\s+(.*)$/), ol = l.match(/^\s*\d+[.)]\s+(.*)$/);
-      const tipo = ul ? "ul" : ol ? "ol" : "";
-      if (tipo) {
-        if (lista !== tipo) { fecha(); saida += `<${tipo}>`; lista = tipo; }
-        saida += `<li>${enfeita((ul || ol)[1])}</li>`;
-        continue;
-      }
-      fecha();
-      if (l.trim()) saida += `<p>${enfeita(l)}</p>`;
-    }
-    fecha();
-    return saida;
-  }
-
-  function novaBolha(classe, conteudo) {
-    const div = document.createElement("div");
-    div.className = "msg " + classe;
-    div.innerHTML = conteudo;
-    $("#chatMensagens").appendChild(div);
-    rolarChat();
-    return div;
-  }
-
-  function rolarChat() {
-    const box = $("#chatMensagens");
-    if (box) box.scrollTop = box.scrollHeight;
-  }
-
-  function renderSugestoes() {
-    const alvo = $("#chatSugestoes");
-    if (!alvo) return;
-    alvo.hidden = chat.turnos.length > 0;
-    alvo.innerHTML = SUGESTOES_CHAT.map((s, k) =>
-      `<button type="button" class="mini claro" data-sugestao="${k}">${AT(s)}</button>`).join("");
-    $$("[data-sugestao]", alvo).forEach((b) => (b.onclick = () =>
-      enviarChat(SUGESTOES_CHAT[Number(b.dataset.sugestao)])));
-  }
-
-  function abrirChat() {
-    if (!claudeApp.sample) return;
-    $("#chat").hidden = false;
-    document.body.classList.add("com-chat");
-    $("#abrirChat").hidden = true;
-    if ($("#conviteChat")) $("#conviteChat").hidden = true;
-    try { localStorage.removeItem(CHAVE_CHAT); } catch (e) { /* sem memória: tudo bem */ }
-    setTimeout(() => { const t = $("#chatTexto"); if (t) t.focus(); });
-  }
-
-  function fecharChat() {
-    $("#chat").hidden = true;
-    document.body.classList.remove("com-chat");
-    $("#abrirChat").hidden = !claudeApp.sample;
-    if ($("#conviteChat")) $("#conviteChat").hidden = !claudeApp.sample;
-    try { localStorage.setItem(CHAVE_CHAT, "1"); } catch (e) { /* idem */ }
-  }
-
-  // chamada quando o claude.ai responde se este app pode usar o Claude
-  async function prepararChat() {
-    const tem = !!claudeApp.sample;
-    $("#abrirChat").hidden = !tem;
-    if ($("#conviteChat")) $("#conviteChat").hidden = !tem;
-    if (!tem || chat.preparado) return;
-    chat.preparado = true;
-    const lim = await claudeApp.sample.limits().catch(() => null);
-    chat.ferramentas = !!(lim && lim.tools);
-    novaBolha("claude", formatarResposta(
-      "Olá! Eu sou o Claude, trabalhando na sua conta. Posso explicar cada passo, " +
-      "dizer o que falta para gerar o balizamento, explicar os problemas da conferência" +
-      (chat.ferramentas ? " e preencher a tela da competição para você." : ".") +
-      "\nQuem monta as séries e as raias é o app, pelas regras de sempre."));
-    renderSugestoes();
-    let fechado = false;
-    try { fechado = localStorage.getItem(CHAVE_CHAT) === "1"; } catch (e) { /* idem */ }
-    if (!fechado && window.innerWidth >= 1100) abrirChat();
-  }
-
-  async function enviarChat(texto) {
-    const sample = claudeApp.sample;
-    texto = String(texto || "").trim();
-    if (!sample || !texto || chat.controle) return;
-    abrirChat();
-    $("#chatTexto").value = "";
-    novaBolha("eu", formatarResposta(texto));
-    chat.turnos.push({ role: "user", content: texto });
-    renderSugestoes();
-    // as últimas trocas, com o resumo da tela só na mensagem de agora
-    const recentes = chat.turnos.slice(-12);
-    const envio = [{ role: "user", content: INSTRUCOES_CHAT }].concat(recentes.map((t, k) =>
-      k === recentes.length - 1
-        ? { role: "user", content: t.content + "\n\n---\nResumo da tela agora, feito pelo app:\n" + situacaoParaChat() }
-        : t));
-    const bolha = novaBolha("claude pensando", "Pensando...");
-    chat.controle = new AbortController();
-    $("#chatEnviar").disabled = true;
-    $("#chatParar").hidden = false;
-    let parcial = "";
-    try {
-      const opcoes = {
-        cache: false, signal: chat.controle.signal,
-        onText: ({ text }) => {
-          parcial = text;
-          bolha.classList.remove("pensando");
-          bolha.innerHTML = formatarResposta(text);
-          rolarChat();
-        },
-      };
-      if (chat.ferramentas) opcoes.tools = ferramentasChat();
-      const r = await sample(envio, opcoes);
-      bolha.classList.remove("pensando");
-      bolha.innerHTML = formatarResposta(r.text) +
-        (r.truncated ? "<p class=\"apagado\">A resposta foi cortada. Peça uma parte de cada vez.</p>" : "");
-      chat.turnos.push({ role: "assistant", content: r.text });
-    } catch (e) {
-      const x = IA.explicarErro(e);
-      bolha.classList.remove("pensando");
-      if (e && e.code === "cancelled") {
-        bolha.innerHTML = parcial ? formatarResposta(parcial) : "<p class=\"apagado\">Parado.</p>";
-        if (parcial) chat.turnos.push({ role: "assistant", content: parcial });
-      } else {
-        bolha.classList.add("erro");
-        bolha.innerHTML = `<p>${AT(x.titulo.replace(" Nada foi usado.", ""))}</p>`;
-      }
-    } finally {
-      chat.controle = null;
-      $("#chatEnviar").disabled = false;
-      $("#chatParar").hidden = true;
-      rolarChat();
-    }
-  }
-
-  function ligarChat() {
-    ao("abrirChat", "click", abrirChat);
-    ao("abrirChat2", "click", abrirChat);
-    ao("fecharChat", "click", fecharChat);
-    ao("chatParar", "click", () => chat.controle && chat.controle.abort());
-    ao("chatForm", "submit", (e) => { e.preventDefault(); enviarChat($("#chatTexto").value); });
-    ao("chatTexto", "keydown", (e) => {
-      // Enter envia, Shift+Enter quebra a linha
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviarChat(e.target.value); }
-    });
+  // conta para a conversa o que aconteceu na tela; devolve se ela cuidou disso
+  function avisarConversa(nome, dados) {
+    const c = window.BalizadorConversa;
+    return !!(c && c.ativa() && c.evento(nome, dados));
   }
 
   /* Uma inscrição é identificada pela linha da planilha de onde veio. Quando
@@ -3495,20 +3133,7 @@ Regras:
     caixa.className = "correcao-lista";
 
     const aplicar = (lista, texto) => {
-      for (const g of D.gruposDePropostas(lista)) {
-        const igual = estado.perfil.grupos.find((x) =>
-          D.chaveCategoria(x.rotulo) === D.chaveCategoria(g.rotulo) &&
-          (x.distancias || []).join() === g.distancias.join());
-        if (!igual) { estado.perfil.grupos.push(g); continue; }
-        // mesma prova de destino já casada antes: só acrescenta o que falta
-        igual.categorias = igual.categorias || [];
-        igual.estilos = igual.estilos || [];
-        for (const c of g.categorias)
-          if (!igual.categorias.includes(c)) igual.categorias.push(c);
-        for (const e of g.estilos)
-          if (!igual.estilos.includes(e)) igual.estilos.push(e);
-      }
-      renderGrupos();
+      juntarNoPrograma(lista);
       montar();
       renderConferencia();
       aviso(texto);
@@ -3552,6 +3177,24 @@ Regras:
       caixa.appendChild(bloco);
     }
     return caixa;
+  }
+
+  // o casamento vira linha de "categorias que nadam juntas" na competição
+  function juntarNoPrograma(lista) {
+    for (const g of D.gruposDePropostas(lista)) {
+      const igual = estado.perfil.grupos.find((x) =>
+        D.chaveCategoria(x.rotulo) === D.chaveCategoria(g.rotulo) &&
+        (x.distancias || []).join() === g.distancias.join());
+      if (!igual) { estado.perfil.grupos.push(g); continue; }
+      // mesma prova de destino já casada antes: só acrescenta o que falta
+      igual.categorias = igual.categorias || [];
+      igual.estilos = igual.estilos || [];
+      for (const c of g.categorias)
+        if (!igual.categorias.includes(c)) igual.categorias.push(c);
+      for (const e of g.estilos)
+        if (!igual.estilos.includes(e)) igual.estilos.push(e);
+    }
+    renderGrupos();
   }
 
   function resolverProvasFora(provasFora) {
@@ -4171,7 +3814,6 @@ Regras:
     };
     renderPerfisSalvos();
     renderEspecificacao();
-    ligarChat();
     // pergunta ao claude.ai, sem pressa, se este app pode usar o Claude
     iniciarClaude();
   }
@@ -4208,6 +3850,240 @@ Regras:
     el.classList.add("visivel");
     setTimeout(() => el.classList.remove("visivel"), 2600);
   }
+
+  /* ---------------- o que a conversa pode fazer no app ----------------
+     A conversa (balizador.conversa.js) não tem regra nenhuma de balizamento:
+     ela chama estas funções, que são as mesmas dos botões dos cinco passos.
+     Por isso o resultado é igual de um jeito ou de outro. */
+
+  // o mesmo que o botão "Continuar para os inscritos"
+  function confirmarCompeticao() {
+    if (!validarConfig()) {
+      return { ok: false, falta: $$("#faltando li").map((li) => li.textContent.trim()) };
+    }
+    lerConfig();
+    renderEspecificacao();
+    liberar("inscritos", true);
+    return { ok: true };
+  }
+
+  // competição sem etapas no programa: uma etapa só, da primeira à última prova
+  function etapaUnica() {
+    const n = (estado.perfil.programa || []).length;
+    estado.perfil.etapas = [{ nome: "ETAPA ÚNICA", dia: "", periodo: "", de: 1, ate: n || 999 }];
+    renderEtapas();
+    return validarConfig();
+  }
+
+  // o mesmo que "li e vou seguir assim mesmo" num bloco vermelho
+  function aceitarBloco(id) {
+    estado.ajustes.aceitos.add(id);
+    montar();
+    renderConferencia();
+  }
+
+  // a etapa de IA sobre a última planilha recusada, na tela completa
+  function organizarComIA() {
+    const u = estado.ultimaRecusa;
+    if (!u || !claudeApp.sample) return false;
+    irPara("inscritos");
+    abrirIA(u.wb, u.arquivo, u.abas, u.base);
+    return true;
+  }
+
+  function baixarSaida(qual) {
+    const s = montarSaida(qual);
+    if (s.tipo === "planilha") {
+      const out = XLSX.write(s.wb, { bookType: "xlsx", type: "array" });
+      return baixar(new Blob([out], { type: "application/octet-stream" }),
+                    baseNome() + " - BALIZAMENTO.xlsx");
+    }
+    return baixar(s.doc.output("blob"), s.nome);
+  }
+
+  // o passo de gerar só abre sem vermelho pendente; a conferência decide isso
+  function geracaoLiberada() {
+    const el = $('.passo[data-passo="gerar"]');
+    return !!el && !el.classList.contains("bloqueado");
+  }
+
+  /* ---------------- correções propostas, para a conversa ----------------
+     Para cada problema que tem conserto, o app monta uma proposta concreta:
+     o caso, a pergunta e a função que faz a edição. A conversa mostra com Sim
+     e Não, e nada muda sem o Sim. Os consertos são os mesmos dos botões de
+     resolver da conferência; onde a escolha é do árbitro (que provas o atleta
+     fica), a proposta é uma sugestão escrita, e o Não leva para a escolha na
+     mão. */
+  function propostasDeCorrecao() {
+    if (!estado.provas.length) montar();
+    const P = [];
+    const nomeProva = (p) => `${p.numero}ª ${p.titulo}`;
+    const fim = () => { montar(); renderConferencia(); };
+    const numeroDa = new Map();
+    for (const p of estado.provas) {
+      for (const s of p.series) for (const l of s.linhas) numeroDa.set(chaveDaLinha(l.item), p);
+      for (const c of (p.cortados || [])) numeroDa.set(chaveDaLinha(c), p);
+    }
+
+    for (const p of estado.provas) {
+      for (const r of (p.repetidos || [])) {
+        P.push({ id: "rep|" + chaveDaLinha(r), bloco: "duplicados",
+          caso: `${CX(r.nome)} (${CX(r.equipe)}) aparece duas vezes na ${nomeProva(p)}, ${r.motivo}.`,
+          pergunta: `Posso tirar a inscrição repetida, da linha ${r.linha}?`,
+          aplicar: () => { estado.ajustes.removidas.add(chaveDaLinha(r)); fim(); },
+          feito: `A inscrição repetida de ${CX(r.nome)} saiu.` });
+      }
+    }
+
+    for (const t of estado.tempos) {
+      const alt = t.alternativas[0];
+      P.push({ id: "tempo|" + chaveDaLinha(t.item), bloco: "tempos",
+        caso: `${CX(t.nome)}, ${t.prova}ª ${t.titulo}: na planilha está "${t.texto}", que dá ` +
+              `${B.formatarTempo(t.tempo)}, impossível em ${t.metros}m.`,
+        pergunta: alt ? `Posso ler como ${B.formatarTempo(alt.segundos)}?`
+                      : "Posso deixar sem tempo? Ele vai para as primeiras séries.",
+        aplicar: () => { estado.ajustes.tempos[chaveDaLinha(t.item)] = alt ? alt.segundos : null; fim(); },
+        feito: alt ? `${CX(t.nome)} agora está com ${B.formatarTempo(alt.segundos)}.`
+                   : `${CX(t.nome)} ficou sem tempo.` });
+    }
+
+    const propostas = estado.propostas || [];
+    const porDestino = new Map();
+    for (const pr of propostas) {
+      if (!porDestino.has(pr.destino.chave)) porDestino.set(pr.destino.chave, []);
+      porDestino.get(pr.destino.chave).push(pr);
+    }
+    for (const [chave, lista] of porDestino) {
+      const d = lista[0].destino;
+      P.push({ id: "junta|" + chave, bloco: "juntarPrograma",
+        caso: `${lista.map((pr) => `${pr.origem.categoria} (${pr.origem.total})`).join(" e ")} ficaram ` +
+              `fora do programa, que junta essas categorias na ${nomeProva(d)}.`,
+        pergunta: "Posso juntar nesta prova, como o programa manda?",
+        aplicar: () => { juntarNoPrograma(lista); fim(); },
+        feito: `As inscrições foram para a ${nomeProva(d)}.` });
+    }
+
+    const comDona = new Set(propostas.map((pr) => pr.origem.chave));
+    for (const p of estado.provas.filter((x) => x.foraDoPrograma && x.series.length && !comDona.has(x.chave))) {
+      P.push({ id: "fora|" + p.chave, bloco: "foraPrograma",
+        caso: `A ${nomeProva(p)} tem ${p.atletas} atleta(s), mas não está no programa.`,
+        pergunta: "Posso tirar esta prova do balizamento e das papeletas?",
+        aplicar: () => {
+          for (const s of p.series) for (const l of s.linhas) estado.ajustes.removidas.add(chaveDaLinha(l.item));
+          for (const c of (p.cortados || [])) estado.ajustes.removidas.add(chaveDaLinha(c));
+          fim();
+        },
+        feito: `A ${p.titulo} saiu do balizamento.` });
+    }
+
+    /* limite, duas categorias, dois naipes: a sugestão é ficar com as
+       primeiras provas pela ordem do programa, todas da mesma categoria (ou do
+       mesmo naipe) da primeira, até o limite */
+    const decidido = (a) => !!(estado.ajustes.decisoes || {})[B.chaveAtleta(a)];
+    const sugerir = (lista, bloco, teto, fecho, porque) => {
+      for (const a of lista.filter((x) => !decidido(x))) {
+        const chave = B.chaveAtleta(a);
+        const minhas = estado.inscricoes.filter((i) => !i.revezamento && B.chaveAtleta(i) === chave &&
+          !estado.ajustes.removidas.has(chaveDaLinha(i)))
+          .map((i) => ({ i, p: numeroDa.get(chaveDaLinha(i)) }))
+          .filter((x) => x.p).sort((x, y) => x.p.numero - y.p.numero);
+        if (minhas.length < 2) continue;
+        const marca = fecho(minhas[0].i);
+        const fica = minhas.filter((x) => fecho(x.i) === marca).slice(0, teto || minhas.length);
+        const sai = minhas.filter((x) => !fica.includes(x));
+        if (!sai.length) continue;
+        P.push({ id: bloco + "|" + chave, bloco, escolha: true,
+          caso: `${CX(a.nome)} (${CX(a.equipe)}) ${porque(a)}.`,
+          pergunta: `Sugestão: ficar com ${fica.map((x) => x.p.numero + "ª").join(", ")} e tirar ` +
+                    `${sai.map((x) => x.p.numero + "ª " + x.p.titulo).join(", ")}. Posso aplicar?`,
+          aplicar: () => {
+            for (const x of sai) estado.ajustes.removidas.add(chaveDaLinha(x.i));
+            estado.ajustes.decisoes[chave] = { nome: a.nome, equipe: a.equipe, quantas: fica.length };
+            fim();
+          },
+          feito: `${CX(a.nome)} ficou com ${fica.length} prova(s).` });
+      }
+    };
+    sugerir(estado.limites, "limites", estado.perfil.limiteInd, (i) => D.chaveCategoria(i.categoria),
+      (a) => `está em ${a.quantidade} provas, e o limite é ${a.limite}`);
+    sugerir(estado.categorias, "categorias", null, (i) => D.chaveCategoria(i.categoria),
+      (a) => `está inscrito em ${a.categorias.join(" e ")}`);
+    sugerir(estado.naipes, "naipes", null, (i) => i.naipe || "", () => "está inscrito no feminino e no masculino");
+
+    for (const a of estado.classes) {
+      const chave = B.normalizar(a.nome) + "|" + B.normalizar(a.equipe);
+      const conta = a.valores.map((v) => estado.inscricoes.filter((i) => B.chaveAtleta(i) === chave &&
+        B.normalizar(i[a.campo]) === B.normalizar(v)).length);
+      const k = conta.indexOf(Math.max(...conta));
+      const valor = a.valores[k];
+      P.push({ id: "classe|" + chave, bloco: "classesDivergentes",
+        caso: `${CX(a.nome)} (${CX(a.equipe)}) tem ${a.campo} ${a.valores.map(CX).join(" e ")} em provas diferentes.`,
+        pergunta: `A mais usada é ${CX(valor)}. Posso usar ${CX(valor)} em todas as provas dele?`,
+        aplicar: () => {
+          const antes = estado.ajustes.classes[chave] || {};
+          antes[a.campo] = valor;
+          estado.ajustes.classes[chave] = antes;
+          fim();
+        },
+        feito: `${CX(a.nome)} agora é ${CX(valor)} em todas as provas.` });
+    }
+    return P;
+  }
+
+  /* A planilha que a IA organizou, revisada na conversa, entra pela mesma porta
+     da tela de revisão: aceitarLeitura, montar, conferência. */
+  function aceitarOrganizadas(org) {
+    const prog = lerConfig().programa || [];
+    const { inscricoes, pendentes } = IA.inscricoesDaRevisao(org.linhas, prog);
+    if (pendentes.length || !inscricoes.length) return { ok: false, pendentes: pendentes.length };
+    const abas = org.grades.map((g) => {
+      const daAba = inscricoes.filter((i) => i.aba === g.aba);
+      const provas = [], vistas = new Set();
+      for (const i of daAba) {
+        const k = i.distancia + " " + i.estilo;
+        if (!vistas.has(k)) { vistas.add(k); provas.push({ distancia: i.distancia, estilo: i.estilo }); }
+      }
+      return { aba: g.aba, provas, linhas: daAba.length };
+    }).filter((a) => a.linhas);
+    const b = org.base ? org.base.r : null;
+    aceitarLeitura({
+      inscricoes: (b ? b.inscricoes : []).concat(inscricoes),
+      abas: (b ? b.abas : []).concat(abas),
+      descartadas: b ? b.descartadas || [] : [],
+      repetidas: b ? b.repetidas || [] : [],
+    }, "ia", org.arquivo, null, null, { silencioso: true });
+    estado.recusa = null;
+    estado.ultimaRecusa = null;
+    return { ok: true, inscricoes: inscricoes.length };
+  }
+
+  // a revisão linha por linha, na tela completa, com o que a conversa organizou
+  function revisarOrganizacao(org) {
+    estado.ia = org;
+    irPara("inscritos");
+    abrirRevisao();
+  }
+
+  // o programa com as linhas que a IA corrigiu e a pessoa aceitou
+  function aplicarPrograma(r) {
+    estado.programa = r.provas.length ? r : null;
+    if (estado.programa) { adotarPrograma(); sincronizarDatas(); }
+    liberarCompeticao(!!(estado.programa && r.ok));
+    renderResultadoPrograma(r);
+    renderResumoPrograma();
+    renderEtapas();
+  }
+
+  window.BalizadorApp = {
+    estado, claudeApp, LINK_CLAUDE,
+    lerConfig, validarConfig, atualizarPreviaData, montar, montarSecoes,
+    renderConferencia, irPara, mostrarPainel, liberar, aviso,
+    carregarPrograma, carregarArquivo, seguirSemPrograma, juncoesDoPrograma,
+    renderGrupos, renderResultadoPrograma, liberarCompeticao,
+    confirmarCompeticao, etapaUnica, aceitarBloco, organizarComIA, baixarSaida, geracaoLiberada,
+    baixarModelo, baixarModeloPrograma, verPrevia, baixarPlanilha,
+    propostasDeCorrecao, aceitarOrganizadas, revisarOrganizacao, aplicarPrograma,
+  };
 
   document.addEventListener("DOMContentLoaded", ligar);
 })();

@@ -2,7 +2,8 @@
        node montar.js
 
    Sai em três lugares:
-   - site/index.html, o site do GitHub Pages
+   - site/app/index.html, o app no GitHub Pages, sem IA (a página de entrada,
+     site/index.html, é escrita à mão e este script não mexe nela)
    - BALIZADOR.html, a cópia offline da pasta do projeto, que abre com duplo
      clique e funciona sem internet
    - BALIZADOR-CLAUDE.html, a versão que é publicada como Artifact no
@@ -25,6 +26,7 @@ const partes = {
   exemplos: ler("balizador.exemplos.js"),
   ia: ler("balizador.ia.js"),
   app: ler("balizador.app.js"),
+  conversa: ler("balizador.conversa.js"),
   css: ler("estilo.css"),
   corpo: ler("corpo.html"),
 };
@@ -73,7 +75,8 @@ const SCRIPTS = `<script>${partes.xlsx}</script>
 <script>${partes.saida}</script>
 <script>${partes.exemplos}</script>
 <script>${partes.ia}</script>
-<script>${partes.app}</script>`;
+<script>${partes.app}</script>
+<script>${partes.conversa}</script>`;
 
 const html = `<!doctype html>
 <html lang="pt-BR">
@@ -104,9 +107,9 @@ ${partes.corpo}
 ${SCRIPTS}
 `;
 
-// o site publicado usa index.html; a cópia offline e a do claude.ai ficam na
+// o app publicado fica em app/index.html; a cópia offline e a do claude.ai ficam na
 // pasta do projeto, fora do repositório
-const destinos = [[path.join(AQUI, "..", "index.html"), html]];
+const destinos = [[path.join(AQUI, "index.html"), html]];
 const pasta = path.join(AQUI, "..", "..");
 if (fs.existsSync(pasta)) {
   destinos.push([path.join(pasta, "BALIZADOR.html"), html]);

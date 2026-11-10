@@ -1139,8 +1139,132 @@ Em linhas_ignoradas, liste as linhas com conteúdo que não viraram inscrição 
     return wb;
   }
 
+  /* ---------------- 13. as linhas do programa que o app não entendeu --------
+     O programa não tem dado de atleta: as linhas vão como estão, junto com as
+     provas que o app já leu, para a IA ver o jeito deste programa escrever. A
+     IA devolve cada linha corrigida, ou diz que ela não é prova (um recado,
+     um total). O app confere a correção com os mesmos normalizadores do
+     programa, e a pessoa aceita linha por linha. */
+  const ESQUEMA_PROGRAMA = objeto({
+    linhas: { type: "array", items: objeto({
+      linha: { type: "integer" },
+      e_prova: { type: "boolean" },
+      distancia: TEXTO_OU_NULO,
+      estilo: { anyOf: [{ type: "string",
+        enum: ["LIVRE", "COSTAS", "PEITO", "BORBOLETA", "MEDLEY"] }, NULO] },
+      categoria: TEXTO_OU_NULO,
+      naipe: { anyOf: [{ type: "string", enum: ["FEM", "MASC", "MISTO"] }, NULO] },
+      incerto: { type: "boolean" },
+      motivo: TEXTO_OU_NULO,
+    }) },
+  });
+
+  const SISTEMA_PROGRAMA = `Você corrige linhas de um programa de provas de natação que o aplicativo não conseguiu ler. Cada linha do programa é uma prova: distância, estilo, categoria e naipe. Você não inventa prova nenhuma: só reescreve o que está na linha.
+
+Para cada linha recebida, devolva:
+- linha: o número recebido.
+- e_prova: false quando a linha não é prova (recado, total, título, linha sobrando).
+- distancia: 25M, 50M, 100M, 200M, 400M, 800M ou 1500M; revezamento como 4X25M, 4X50M, 4X100M.
+- estilo: LIVRE, COSTAS, PEITO, BORBOLETA ou MEDLEY. Crawl é LIVRE.
+- categoria: escrita como nas outras provas deste programa.
+- naipe: FEM, MASC ou MISTO.
+- incerto e motivo: marque incerto quando faltar informação na linha ou ela permitir mais de uma leitura, e explique numa frase curta, em português. Quando a linha não diz o naipe ou a categoria, deixe null e marque incerto: não copie de outra linha.`;
+
+  function pedidoDoPrograma(ruins, provasOk) {
+    const L = ["Provas que o aplicativo já leu neste programa, para você ver o jeito dele escrever:"];
+    provasOk.slice(0, 40).forEach((p, k) => L.push(
+      `${k + 1}. ${D.tituloProva(p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe)}`));
+    L.push("", "Linhas que o aplicativo não entendeu (número da linha na planilha, texto e o motivo):");
+    for (const l of ruins) L.push(`linha ${l.linha}: "${l.texto}" (${l.motivo})`);
+    return { sistema: SISTEMA_PROGRAMA, esquema: ESQUEMA_PROGRAMA, texto: L.join("\n") };
+  }
+
+  /** As correções, conferidas: cada uma vira { linha, original, prova | null,
+      naoEProva, incerto, motivo, problema }. */
+  function correcoesDoPrograma(resposta, ruins) {
+    const porLinha = new Map(ruins.map((l) => [l.linha, l]));
+    const saida = [];
+    for (const c of resposta.linhas) {
+      const l = porLinha.get(c.linha);
+      if (!l) continue;
+      porLinha.delete(c.linha);
+      const item = { linha: c.linha, original: l.texto, prova: null, naoEProva: !c.e_prova,
+                     incerto: !!c.incerto, motivo: c.motivo || "", problema: "" };
+      if (c.e_prova) {
+        const distancia = D.normalizarDistancia(c.distancia || "");
+        const estilo = D.normalizarEstilo(c.estilo || "");
+        const naipe = D.normalizarNaipe(c.naipe || "");
+        const categoria = texto(c.categoria);
+        if (!distancia || !estilo || !naipe || !categoria) {
+          item.problema = "a correção não diz " + [!distancia && "a distância", !estilo && "o estilo",
+            !categoria && "a categoria", !naipe && "o naipe"].filter(Boolean).join(", ");
+        } else {
+          item.prova = { distancia, estilo, categoria, naipe, rotulo: categoria, numero: null,
+                         etapa: "", dia: "", periodo: "" };
+        }
+      }
+      saida.push(item);
+    }
+    // linha de que a IA não falou: continua como estava, e aparece
+    for (const l of porLinha.values()) {
+      saida.push({ linha: l.linha, original: l.texto, prova: null, naoEProva: false,
+                   incerto: true, motivo: "", problema: "a IA não disse nada sobre esta linha" });
+    }
+    return saida.sort((a, b) => a.linha - b.linha);
+  }
+
+  /* O programa refeito com as correções aceitas: a linha corrigida entra na
+     posição dela, herdando a etapa da prova de cima; a que não é prova sai. */
+  function programaCorrigido(r, aceitas) {
+    const porLinha = new Map(aceitas.map((c) => [c.linha, c]));
+    const linhas = [];
+    let anterior = null;
+    for (const l of r.linhas) {
+      const c = porLinha.get(l.linha);
+      if (c && c.naoEProva) continue;
+      if (c && c.prova) {
+        const p = Object.assign({}, c.prova, anterior
+          ? { etapa: anterior.etapa, dia: anterior.dia, periodo: anterior.periodo } : {});
+        linhas.push({ linha: l.linha, texto: l.texto, ok: true, prova: p, corrigida: true });
+        anterior = p;
+        continue;
+      }
+      linhas.push(l);
+      if (l.ok) anterior = l.prova;
+    }
+    // prova repetida colocaria os mesmos atletas em duas provas
+    const vistas = new Map();
+    for (const l of linhas) {
+      if (!l.ok) continue;
+      const k = D.chaveProva(l.prova.distancia, l.prova.estilo, l.prova.categoria, l.prova.naipe);
+      if (vistas.has(k)) {
+        l.ok = false;
+        l.motivo = "esta prova já aparece na linha " + vistas.get(k);
+      } else vistas.set(k, l.linha);
+    }
+    const provas = linhas.filter((l) => l.ok).map((l) => l.prova);
+    return Object.assign({}, r, { linhas, provas, problemas: [],
+      ok: provas.length > 0 && linhas.every((l) => l.ok) });
+  }
+
+  // o programa no modelo do app, para guardar e usar de novo sem IA
+  function planilhaDoPrograma(provas) {
+    const dados = [["Nº", "DISTÂNCIA", "ESTILO", "CATEGORIA", "NAIPE", "ETAPA", "DIA", "PERÍODO"]];
+    provas.forEach((p, k) => dados.push([k + 1, String(p.distancia).toLowerCase(), p.estilo,
+      p.rotulo || p.categoria, { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" }[p.naipe] || p.naipe,
+      p.etapa || "", p.dia || "", p.periodo || ""]));
+    const ws = XLSX.utils.aoa_to_sheet(dados);
+    ws["!cols"] = [{ wch: 5 }, { wch: 11 }, { wch: 12 }, { wch: 26 }, { wch: 12 },
+                   { wch: 14 }, { wch: 10 }, { wch: 10 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "PROGRAMA");
+    return wb;
+  }
+
   const api = {
     MODELO, CAMPOS, LAYOUTS,
+    ESQUEMA_PROGRAMA, SISTEMA_PROGRAMA, pedidoDoPrograma, correcoesDoPrograma,
+    programaCorrigido, planilhaDoPrograma,
     lerGrades, vocabulario, novaMascara, mascararCelula, desmascarar,
     codigosDesconhecidos, montarAmostra, textoDaAmostra,
     ESQUEMA_MAPA, ESQUEMA_PROVAS, ESQUEMA_TRANSCRICAO, validarEsquema,

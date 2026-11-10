@@ -827,60 +827,319 @@ details.texto-exato pre{
 details.ignoradas .scroll-x{margin-top:.6rem}
 
 /* =====================================================================
-   A conversa com o Claude: um painel à direita, por cima dos passos.
-   Em tela larga ele divide a janela com o app; em tela estreita ocupa tudo
-   e fecha num botão.
+   A conversa: no claude.ai, o Balizador é um chat com o Claude, e cada
+   etapa chega como um cartão em que a pessoa age ali mesmo. Os cinco
+   passos continuam embaixo, em "Fazer eu mesmo".
    ===================================================================== */
-.marca .lancador-chat{margin-left:auto;padding:.55rem 1.05rem;font-size:.98rem}
-.convite-chat{border-left:3px solid var(--agua);margin-bottom:1.4rem}
-.convite-chat .botao{align-self:flex-start}
+body:not(.modo-conversa) #conversa,
+body:not(.modo-conversa) .trilha{display:none}
+body.modo-conversa main > .tela{display:none!important}
+body.modo-conversa .passos{display:none}
+body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 
-.chat{
-  position:fixed;top:0;right:0;bottom:0;z-index:40;width:min(30rem,100vw);
-  display:flex;flex-direction:column;background:var(--papel);
-  border-left:1px solid var(--linha);box-shadow:-10px 0 34px rgba(9,17,21,.16);
-  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+/* o seletor de modo, no topo */
+.modos{
+  margin-left:auto;display:flex;gap:.2rem;padding:.25rem;border-radius:999px;
+  background:var(--papel2);border:1px solid var(--linha);
 }
-.chat-topo{
-  display:flex;align-items:center;gap:.8rem;padding:1rem 1.15rem;
-  border-bottom:1px solid var(--linha);background:var(--papel2);
+.modos button{
+  font:inherit;font-size:.95rem;font-weight:500;cursor:pointer;border:0;
+  background:none;color:var(--suave);padding:.5rem 1rem;border-radius:999px;
+  transition:background .15s,color .15s;
 }
-.chat-topo b{display:block;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.2rem}
-.chat-topo span{color:var(--suave);font-size:.92rem}
-.chat-topo button{margin-left:auto}
-.chat-mensagens{
-  flex:1;min-height:0;overflow-y:auto;padding:1.1rem 1.15rem;
-  display:flex;flex-direction:column;gap:.8rem;
+.modos button:hover{color:var(--tinta)}
+.modos button.ativo{background:var(--agua);color:var(--papel);font-weight:600}
+
+/* a trilha das cinco etapas, sempre à vista no topo */
+.trilha{display:flex;gap:.35rem;flex-wrap:wrap;padding:.1rem 0 .9rem;align-items:center}
+.degrau{
+  display:flex;align-items:center;gap:.45rem;font:inherit;font-size:.95rem;
+  cursor:pointer;border:1px solid var(--linha);background:var(--papel);
+  color:var(--suave);padding:.35rem .8rem .35rem .4rem;border-radius:999px;
+  transition:border-color .15s,background .15s,color .15s;
 }
-.msg{
-  max-width:92%;padding:.7rem .95rem;border-radius:14px;font-size:1.02rem;
-  line-height:1.5;overflow-wrap:anywhere;display:flex;flex-direction:column;gap:.45rem;
+.degrau:disabled{cursor:default;opacity:.55}
+.degrau .bolinha{
+  width:1.55rem;height:1.55rem;border-radius:50%;display:grid;place-items:center;
+  background:var(--papel2);font-family:"JetBrains Mono",monospace;font-size:.75rem;
 }
-.msg p{margin:0}
-.msg ul,.msg ol{margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:.2rem}
-.msg.eu{align-self:flex-end;background:var(--agua);color:var(--papel);border-bottom-right-radius:4px}
-.msg.eu code{background:transparent;color:inherit}
-.msg.claude{align-self:flex-start;background:var(--papel2);border-bottom-left-radius:4px}
-.msg.pensando{color:var(--suave);font-style:italic}
-.msg.erro{background:var(--grave-fraca);color:var(--grave)}
-.msg .apagado{color:var(--suave);font-size:.9rem}
-.chat-sugestoes{display:flex;flex-wrap:wrap;gap:.45rem;padding:0 1.15rem .7rem}
-.chat-sugestoes .mini{font-size:.92rem;padding:.4rem .75rem;text-align:left}
-.chat-form{
-  display:flex;flex-direction:column;gap:.55rem;padding:.85rem 1.15rem .5rem;
-  border-top:1px solid var(--linha);
+.degrau.feito{color:var(--bom);border-color:var(--bom)}
+.degrau.feito .bolinha{background:var(--bom);color:var(--papel)}
+.degrau.atual{color:var(--agua);border-color:var(--agua);font-weight:600;background:var(--agua-fraca)}
+.degrau.atual .bolinha{background:var(--agua);color:var(--papel)}
+.degrau:not(:disabled):hover{border-color:var(--agua);color:var(--tinta)}
+
+/* o fio */
+.conversa{display:flex;flex-direction:column;min-height:calc(100vh - 11rem)}
+.conversa.sobre{outline:2px dashed var(--agua);outline-offset:6px;border-radius:12px}
+.fio{flex:1;display:flex;flex-direction:column;gap:1.15rem;padding-bottom:1.5rem}
+/* só movimento, sem sumir: parado no meio, o cartão continua inteiro na tela */
+@keyframes surgir{from{transform:translateY(8px)}to{transform:none}}
+.fio > *{animation:surgir .28s ease-out}
+
+.fala{max-width:min(46rem,88%);display:flex;flex-direction:column;gap:.3rem}
+.fala .texto{
+  padding:.8rem 1.05rem;border-radius:16px;font-size:1.05rem;line-height:1.55;
+  display:flex;flex-direction:column;gap:.5rem;overflow-wrap:anywhere;
 }
-.chat-form textarea{
-  font-family:"Instrument Sans",system-ui,sans-serif;font-size:1.02rem;
-  line-height:1.45;resize:none;border-radius:10px;padding:.6rem .75rem;
+.fala .texto p{margin:0}
+.fala .texto ul,.fala .texto ol{margin:0;padding-left:1.3rem;display:flex;flex-direction:column;gap:.25rem}
+.fala.claude{align-self:flex-start}
+.fala.claude .texto{background:var(--papel);border:1px solid var(--linha);border-top-left-radius:5px}
+.fala .quem{
+  font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--agua);padding-left:.3rem;
 }
-.chat-acoes{display:flex;gap:.5rem;align-items:center}
-.chat-acoes .botao{padding:.55rem 1.2rem}
-.chat-nota{margin:0;padding:0 1.15rem .9rem;font-size:.84rem;color:var(--suave);line-height:1.4}
-@media (min-width:1100px){
-  /* o app encolhe para o painel caber ao lado, sem cobrir nada */
-  body.com-chat{padding-right:min(30rem,100vw)}
+.fala.eu{align-self:flex-end}
+.fala.eu .texto{background:var(--agua);color:var(--papel);border-top-right-radius:5px}
+.fala.eu code{background:transparent;color:inherit}
+.fala.erro .texto{background:var(--grave-fraca);border-color:var(--grave);color:var(--grave)}
+.fala .apagado{color:var(--suave);font-size:.92rem}
+.fala.eu .anexo::before{content:"Planilha: ";opacity:.8}
+
+/* os três pontinhos enquanto o Claude pensa */
+.digitando{display:inline-flex;gap:.3rem;padding:.2rem 0}
+.digitando i{
+  width:.5rem;height:.5rem;border-radius:50%;background:var(--suave);
+  animation:pulo 1.1s ease-in-out infinite;
 }
+.digitando i:nth-child(2){animation-delay:.15s}
+.digitando i:nth-child(3){animation-delay:.3s}
+@keyframes pulo{0%,60%,100%{transform:none;opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+
+.nota-app{
+  align-self:center;margin:0;font-size:.88rem;color:var(--suave);
+  display:flex;align-items:center;gap:.7rem;text-align:center;max-width:90%;
+}
+.nota-app::before,.nota-app::after{content:"";height:1px;width:2.5rem;background:var(--linha);flex:none}
+
+/* os cartões */
+.cartao-conversa{
+  background:var(--papel);border:1px solid var(--linha);border-radius:18px;
+  padding:1.25rem 1.4rem 1.35rem;display:flex;flex-direction:column;gap:.85rem;
+  box-shadow:0 1px 2px rgba(15,32,39,.05),0 10px 30px -18px rgba(11,114,133,.35);
+  border-top:3px solid var(--agua);
+}
+.cartao-conversa header{display:flex;flex-direction:column;gap:.15rem}
+.cartao-conversa .etapa{
+  font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--agua);
+}
+.cartao-conversa h3{font-size:1.35rem}
+.cartao-conversa .corpo{display:flex;flex-direction:column;gap:.85rem}
+.cartao-conversa .corpo > p{font-size:1.04rem;line-height:1.55;max-width:68ch}
+.cartao-conversa .resumo{display:none}
+/* cartão que já passou: uma linha só, com a história guardada */
+.cartao-conversa.antigo{
+  padding:.65rem 1rem;border-top-width:1px;box-shadow:none;opacity:.78;gap:0;
+  border-radius:12px;background:var(--papel2);
+}
+.cartao-conversa.antigo header,.cartao-conversa.antigo .corpo{display:none}
+.cartao-conversa.antigo .resumo{display:block;margin:0;font-size:.95rem;color:var(--suave)}
+.cartao-conversa.antigo .resumo::before{content:"✓ ";color:var(--bom);font-weight:700}
+
+.opcoes{display:grid;gap:.7rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr))}
+.opcao{
+  font:inherit;text-align:left;cursor:pointer;display:flex;flex-direction:column;
+  gap:.25rem;padding:1rem 1.1rem;border-radius:14px;border:1.5px solid var(--linha);
+  background:var(--papel);color:var(--tinta);
+  transition:border-color .15s,background .15s,transform .15s;
+}
+.opcao b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.12rem}
+.opcao span{color:var(--suave);font-size:.95rem;line-height:1.4}
+.opcao:hover,.opcao:focus-visible{border-color:var(--agua);background:var(--agua-fraca);transform:translateY(-2px)}
+.opcao:first-child{border-color:var(--agua)}
+
+.zona-conversa{
+  display:flex;flex-direction:column;align-items:center;gap:.3rem;text-align:center;
+  padding:1.8rem 1rem;border:2px dashed var(--linha);border-radius:14px;cursor:pointer;
+  background:var(--fundo);transition:border-color .15s,background .15s;
+}
+.zona-conversa b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.2rem}
+.zona-conversa span{color:var(--suave);font-size:.95rem}
+.zona-conversa:hover,.zona-conversa.sobre{border-color:var(--agua);background:var(--agua-fraca)}
+
+.acoes-cartao{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center}
+
+.numeros{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr))}
+.numeros div{background:var(--papel2);border-radius:12px;padding:.75rem .9rem;display:flex;flex-direction:column;gap:.1rem}
+.numeros b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
+.numeros span{color:var(--suave);font-size:.9rem}
+.numeros .ruim b{color:var(--grave)}
+.numeros .bom b{color:var(--bom)}
+
+.lista-provas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.15rem}
+.lista-provas li{display:flex;gap:.6rem;align-items:baseline;padding:.3rem .2rem;border-bottom:1px solid var(--linha);font-size:1rem}
+.lista-provas li:last-child{border-bottom:0}
+.lista-provas .num{font-family:"JetBrains Mono",monospace;font-size:.82rem;color:var(--suave);min-width:2.2rem}
+.lista-provas .apagado{margin-left:auto;color:var(--suave);font-size:.85rem}
+details.mais summary,details.bloco-conv summary{cursor:pointer}
+details.mais summary{color:var(--agua);font-size:.98rem}
+
+.pergunta-conv,.alerta-conv{border-radius:12px;padding:.85rem 1rem;display:flex;flex-direction:column;gap:.6rem}
+.pergunta-conv{background:var(--agua-fraca);border:1px solid var(--agua)}
+.alerta-conv{background:var(--grave-fraca);border:1px solid var(--grave);color:var(--tinta)}
+.alerta-conv ul,.motivos-conv{margin:0;padding-left:1.2rem;display:flex;flex-direction:column;gap:.2rem}
+.pergunta-conv p,.alerta-conv p{margin:0;font-size:1rem;line-height:1.5}
+.destaque-ia{background:linear-gradient(135deg,var(--agua-fraca),var(--papel2))}
+.ok-conv{margin:0;background:var(--bom-fraca);color:var(--bom);border-radius:12px;padding:.8rem 1rem;font-weight:500}
+
+.cartao-conversa .campos{gap:.8rem}
+.cartao-conversa .campo{font-size:.95rem}
+.cartao-conversa .marcas{display:flex;flex-wrap:wrap;gap:.5rem 1.4rem;align-items:center}
+
+/* a conferência, bloco a bloco */
+.blocos-conv{display:flex;flex-direction:column;gap:.5rem}
+.bloco-conv{border:1px solid var(--linha);border-radius:12px;background:var(--papel);overflow:hidden}
+.bloco-conv.critico{border-left:4px solid var(--grave)}
+.bloco-conv.aviso{border-left:4px solid var(--ambar)}
+.bloco-conv.info{border-left:4px solid var(--info)}
+.bloco-conv.aceito{border-left:4px solid var(--bom);opacity:.85}
+.bloco-conv summary{display:flex;align-items:center;gap:.6rem;padding:.7rem .9rem;list-style:none}
+.bloco-conv summary::-webkit-details-marker{display:none}
+.bloco-conv summary b{flex:1;font-size:1.02rem}
+.bloco-corpo{padding:0 .9rem .9rem;display:flex;flex-direction:column;gap:.6rem}
+.bloco-corpo .explica{font-size:.96rem;line-height:1.5;color:var(--suave);margin:0}
+.bloco-corpo .tabela td{font-size:.92rem}
+.bloco-corpo .confirma{margin:0;flex-basis:100%}
+.selo{
+  font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.06em;
+  text-transform:uppercase;padding:.15rem .5rem;border-radius:999px;white-space:nowrap;
+}
+.selo.critico{background:var(--grave-fraca);color:var(--grave)}
+.selo.aviso{background:var(--ambar-fraca);color:var(--ambar)}
+.selo.info{background:var(--info-fraca);color:var(--info)}
+.selo.aceito{background:var(--bom-fraca);color:var(--bom)}
+
+/* a piscina: cada série uma linha, cada raia uma coluna, com as cordas entre elas */
+.navega-prova{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.navega-prova select{flex:1;min-width:12rem}
+.piscina{
+  display:flex;flex-direction:column;gap:.45rem;min-width:calc(5.5rem + var(--raias) * 8rem);
+  background:var(--agua-fraca);border-radius:14px;padding:.6rem;
+}
+.piscina .serie{display:grid;grid-template-columns:5rem repeat(var(--raias),minmax(7.5rem,1fr));gap:.35rem}
+.piscina .nserie{
+  font-family:"JetBrains Mono",monospace;font-size:.75rem;color:var(--agua);
+  display:flex;align-items:center;text-transform:uppercase;letter-spacing:.05em;
+}
+.piscina .cabeca .nraia{text-align:center;font-family:"JetBrains Mono",monospace;font-size:.78rem;color:var(--agua);font-weight:500}
+.raia{
+  background:var(--papel);border-radius:8px;padding:.45rem .55rem;min-height:4.1rem;
+  display:flex;flex-direction:column;gap:.05rem;overflow:hidden;
+  border-bottom:3px dotted var(--agua);
+}
+.raia b{font-size:.86rem;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.raia span{font-size:.75rem;color:var(--suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.raia em{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:.75rem;color:var(--agua);margin-top:auto}
+.raia.vazia{background:repeating-linear-gradient(135deg,transparent,transparent 6px,var(--papel2) 6px,var(--papel2) 12px);border-bottom-color:transparent}
+.raia.marcada{background:var(--grave-fraca)}
+
+.saida-conv{
+  display:flex;gap:1rem;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  padding:.8rem 1rem;border:1px solid var(--linha);border-radius:12px;
+}
+.saida-conv b{display:block;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.1rem}
+.saida-conv span{color:var(--suave);font-size:.95rem}
+
+/* a caixa de mensagem, presa embaixo */
+.compositor{
+  position:sticky;bottom:0;z-index:5;display:flex;gap:.55rem;align-items:flex-end;
+  background:var(--papel);border:1.5px solid var(--linha);border-radius:18px;
+  padding:.55rem .6rem .55rem .7rem;
+  box-shadow:0 -14px 24px -8px var(--fundo),0 6px 22px -14px rgba(11,114,133,.45);
+  margin-bottom:max(.6rem,env(safe-area-inset-bottom,0px));
+}
+.compositor:focus-within{border-color:var(--agua)}
+.compositor textarea{
+  flex:1;border:0;background:transparent;resize:none;font-family:"Instrument Sans",system-ui,sans-serif;
+  font-size:1.05rem;line-height:1.45;padding:.5rem .3rem;max-height:11rem;min-width:0;
+}
+.compositor textarea:focus{outline:none}
+.anexar{
+  display:flex;align-items:center;cursor:pointer;font-size:.9rem;color:var(--agua);
+  border:1px solid var(--linha);border-radius:12px;padding:.55rem .75rem;white-space:nowrap;
+}
+.anexar:hover{border-color:var(--agua);background:var(--agua-fraca)}
+.compositor .botao{border-radius:12px;padding:.6rem 1.2rem}
+.compositor-nota{margin:.1rem 0 1rem;text-align:center;font-size:.84rem;color:var(--suave)}
+
 @media (max-width:640px){
-  .marca .lancador-chat{padding:.45rem .7rem;font-size:.9rem}
+  .modos button{padding:.45rem .7rem;font-size:.85rem}
+  .marca{flex-wrap:wrap}
+  .fala{max-width:96%}
+  .anexar span{font-size:.82rem}
+  .degrau span:last-child{display:none}
+  .degrau{padding:.3rem}
+  .cartao-conversa{padding:1rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .fio > *,.digitando i{animation:none}
+  .opcao:hover{transform:none}
+}
+
+/* ---------- a IA trabalhando: os passos acendem um a um ---------- */
+.passos-ia{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.55rem}
+.passos-ia li{display:flex;align-items:center;gap:.7rem;color:var(--suave);font-size:1rem}
+.passos-ia li em{font-style:normal;margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--agua)}
+.marca-passo{
+  width:1.35rem;height:1.35rem;border-radius:50%;flex:none;border:2px solid var(--linha);
+  display:grid;place-items:center;font-size:.75rem;font-weight:700;
+}
+.passos-ia li.fazendo{color:var(--tinta)}
+.passos-ia li.fazendo .marca-passo{border-color:var(--agua-fraca);border-top-color:var(--agua);animation:girar .9s linear infinite}
+.passos-ia li.feito{color:var(--tinta)}
+.passos-ia li.feito .marca-passo{background:var(--bom);border-color:var(--bom);color:var(--papel)}
+.passos-ia li.feito .marca-passo::after{content:"✓"}
+.passos-ia li.espera .marca-passo{border-color:var(--ambar);background:var(--ambar-fraca)}
+.passos-ia li.falhou{color:var(--grave)}
+.passos-ia li.falhou .marca-passo{border-color:var(--grave);background:var(--grave-fraca)}
+.passos-ia li.falhou .marca-passo::after{content:"!";color:var(--grave)}
+
+/* ---------- a tabela reescrita: a planilha ao lado do modelo do app ---------- */
+.tabela-org{display:flex;flex-direction:column;border:1px solid var(--linha);border-radius:12px;overflow:hidden}
+.linha-org{
+  display:grid;grid-template-columns:7rem minmax(0,1fr) minmax(0,1.25fr);gap:.9rem;
+  padding:.7rem .9rem;border-top:1px solid var(--linha);align-items:start;
+}
+.linha-org:first-child{border-top:0}
+.linha-org.cabeca{
+  background:var(--papel2);font-family:"JetBrains Mono",monospace;font-size:.7rem;
+  letter-spacing:.07em;color:var(--suave);padding-block:.5rem;
+}
+.org-origem{font-size:.85rem;color:var(--suave);display:flex;flex-direction:column}
+.org-origem b{color:var(--tinta);font-weight:600}
+.org-de{font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--suave);overflow-wrap:anywhere}
+.org-de .sep{color:var(--linha)}
+.org-para{font-size:.98rem;line-height:1.45;display:flex;flex-direction:column;gap:.4rem;min-width:0}
+.org-para .motivos{margin:0}
+.linha-org.incerto{background:var(--ambar-fraca);box-shadow:inset 3px 0 0 var(--ambar)}
+.linha-org.incerto .motivos{color:var(--ambar)}
+.linha-org.erro{background:var(--grave-fraca);box-shadow:inset 3px 0 0 var(--grave)}
+.linha-org.erro .motivos{color:var(--grave)}
+.linha-org.fora{opacity:.55}
+.linha-org.fora .org-de{text-decoration:line-through}
+.linha-org.ok .motivos{color:var(--suave)}
+.org-para .acoes-cartao .botao{padding:.4rem .9rem;font-size:.92rem}
+
+/* ---------- correções prontas, esperando o Sim ---------- */
+.correcoes{
+  display:flex;flex-direction:column;gap:.6rem;border-radius:14px;padding:.9rem 1rem;
+  background:linear-gradient(135deg,var(--agua-fraca),var(--papel));border:1px solid var(--agua);
+}
+.correcoes-titulo{margin:0;display:flex;gap:.7rem;align-items:baseline;flex-wrap:wrap;font-size:1.05rem}
+.correcoes-titulo .apagado{color:var(--suave);font-size:.88rem}
+.correcao{
+  background:var(--papel);border:1px solid var(--linha);border-radius:12px;padding:.75rem .9rem;
+  display:flex;flex-direction:column;gap:.35rem;
+}
+.correcao .caso{margin:0;color:var(--suave);font-size:.95rem;line-height:1.45}
+.correcao .pergunta{margin:0;font-size:1.02rem}
+.correcao .acoes-cartao .botao{padding:.4rem 1.1rem}
+.cartao-conversa .amostra-ia{margin-top:.6rem}
+.cartao-conversa details.texto-exato pre{max-height:18rem}
+
+@media (max-width:640px){
+  .linha-org{grid-template-columns:1fr;gap:.35rem}
+  .linha-org.cabeca{display:none}
 }
