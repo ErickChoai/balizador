@@ -140,11 +140,10 @@
     return util;
   }
 
-  /* No celular, o cartão que não cabe na tela vira dois passos. Primeiro vêm
-     o que é e por que importa, com Continuar. Depois vêm o que fazer, a
-     planilha (ou a piscina, a tabela) e os botões. Nada some: vem em duas
-     vezes, e dá para voltar à explicação. No cartão dos arquivos, a divisão
-     é antes do fim da demonstração. */
+  /* No celular, o cartão dos arquivos que não cabe na tela vira dois passos:
+     primeiro os arquivos, com Continuar, depois o fim da demonstração. Nos
+     outros cartões o porquê já fica fechado no "Por quê?", e a planilha ou a
+     piscina encolhe por dentro para o cartão caber. */
   const CELULAR = 640;
   function paginar(el, direto) {
     if (!el || !el.isConnected || el.classList.contains("antigo") || el.dataset.partes) return;
@@ -159,13 +158,7 @@
     if (fim) {
       const i = filhos.indexOf(fim);
       p1 = filhos.slice(0, i); p2 = filhos.slice(i); depoisDe = filhos[i - 1];
-    } else {
-      const ori = $(":scope > .orienta", corpo);
-      if (!ori) return;
-      p1 = $$(":scope > li.que, :scope > li.porque", ori);
-      p2 = [$(":scope > li.fazer", ori), ...filhos.filter((f) => f !== ori)].filter(Boolean);
-      depoisDe = ori;
-    }
+    } else return;
     if (!p1.length || !p2.length || !depoisDe) return;
     p1.forEach((x) => x.classList.add("so-parte-1"));
     p2.forEach((x) => x.classList.add("so-parte-2"));
@@ -176,10 +169,8 @@
     const volta = document.createElement("button");
     volta.type = "button";
     volta.className = "link volta-parte parte-extra so-parte-2";
-    volta.textContent = fim ? "voltar aos arquivos" : "rever a explicação";
-    // o link de voltar vai no fim da linha "o que fazer", para não gastar uma linha
-    const fazer = fim ? null : $(":scope > .orienta > li.fazer p", corpo);
-    (fazer || corpo).appendChild(volta);
+    volta.textContent = "voltar aos arquivos";
+    corpo.appendChild(volta);
     el.dataset.partes = "2";
     const mostrar = (n) => {
       el.classList.toggle("parte-1", n === 1);
@@ -228,13 +219,17 @@
     el.setAttribute("inert", "");
   }
 
-  /* As três linhas que orientam cada passo, cada uma com uma ideia só: o que
-     é, por que importa e o que fazer agora. */
+  /* Cada passo diz o que fazer numa frase. O que é e por que importa ficam
+     num "Por quê?" que abre ao tocar: quem já sabe segue direto, quem nunca
+     viu uma competição abre e lê. */
   function orienta(o) {
-    const L = [["que", "O que é"], ["porque", "Por que importa"], ["fazer", "O que fazer"]]
-      .filter(([k]) => o && o[k]);
-    return L.length ? `<ul class="orienta">${L.map(([k, rot]) =>
-      `<li class="${k}"><span>${rot}</span><p>${o[k]}</p></li>`).join("")}</ul>` : "";
+    if (!o) return "";
+    const instrucao = o.fazer || o.que || o.porque || "";
+    const resto = [o.fazer ? o.que : null, (o.fazer || o.que) ? o.porque : null].filter(Boolean);
+    if (!instrucao) return "";
+    return `<div class="orienta"><p class="instrucao">${instrucao}</p>${resto.length
+      ? `<details class="porque"><summary>Por quê?</summary>${resto.map((t) => `<p>${t}</p>`).join("")}</details>`
+      : ""}</div>`;
   }
 
   function bolha(quem, html) {
@@ -277,7 +272,7 @@
     el.dataset.tipo = tipo;
     el.id = "cartao" + (++conv.numero);
     el.innerHTML = `
-      <header><span class="etapa">${rotuloEtapa(etapa)}</span><h3>${titulo}</h3></header>
+      <header><h3>${titulo}</h3></header>
       <p class="resumo">${AT(resumo || titulo)}</p>
       <div class="corpo">${corpo}</div>`;
     // a fala da pessoa e as notas do app não seguram a tela: o cartão sim
@@ -441,8 +436,8 @@
 
   /* ---------------- a demonstração guiada ----------------
      Um campeonato inventado, com erros plantados de propósito, num passo de
-     cada vez. Cada passo é um cartão que cabe na tela, com três linhas: o que
-     é, por que importa e o que fazer. A pessoa segue clicando; nada anda
+     cada vez. Cada passo é um cartão que cabe na tela, com uma frase do que
+     fazer e o porquê num "Por quê?" que abre ao tocar. A pessoa segue clicando; nada anda
      sozinho. O Claude de verdade faz o trabalho de IA e fala antes dos
      cartões em que ele age; se ele demorar ou falhar, entra a resposta de
      reserva preparada para estas planilhas, com aviso na tela. */
@@ -528,8 +523,8 @@
     const d = E.demoInscritos();
     return passoFolha("folha-inscritos", "Inscritos", "Esta é a ficha que as escolas mandaram", d, false, {
       que: "Uma aba por escola. O X ou o tempo diz em que prova cada atleta vai nadar.",
-      porque: "Escondemos 2 erros, em vermelho: um tempo sem a vírgula e um atleta repetido.",
-      fazer: "Clique em <b>Entregar ao app</b>. Ele tem de achar os dois sozinho.",
+      porque: "Um tempo sem a vírgula e um atleta repetido são erros comuns de ficha.",
+      fazer: "Escondemos 2 erros em vermelho. Clique em <b>Entregar ao app</b> e veja se ele acha os dois.",
     }, "Entregar ao app", "Ficha das escolas", () => receberArquivo(arquivoDe(d.wb, d.nome), "inscritos"));
   }
 
@@ -595,7 +590,7 @@
     const programa = tipo === "programa";
     const id = "anexo" + (conv.numero + 1);
     return cartao("arquivo-" + tipo, programa ? "Programa" : "Inscritos",
-      programa ? "Onde está a lista de provas?" : "Onde está a lista de inscritos?", `
+      programa ? "Envie a lista de provas" : "Envie a lista de inscritos", `
       ${orienta(programa ? {
         que: "A planilha com as provas do campeonato, na ordem, como 50 m livre.",
         fazer: "Arraste a planilha para o quadro abaixo, ou clique nele para escolher.",
@@ -711,7 +706,7 @@
     const principais = CAMPOS.filter((c) => PRINCIPAIS.includes(c[0]))
       .map((c) => (c[0] === "nomeComp" ? [c[0], c[1], c[2], ""] : c));
     const outros = CAMPOS.filter((c) => !PRINCIPAIS.includes(c[0]));
-    return cartao("competicao", "Competição", "Como é a competição?", `
+    return cartao("competicao", "Competição", "Confira a competição", `
       ${orienta(falta && falta.length ? {
         fazer: "Preencha o que falta, logo abaixo, e clique em <b>Confirmar a competição</b>.",
       } : {
@@ -922,12 +917,12 @@
       const props = lista.filter((y) => y.tipo === "correcao").length;
       return cartao("problema", "Conferência", `${conta} ${AT(s ? s.titulo : "Correção proposta")}`, `
         ${orienta({
-          que: AT(x.p.caso),
           porque,
-          fazer: "<b>Sim</b> aplica a correção abaixo. <b>Não</b> deixa como está, e você decide depois.",
+          fazer: "<b>Sim</b> aplica a correção. <b>Não</b> deixa como está, e você decide depois.",
         })}
         <div class="correcao-unica" data-correcao="${AT(x.p.id)}">
           <span class="rot">CORREÇÃO PROPOSTA</span>
+          <p class="caso">${AT(x.p.caso)}</p>
           <p class="pergunta"><b>${AT(x.p.pergunta)}</b></p>
           <div class="acoes-cartao">
             <button type="button" class="botao" data-acao="correcao_sim">Sim, corrigir</button>
@@ -939,9 +934,8 @@
     }
     return cartao("problema", "Conferência", `${conta} ${AT(s.titulo)}`, `
       ${orienta({
-        que: `${s.itens.length === 1 ? "1 caso" : s.itens.length + " casos"} que o app não sabe corrigir sozinho.`,
         porque,
-        fazer: "Peça ao Claude para explicar, resolva na tela completa ou siga assim mesmo.",
+        fazer: `O app não corrige ${s.itens.length === 1 ? "este caso" : `estes ${s.itens.length} casos`} sozinho. Peça ao Claude para explicar, resolva na tela completa ou siga assim mesmo.`,
       })}
       <div class="rola-tabela">${tabelaItens(s, 4)}</div>
       <div class="acoes-cartao" data-bloco="${AT(s.id)}" data-titulo="${AT(s.titulo)}">
@@ -1057,9 +1051,8 @@
         <button type="button" class="link" data-acao="previa_${q}">ver a prévia</button></div></div>`;
     const fim = conv.demo ? `<div class="fim-demo">
         <b>Fim da demonstração</b>
-        <ul><li>A IA corrigiu a lista de provas e reescreveu a ficha das escolas.</li>
-          <li>O app conferiu tudo e montou as séries pelas regras.</li>
-          <li>Nada mudou sem o seu Sim.</li></ul>
+        <ul><li>O Claude corrigiu a lista de provas e reescreveu a ficha das escolas.</li>
+          <li>O app conferiu tudo e montou as séries pela regra.</li></ul>
         <div class="acoes-cartao">
           <button type="button" class="botao" data-recomecar="minhas">Começar com as minhas planilhas</button>
           <button type="button" class="mini claro" data-recomecar="demo">Ver a demonstração de novo</button>
@@ -1074,6 +1067,8 @@
         ${item("papeletas", "Papeletas de raia", "O papel do cronometrista de cada raia.")}
         ${item("xlsx", "Planilha", "Tudo editável no Excel.")}
       </div>
+      <p class="nota levar-github">Também dá para <button type="button" class="link"
+        data-acao="levar_github">abrir este balizamento no app do GitHub</button>.</p>
       ${conv.demo ? "" : `<p class="nota">As logos das instituições entram pela tela completa.
         <button type="button" class="link" data-acao="tela_gerar">pôr as logos</button></p>`}
       ${fim}`,
@@ -1138,7 +1133,7 @@
     if (!o) return nota("Não há planilha recusada esperando a IA.");
     const total = o.amostra.reduce((s, x) => s + x.total, 0);
     const vao = o.amostra.reduce((s, x) => s + x.linhas.length, 0);
-    return cartao("organizar", "Inscritos", "A IA pode reescrever esta planilha?", `
+    return cartao("organizar", "Inscritos", "O Claude pode reescrever esta planilha", `
       ${orienta({
         que: "A IA olha como a planilha está montada e diz onde está cada coisa.",
         porque: "Assim o app consegue ler a ficha do jeito que ela veio.",
@@ -1229,7 +1224,7 @@
     const o = org, g = o.grades.find((x) => x.aba === aba);
     if (!o.pedidosAba[aba]) o.pedidosAba[aba] = IA.pedidoDaAbaInteira(g, o.mascara, o.voc, app().lerConfig());
     const p = o.pedidosAba[aba];
-    return cartao("aba-inteira", "Inscritos", `Posso mandar a aba ${AT(aba)} inteira?`, `
+    return cartao("aba-inteira", "Inscritos", `O Claude precisa ver a aba ${AT(aba)} inteira`, `
       <p>O mapa não deu conta desta aba. Com ela inteira, ${g.linhas.length} linhas com os nomes e as
         datas trocados por código, eu transcrevo inscrição por inscrição. Tudo volta para a mesma
         tabela, para você conferir.</p>
@@ -1274,7 +1269,7 @@
     const o = org;
     const troca = (v) => IA.mascararCelula(v, o.mascara, o.voc);
     const n = o.pendentes.reduce((s, p) => s + p.linhas.length, 0);
-    return cartao("provas-ia", "Inscritos", "A IA pode ligar estas provas às da lista?", `
+    return cartao("provas-ia", "Inscritos", "O Claude pode ligar estas provas às da lista", `
       ${orienta({
         que: `A ficha escreve o nome das provas ${o.pendentes.length === 1 ? "de um jeito diferente" : `de ${o.pendentes.length} jeitos diferentes`} da lista.`,
         porque: "Cada inscrição precisa cair na prova certa da lista.",
@@ -1435,7 +1430,7 @@
     if (!ruins.length) return cartaoPrograma();
     const pedido = IA.pedidoDoPrograma(ruins, r.provas);
     corrProg = { r, ruins, pedido, itens: null, decisao: {} };
-    return cartao("proposta-programa", "Programa", `A IA pode corrigir ${ruins.length === 1 ? "esta linha" : `estas ${ruins.length} linhas`}?`, `
+    return cartao("proposta-programa", "Programa", `O Claude pode corrigir ${ruins.length === 1 ? "esta linha" : `estas ${ruins.length} linhas`}`, `
       ${orienta({
         porque: "A prova de uma linha que o app não entende ficaria de fora.",
         fazer: "Clique em <b>Sim</b>. A IA sugere a correção, e você confere uma por uma.",
@@ -1693,11 +1688,13 @@
         return;
       }
       case "tela_gerar": return irParaTela("gerar");
+      case "levar_github": return a.abrirPonte({ saida: true });
       default:
         if (nome.startsWith("baixar_")) {
           const q = nome.slice(7);
           await a.baixarSaida(q);
-          conv.baixados.add(q);
+          // no link público o arquivo não sai daqui: vai pelo GitHub, não conta como baixado
+          if (!a.claudeApp.noClaude || a.claudeApp.downloads) conv.baixados.add(q);
           return renderTrilha();
         }
         if (nome.startsWith("previa_")) {
@@ -2093,7 +2090,7 @@ O caminho tem cinco etapas, nesta ordem:
 5. Arquivos: o PDF do balizamento, as papeletas e a planilha.
 
 Como conduzir:
-- Uma coisa de cada vez, em uma frase curta (no máximo duas): o que você viu, em palavras simples. O cartão que vem depois diz por que importa e o que fazer. Os cartões aparecem logo depois da sua fala e mostram os detalhes e os botões Sim e Não: não repita o que eles mostram nem descreva os botões.
+- Uma coisa de cada vez, em uma frase curta (no máximo duas): o que você viu, em palavras simples. O cartão que vem depois diz o que fazer, e o porquê fica num "Por quê?" que a pessoa abre se quiser. Os cartões aparecem logo depois da sua fala e mostram os detalhes e os botões Sim e Não: não repita o que eles mostram nem descreva os botões.
 - Sempre que a próxima ação for da pessoa, chame a ferramenta mostrar com o cartão certo, para ela agir ali mesmo. Não chame mostrar para um cartão que a mensagem diz que vai aparecer depois da sua fala.
 - Nunca escreva uma chamada de ferramenta como texto (nada de tool_call, JSON de ferramenta ou marcação parecida). Se não tiver a ferramenta, só fale.
 - Competição: depois do programa, proponha valores com base nele (revezamento quando há provas 4x; paradesporto quando há categorias paralímpicas ou segmentos DF, DV, DI, DA, TEA) e pergunte o que só a pessoa sabe, principalmente quantas raias tem a piscina e quantas provas individuais cada atleta pode nadar. Quando ela responder, preencha com preencher_competicao e peça para conferir no cartão. Use confirmar_competicao só quando ela disser que está certo.

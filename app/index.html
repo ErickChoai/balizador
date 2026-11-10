@@ -6,9 +6,13 @@
 <title>Balizador, natação</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%230B7285%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2233%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22central%22%20font-family%3D%22Verdana%2CDejaVu%20Sans%2Csans-serif%22%20font-weight%3D%22bold%22%20font-size%3D%2227%22%20fill%3D%22%23ffffff%22%3EBZ%3C%2Ftext%3E%3C%2Fsvg%3E"><link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%230B7285%22%2F%3E%3Ctext%20x%3D%2232%22%20y%3D%2233%22%20text-anchor%3D%22middle%22%20dominant-baseline%3D%22central%22%20font-family%3D%22Verdana%2CDejaVu%20Sans%2Csans-serif%22%20font-weight%3D%22bold%22%20font-size%3D%2227%22%20fill%3D%22%23ffffff%22%3EBZ%3C%2Ftext%3E%3C%2Fsvg%3E"><meta name="theme-color" content="#0B7285">
 <meta name="description" content="Monta balizamento, papeletas de raia e confere erros de inscrição em competições de natação. Roda no navegador. No claude.ai, a etapa opcional de IA e a conversa usam a conta Claude de quem abre.">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..600&family=JetBrains+Mono:wght@400..500&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;600&family=Atkinson+Hyperlegible+Next:wght@400;600;700&family=Big+Shoulders:wght@700;800&display=swap">
 <style>
 :root{
+  --display:"Big Shoulders","Big Shoulders Display","Arial Narrow",sans-serif;
+  --texto:"Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Atkinson Hyperlegible Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --amarelo:#F2C14E; --corda2:#1E4B58;
   /* diz ao navegador em que tema ele está: é isto que faz o calendário do
      campo de data abrir claro no claro e escuro no escuro, com o ícone
      visível. Sem isto o ícone sai preto no fundo preto. */
@@ -50,15 +54,15 @@
 [hidden]{display:none!important}
 body{
   margin:0;background:var(--fundo);color:var(--tinta);
-  font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-family:var(--texto);
   font-size:17.5px;line-height:1.62;-webkit-font-smoothing:antialiased;
 }
-h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0;text-wrap:balance}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
 h1{font-size:1.75rem;font-weight:700;letter-spacing:-.025em;line-height:1.05}
 h2{font-size:2.05rem;font-weight:700;letter-spacing:-.025em;margin-bottom:.3rem;line-height:1.12}
 h3{font-size:1.28rem;font-weight:700;letter-spacing:-.012em;margin-bottom:.2rem}
 p{margin:0}
-.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.85em}
+.mono{font-family:var(--mono);font-size:.85em}
 
 /* ---------- topo ---------- */
 .topo{
@@ -70,7 +74,7 @@ p{margin:0}
 .sigla{
   display:grid;place-items:center;width:2.9rem;height:2.9rem;border-radius:9px;
   background:var(--agua);color:var(--papel);
-  font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.15rem;letter-spacing:.01em;
+  font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.01em;
 }
 .marca p{color:var(--suave);font-size:.95rem}
 .passos{display:flex;gap:.25rem;flex-wrap:wrap}
@@ -80,7 +84,7 @@ p{margin:0}
   display:flex;align-items:center;gap:.45rem;border-radius:3px 3px 0 0;
 }
 .passo b{
-  font-family:"JetBrains Mono",monospace;font-size:.78rem;font-weight:500;
+  font-family:var(--mono);font-size:.78rem;font-weight:500;
   background:var(--papel2);color:var(--suave);
   width:1.6rem;height:1.6rem;display:grid;place-items:center;border-radius:50%;
 }
@@ -105,10 +109,10 @@ main{margin:0 auto}
 }
 .cartao-tipo:hover{border-color:var(--agua)}
 .cartao-tipo.marcado{border-left-color:var(--agua);background:var(--agua-fraca)}
-.cartao-tipo strong{font-family:"Bricolage Grotesque",sans-serif;font-size:.98rem}
+.cartao-tipo strong{font-family:var(--display);font-size:.98rem}
 .cartao-tipo span{color:var(--suave);font-size:.85rem;line-height:1.4}
 .cartao-tipo em{
-  font-family:"JetBrains Mono",monospace;font-size:.68rem;font-style:normal;
+  font-family:var(--mono);font-size:.68rem;font-style:normal;
   color:var(--agua);text-transform:uppercase;letter-spacing:.04em;margin-top:.15rem;
 }
 
@@ -122,7 +126,7 @@ main{margin:0 auto}
   display:flex;flex-direction:column;gap:.85rem;
 }
 .opcional{
-  font-family:"JetBrains Mono",monospace;font-size:.65rem;font-weight:400;
+  font-family:var(--mono);font-size:.65rem;font-weight:400;
   text-transform:uppercase;letter-spacing:.08em;color:var(--suave);
   border:1px solid var(--linha);border-radius:2px;padding:.1rem .35rem;
   margin-left:.4rem;vertical-align:middle;
@@ -132,7 +136,7 @@ main{margin:0 auto}
 .campos > .campo.largo{flex:1}
 .campo.largo{min-width:16rem}
 textarea{
-  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.8rem;line-height:1.5;
+  font-family:var(--mono);font-size:.8rem;line-height:1.5;
   color:var(--tinta);background:var(--fundo);border:1px solid var(--linha);
   border-radius:3px;padding:.55rem .65rem;width:100%;resize:vertical;
 }
@@ -218,7 +222,7 @@ input[type=number]{width:6rem}
   transition:border-color .12s,background .12s;
 }
 .zona:hover,.zona.sobre{border-color:var(--agua);background:var(--agua-fraca)}
-.zona strong{font-family:"Bricolage Grotesque",sans-serif;font-size:1.2rem}
+.zona strong{font-family:var(--display);font-size:1.2rem}
 .zona span{color:var(--suave);font-size:.95rem}
 
 /* ---------- atalhos e blocos condicionais ---------- */
@@ -267,12 +271,12 @@ input.pendente,select.pendente,textarea.pendente{
 .grade thead th{background:var(--papel2);font-weight:600;position:relative;
   padding-top:1.1rem}
 .grade .col{
-  position:absolute;top:.05rem;left:.5rem;font-family:"JetBrains Mono",monospace;
+  position:absolute;top:.05rem;left:.5rem;font-family:var(--mono);
   font-size:.6rem;font-weight:400;color:var(--suave);letter-spacing:.05em;
 }
 .grade .lin{
   background:var(--papel2);color:var(--suave);text-align:center;width:2rem;
-  font-family:"JetBrains Mono",monospace;font-size:.7rem;
+  font-family:var(--mono);font-size:.7rem;
 }
 .grade .vazia{background:repeating-linear-gradient(45deg,
   transparent,transparent 4px,var(--papel2) 4px,var(--papel2) 8px);min-width:2.5rem}
@@ -316,7 +320,7 @@ input.pendente,select.pendente,textarea.pendente{
   padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.25rem;
 }
 .ficha b{
-  font-family:"Bricolage Grotesque",sans-serif;font-size:2.2rem;font-weight:700;line-height:1;
+  font-family:var(--display);font-size:2.2rem;font-weight:700;line-height:1;
   font-variant-numeric:tabular-nums;
 }
 .ficha span{font-size:.9rem;color:var(--suave);line-height:1.35}
@@ -334,12 +338,12 @@ input.pendente,select.pendente,textarea.pendente{
   vertical-align:top;
 }
 .tabela thead th{
-  font-family:"JetBrains Mono",monospace;font-size:.73rem;font-weight:500;
+  font-family:var(--mono);font-size:.73rem;font-weight:500;
   text-transform:uppercase;letter-spacing:.07em;color:var(--suave);
   background:var(--papel2);white-space:nowrap;
 }
 .tabela tbody tr:last-child td{border-bottom:0}
-.tabela .num{font-family:"JetBrains Mono",monospace;text-align:right}
+.tabela .num{font-family:var(--mono);text-align:right}
 .tabela .apagado{color:var(--suave)}
 
 /* ---------- programa de provas ---------- */
@@ -354,7 +358,7 @@ input.pendente,select.pendente,textarea.pendente{
   letter-spacing:.06em;text-transform:uppercase;color:var(--suave);
 }
 .discordancia{
-  font-family:"JetBrains Mono",monospace;font-size:.72rem;font-weight:600;
+  font-family:var(--mono);font-size:.72rem;font-weight:600;
   color:var(--ambar);background:var(--ambar-fraca);
   padding:.05rem .3rem;border-radius:2px;margin-left:.3rem;
 }
@@ -371,7 +375,7 @@ input.pendente,select.pendente,textarea.pendente{
 .bloco.aviso h3{border-left-color:var(--ambar);color:var(--ambar)}
 .bloco.info h3{border-left-color:var(--info);color:var(--info)}
 .contador{
-  font-family:"JetBrains Mono",monospace;font-size:.7rem;font-weight:500;
+  font-family:var(--mono);font-size:.7rem;font-weight:500;
   background:var(--papel2);color:var(--suave);padding:.1rem .4rem;border-radius:2px;
 }
 .ok-vazio{
@@ -382,7 +386,7 @@ input.pendente,select.pendente,textarea.pendente{
   background:var(--grave-fraca);color:var(--grave);border-radius:4px;
   padding:.9rem 1rem;
 }
-code{font-family:"JetBrains Mono",monospace;font-size:.85em;
+code{font-family:var(--mono);font-size:.85em;
   background:var(--papel2);padding:.05rem .25rem;border-radius:2px}
 
 /* ---------- saídas ---------- */
@@ -394,7 +398,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
   border-radius:4px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.3rem;
 }
 .saida:hover{background:var(--agua-fraca)}
-.saida b{font-family:"Bricolage Grotesque",sans-serif;font-size:1rem}
+.saida b{font-family:var(--display);font-size:1rem}
 .saida span{color:var(--suave);font-size:.84rem;line-height:1.4}
 
 /* ---------- aviso flutuante ---------- */
@@ -427,7 +431,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
   padding:.7rem 0;border-bottom:1px solid var(--linha);
 }
 .linha-exemplo:last-child{border-bottom:0;padding-bottom:0}
-.linha-exemplo b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:.98rem}
+.linha-exemplo b{display:block;font-family:var(--display);font-size:.98rem}
 .linha-exemplo span{color:var(--suave);font-size:.88rem}
 .acoes-exemplo{display:flex;gap:.4rem;flex-wrap:wrap}
 
@@ -436,7 +440,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
 .recem-chegado{animation:chegou 1.2s ease-out}
 @media (prefers-reduced-motion:reduce){.recem-chegado{animation:none}}
 .valor-calculado.veio-do-programa::after{
-  content:"veio do programa";font-family:"JetBrains Mono",monospace;font-size:.62rem;
+  content:"veio do programa";font-family:var(--mono);font-size:.62rem;
   text-transform:uppercase;letter-spacing:.06em;color:var(--agua);
   border:1px solid var(--agua);border-radius:2px;padding:.05rem .3rem;margin-left:.5rem;
 }
@@ -498,7 +502,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
 .bloco.resolvido .contador{background:var(--bom-fraca);color:var(--bom);font-weight:600}
 .bloco.aceito h3{border-left-color:var(--bom);color:var(--bom)}
 .selo-aceito{
-  font-family:"JetBrains Mono",monospace;font-size:.62rem;text-transform:uppercase;
+  font-family:var(--mono);font-size:.62rem;text-transform:uppercase;
   letter-spacing:.06em;color:var(--bom);background:var(--bom-fraca);
   padding:.1rem .4rem;border-radius:2px;
 }
@@ -621,7 +625,7 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
   display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;
   padding:.8rem 1.1rem;border-bottom:1px solid var(--linha);background:var(--papel2);
 }
-.previa-topo b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.05rem}
+.previa-topo b{font-family:var(--display);font-size:1.05rem}
 .previa-topo .apagado{color:var(--suave);font-size:.9rem}
 .previa-topo button{margin-left:auto}
 .previa-corpo{padding:1rem 1.1rem}
@@ -780,7 +784,7 @@ h2 > .link{font-size:.95rem;font-weight:400;margin-left:.7rem;vertical-align:mid
 .amostra-ia .grade thead th{padding-top:.42rem;position:sticky;top:0;z-index:1}
 .amostra-ia .pulo td{color:var(--suave);font-style:italic;background:var(--papel2)}
 mark.codigo{
-  font-family:"JetBrains Mono",monospace;font-size:.86em;font-weight:500;
+  font-family:var(--mono);font-size:.86em;font-weight:500;
   background:var(--agua-fraca);color:var(--agua);padding:.02rem .25rem;border-radius:3px;
 }
 details.texto-exato summary,details.ignoradas summary{
@@ -788,7 +792,7 @@ details.texto-exato summary,details.ignoradas summary{
   text-underline-offset:2px;
 }
 details.texto-exato pre{
-  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.78rem;line-height:1.5;
+  font-family:var(--mono);font-size:.78rem;line-height:1.5;
   white-space:pre-wrap;word-break:break-word;max-height:26rem;overflow:auto;
   background:var(--fundo);border:1px solid var(--linha);border-radius:6px;
   padding:.8rem .9rem;margin:.6rem 0 0;
@@ -809,7 +813,7 @@ details.texto-exato pre{
 .tabela.revisao .origem{white-space:nowrap;color:var(--suave);font-size:.9rem}
 .tabela.revisao .origem b{color:var(--tinta)}
 .tabela.revisao .original{
-  font-family:"JetBrains Mono",monospace;font-size:.82rem;color:var(--suave);
+  font-family:var(--mono);font-size:.82rem;color:var(--suave);
   max-width:28rem;
 }
 .tabela.revisao .original .sep{color:var(--linha)}
@@ -829,7 +833,7 @@ details.texto-exato pre{
 .rev-erro .motivos{color:var(--grave)}
 .rev-ok .motivos{color:var(--suave)}
 .num-prova{
-  font-family:"JetBrains Mono",monospace;font-size:.78rem;font-weight:500;
+  font-family:var(--mono);font-size:.78rem;font-weight:500;
   background:var(--agua-fraca);color:var(--agua);padding:.05rem .35rem;border-radius:3px;
 }
 .filtro-revisao .ativo{border-color:var(--agua);color:var(--agua);font-weight:600}
@@ -871,7 +875,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 .degrau:disabled{cursor:default;opacity:.55}
 .degrau .bolinha{
   width:1.55rem;height:1.55rem;border-radius:50%;display:grid;place-items:center;
-  background:var(--papel2);font-family:"JetBrains Mono",monospace;font-size:.75rem;
+  background:var(--papel2);font-family:var(--mono);font-size:.75rem;
 }
 .degrau.feito{color:var(--bom);border-color:var(--bom)}
 .degrau.feito .bolinha{background:var(--bom);color:var(--papel)}
@@ -897,7 +901,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 .fala.claude{align-self:flex-start}
 .fala.claude .texto{background:var(--papel);border:1px solid var(--linha);border-top-left-radius:5px}
 .fala .quem{
-  font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.08em;
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;
   text-transform:uppercase;color:var(--agua);padding-left:.3rem;
 }
 .fala.eu{align-self:flex-end}
@@ -932,7 +936,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 }
 .cartao-conversa header{display:flex;flex-direction:column;gap:.15rem}
 .cartao-conversa .etapa{
-  font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.09em;
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.09em;
   text-transform:uppercase;color:var(--agua);
 }
 .cartao-conversa h3{font-size:1.35rem}
@@ -955,7 +959,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
   background:var(--papel);color:var(--tinta);
   transition:border-color .15s,background .15s,transform .15s;
 }
-.opcao b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.12rem}
+.opcao b{font-family:var(--display);font-size:1.12rem}
 .opcao span{color:var(--suave);font-size:.95rem;line-height:1.4}
 .opcao:hover,.opcao:focus-visible{border-color:var(--agua);background:var(--agua-fraca);transform:translateY(-2px)}
 .opcao:first-child{border-color:var(--agua)}
@@ -965,7 +969,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
   padding:1.8rem 1rem;border:2px dashed var(--linha);border-radius:14px;cursor:pointer;
   background:var(--fundo);transition:border-color .15s,background .15s;
 }
-.zona-conversa b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.2rem}
+.zona-conversa b{font-family:var(--display);font-size:1.2rem}
 .zona-conversa span{color:var(--suave);font-size:.95rem}
 .zona-conversa:hover,.zona-conversa.sobre{border-color:var(--agua);background:var(--agua-fraca)}
 
@@ -973,7 +977,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 
 .numeros{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr))}
 .numeros div{background:var(--papel2);border-radius:12px;padding:.75rem .9rem;display:flex;flex-direction:column;gap:.1rem}
-.numeros b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
+.numeros b{font-family:var(--display);font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
 .numeros span{color:var(--suave);font-size:.9rem}
 .numeros .ruim b{color:var(--grave)}
 .numeros .bom b{color:var(--bom)}
@@ -981,7 +985,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 .lista-provas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.15rem}
 .lista-provas li{display:flex;gap:.6rem;align-items:baseline;padding:.3rem .2rem;border-bottom:1px solid var(--linha);font-size:1rem}
 .lista-provas li:last-child{border-bottom:0}
-.lista-provas .num{font-family:"JetBrains Mono",monospace;font-size:.82rem;color:var(--suave);min-width:2.2rem}
+.lista-provas .num{font-family:var(--mono);font-size:.82rem;color:var(--suave);min-width:2.2rem}
 .lista-provas .apagado{margin-left:auto;color:var(--suave);font-size:.85rem}
 details.mais summary,details.bloco-conv summary{cursor:pointer}
 details.mais summary{color:var(--agua);font-size:.98rem}
@@ -1013,7 +1017,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 .bloco-corpo .tabela td{font-size:.92rem}
 .bloco-corpo .confirma{margin:0;flex-basis:100%}
 .selo{
-  font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.06em;
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;
   text-transform:uppercase;padding:.15rem .5rem;border-radius:999px;white-space:nowrap;
 }
 .selo.critico{background:var(--grave-fraca);color:var(--grave)}
@@ -1030,10 +1034,10 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 }
 .piscina .serie{display:grid;grid-template-columns:5rem repeat(var(--raias),minmax(7.5rem,1fr));gap:.35rem}
 .piscina .nserie{
-  font-family:"JetBrains Mono",monospace;font-size:.75rem;color:var(--agua);
+  font-family:var(--mono);font-size:.75rem;color:var(--agua);
   display:flex;align-items:center;text-transform:uppercase;letter-spacing:.05em;
 }
-.piscina .cabeca .nraia{text-align:center;font-family:"JetBrains Mono",monospace;font-size:.78rem;color:var(--agua);font-weight:500}
+.piscina .cabeca .nraia{text-align:center;font-family:var(--mono);font-size:.78rem;color:var(--agua);font-weight:500}
 .raia{
   background:var(--papel);border-radius:8px;padding:.45rem .55rem;min-height:4.1rem;
   display:flex;flex-direction:column;gap:.05rem;overflow:hidden;
@@ -1041,7 +1045,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 }
 .raia b{font-size:.86rem;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .raia span{font-size:.75rem;color:var(--suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.raia em{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:.75rem;color:var(--agua);margin-top:auto}
+.raia em{font-style:normal;font-family:var(--mono);font-size:.75rem;color:var(--agua);margin-top:auto}
 .raia.vazia{background:repeating-linear-gradient(135deg,transparent,transparent 6px,var(--papel2) 6px,var(--papel2) 12px);border-bottom-color:transparent}
 .raia.marcada{background:var(--grave-fraca)}
 
@@ -1049,7 +1053,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
   display:flex;gap:1rem;align-items:center;justify-content:space-between;flex-wrap:wrap;
   padding:.8rem 1rem;border:1px solid var(--linha);border-radius:12px;
 }
-.saida-conv b{display:block;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.1rem}
+.saida-conv b{display:block;font-family:var(--display);font-size:1.1rem}
 .saida-conv span{color:var(--suave);font-size:.95rem}
 
 /* a caixa de mensagem, presa embaixo */
@@ -1062,7 +1066,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 }
 .compositor:focus-within{border-color:var(--agua)}
 .compositor textarea{
-  flex:1;border:0;background:transparent;resize:none;font-family:"Instrument Sans",system-ui,sans-serif;
+  flex:1;border:0;background:transparent;resize:none;font-family:var(--texto);
   font-size:1.05rem;line-height:1.45;padding:.5rem .3rem;max-height:11rem;min-width:0;
 }
 .compositor textarea:focus{outline:none}
@@ -1091,7 +1095,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 /* ---------- a IA trabalhando: os passos acendem um a um ---------- */
 .passos-ia{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.55rem}
 .passos-ia li{display:flex;align-items:center;gap:.7rem;color:var(--suave);font-size:1rem}
-.passos-ia li em{font-style:normal;margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--agua)}
+.passos-ia li em{font-style:normal;margin-left:auto;font-family:var(--mono);font-size:.8rem;color:var(--agua)}
 .marca-passo{
   width:1.35rem;height:1.35rem;border-radius:50%;flex:none;border:2px solid var(--linha);
   display:grid;place-items:center;font-size:.75rem;font-weight:700;
@@ -1114,12 +1118,12 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 }
 .linha-org:first-child{border-top:0}
 .linha-org.cabeca{
-  background:var(--papel2);font-family:"JetBrains Mono",monospace;font-size:.7rem;
+  background:var(--papel2);font-family:var(--mono);font-size:.7rem;
   letter-spacing:.07em;color:var(--suave);padding-block:.5rem;
 }
 .org-origem{font-size:.85rem;color:var(--suave);display:flex;flex-direction:column}
 .org-origem b{color:var(--tinta);font-weight:600}
-.org-de{font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--suave);overflow-wrap:anywhere}
+.org-de{font-family:var(--mono);font-size:.8rem;color:var(--suave);overflow-wrap:anywhere}
 .org-de .sep{color:var(--linha)}
 .org-para{font-size:.98rem;line-height:1.45;display:flex;flex-direction:column;gap:.4rem;min-width:0}
 .org-para .motivos{margin:0}
@@ -1194,7 +1198,7 @@ body:not(.na-abertura) .abertura-conv{display:none}
 body.na-abertura #fio,body.na-abertura #compositor,
 body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 .abertura-conv{display:flex;flex-direction:column;gap:1.3rem;padding:2.2rem 0 3rem}
-.abertura-conv .olho{font-family:"JetBrains Mono",monospace;font-size:.78rem;letter-spacing:.14em;
+.abertura-conv .olho{font-family:var(--mono);font-size:.78rem;letter-spacing:.14em;
   text-transform:uppercase;color:var(--agua)}
 .abertura-conv h2{font-size:clamp(2rem,5vw,3.4rem);line-height:1.04;font-weight:800;max-width:17ch;margin:0}
 .abertura-conv h2 em{font-style:normal;color:var(--agua)}
@@ -1211,7 +1215,7 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 .faixa:nth-child(3)::before,.faixa:nth-child(4)::before{--c:#F2C14E}
 .faixa .rotulo{position:relative;z-index:1;display:flex;align-items:center;gap:.55rem;width:9.5rem;flex:none;
   padding-left:.8rem;font-size:.92rem;color:var(--tinta)}
-.faixa .rotulo b{font-family:"JetBrains Mono",monospace;font-size:.78rem;color:var(--agua);
+.faixa .rotulo b{font-family:var(--mono);font-size:.78rem;color:var(--agua);
   width:1.3rem;height:1.3rem;border-radius:50%;border:1px solid var(--agua);display:grid;place-items:center}
 .faixa .nada{position:absolute;top:50%;left:9.5rem;width:2.9rem;transform:translateY(-50%);
   animation:travessia 6.5s calc(var(--k) * .55s) ease-in-out infinite both}
@@ -1240,11 +1244,11 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 .caminho{font:inherit;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:.35rem;
   padding:1.3rem 1.4rem;border-radius:18px;border:1.5px solid var(--linha);background:var(--papel);color:var(--tinta);
   transition:border-color .15s,transform .15s,background .15s}
-.caminho b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.4rem;line-height:1.15}
+.caminho b{font-family:var(--display);font-size:1.4rem;line-height:1.15}
 .caminho > span:last-child{color:var(--suave);font-size:1rem;line-height:1.45}
 .caminho:hover,.caminho:focus-visible{border-color:var(--agua);transform:translateY(-3px)}
 .caminho.principal{background:linear-gradient(150deg,rgba(242,193,78,.16),var(--papel) 70%);border-color:var(--agua)}
-.selo-caminho{align-self:flex-start;font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.08em;
+.selo-caminho{align-self:flex-start;font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;
   text-transform:uppercase;color:var(--papel);background:var(--agua);border-radius:999px;padding:.15rem .6rem}
 .recomecar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;padding:.9rem 1rem;border-radius:14px;
   background:var(--grave-fraca);border:1px solid var(--grave)}
@@ -1289,7 +1293,7 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
   100%{left:.3rem;transform:translateY(-50%) scaleX(1)}}
 .fala.tocou .raia-ia{animation:toque .32s ease-out}
 @keyframes toque{50%{box-shadow:inset -18px 0 18px -8px rgba(242,193,78,.9)}}
-.legenda-raia{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.08em;
+.legenda-raia{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;
   color:var(--suave);text-transform:uppercase}
 
 /* o guia da demonstração: texto do app, nunca fala do Claude */
@@ -1298,9 +1302,9 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
   background:linear-gradient(120deg,var(--agua-fraca),transparent 75%)}
 .guia::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:14px 0 0 14px;
   background:repeating-linear-gradient(180deg,#F2C14E 0 10px,#FFFFFF 10px 13px)}
-.guia-passo{font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.1em;
+.guia-passo{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;
   text-transform:uppercase;color:var(--agua)}
-.guia b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.3rem;line-height:1.2}
+.guia b{font-family:var(--display);font-size:1.3rem;line-height:1.2}
 .guia p{margin:0;color:var(--suave);font-size:1.02rem;line-height:1.5;max-width:64ch}
 
 /* a planilha como chegou, numa folha branca */
@@ -1310,10 +1314,10 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 .folha-conv figcaption{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;padding:.55rem .9rem;
   background:#DDE7EA;font-size:.9rem}
 .folha-conv .arquivo{font-weight:700}
-.folha-conv .aba-nome{font-family:"JetBrains Mono",monospace;font-size:.75rem;background:#FFFFFF;
+.folha-conv .aba-nome{font-family:var(--mono);font-size:.75rem;background:#FFFFFF;
   border:1px solid #C9D6DA;border-radius:6px;padding:.05rem .5rem}
 .folha-conv .apagado{color:#56707A;font-size:.85rem}
-.folha-conv table{border-collapse:collapse;font-family:"JetBrains Mono",monospace;font-size:.78rem;min-width:100%}
+.folha-conv table{border-collapse:collapse;font-family:var(--mono);font-size:.78rem;min-width:100%}
 .folha-conv th{background:#E9EFF1;color:#8A9EA5;font-weight:500;padding:.2rem .5rem;border:1px solid #D2DDE0}
 .folha-conv td{padding:.22rem .55rem;border:1px solid #D2DDE0;white-space:nowrap;background:#FFFFFF;color:#1A2B31}
 .folha-conv td.lin,.folha-conv th.lin{background:#E9EFF1;color:#8A9EA5;text-align:center}
@@ -1323,14 +1327,14 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 @keyframes piscaErro{50%{background:#F6AFA7}}
 .notas-folha{margin:0;padding:.7rem 1rem .8rem 2.3rem;display:flex;flex-direction:column;gap:.25rem;
   font-size:.96rem;background:#FDF1EF;color:#7A2A22}
-.notas-folha b{font-family:"JetBrains Mono",monospace;font-size:.85rem;margin-right:.35rem}
+.notas-folha b{font-family:var(--mono);font-size:.85rem;margin-right:.35rem}
 @keyframes entraLinhaConv{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
 
 /* as correções: folhas brancas com Sim e Não, como no quadro 3 */
 .noite .correcoes{background:rgba(255,255,255,.03);border-color:var(--linha)}
 .correcoes .correcao{background:#F4F7F8;color:#1A2B31;border:0;border-top:4px solid #0B7285;
   box-shadow:0 18px 36px -22px rgba(0,0,0,.8);animation:chegaFolha .6s var(--d,0s) both}
-.correcoes .correcao .rot{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.08em;color:#0B7285}
+.correcoes .correcao .rot{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;color:#0B7285}
 .correcoes .correcao .caso{color:#56707A}
 .correcoes .correcao .pergunta{color:#1A2B31}
 .correcoes .correcao .botao{background:#0B7285;color:#FFFFFF}
@@ -1403,11 +1407,11 @@ html.noite{font-size:15px}
 .noite .fala.claude .texto{background:#0D3D4B;border:1px solid #2B6070;border-left:4px solid var(--agua);
   border-radius:4px 14px 14px 14px;font-size:1rem;line-height:1.5;padding:.7rem .95rem}
 .fala .quem{display:flex;align-items:center;gap:.45rem;text-transform:none;letter-spacing:0;
-  font-family:"Instrument Sans",system-ui,sans-serif;font-size:.85rem;color:var(--tinta);padding-left:0}
+  font-family:var(--texto);font-size:.85rem;color:var(--tinta);padding-left:0}
 .fala .quem b{font-weight:700}
 .fala .quem em{font-style:normal;color:var(--suave);font-size:.78rem}
 .selo-ia{width:1.6rem;height:1.6rem;border-radius:50%;display:grid;place-items:center;flex:none;
-  background:var(--agua);color:var(--papel);font-family:"JetBrains Mono",monospace;font-size:.68rem;font-weight:700}
+  background:var(--agua);color:var(--papel);font-family:var(--mono);font-size:.68rem;font-weight:700}
 .noite .fala.eu .texto{font-size:.98rem;padding:.55rem .9rem}
 .noite .guia b{font-size:1.12rem}
 .noite .guia p{font-size:.95rem}
@@ -1456,7 +1460,7 @@ body.na-demo .compositor{margin-bottom:max(.7rem,env(safe-area-inset-bottom,0px)
 /* as três linhas de cada passo */
 .orienta{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem}
 .orienta li{display:grid;grid-template-columns:8.4rem minmax(0,1fr);gap:.8rem;align-items:baseline}
-.orienta li > span{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.09em;
+.orienta li > span{font-family:var(--mono);font-size:.68rem;letter-spacing:.09em;
   text-transform:uppercase;color:var(--suave);white-space:nowrap}
 .orienta li p{margin:0;font-size:1rem;line-height:1.45;color:var(--tinta)}
 .orienta li.que p,.orienta li.porque p{color:var(--suave)}
@@ -1491,12 +1495,12 @@ body.na-demo .compositor{margin-bottom:max(.7rem,env(safe-area-inset-bottom,0px)
 .noite .piscina{gap:.35rem;padding:.5rem}
 
 /* um problema por vez: o contador e a correção numa folha branca */
-.conta-problema{display:inline-block;vertical-align:.15em;margin-right:.45rem;font-family:"JetBrains Mono",monospace;
+.conta-problema{display:inline-block;vertical-align:.15em;margin-right:.45rem;font-family:var(--mono);
   font-size:.62em;letter-spacing:.06em;color:var(--papel);background:var(--grave);border-radius:999px;padding:.15rem .55rem}
 .correcao-unica{display:flex;flex-direction:column;gap:.45rem;padding:.8rem 1rem;border-radius:12px;
   background:#F4F7F8;color:#1A2B31;border-top:4px solid #0B7285;
   box-shadow:0 18px 36px -22px rgba(0,0,0,.8);animation:chegaFolha .6s both}
-.correcao-unica .rot{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.08em;color:#0B7285}
+.correcao-unica .rot{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;color:#0B7285}
 .correcao-unica .pergunta{margin:0;font-size:1.04rem;line-height:1.4;color:#1A2B31}
 .correcao-unica .botao{background:#0B7285;color:#FFFFFF}
 .correcao-unica .mini.claro{background:#FFFFFF;color:#56707A;border-color:#C9D6DA}
@@ -1509,7 +1513,7 @@ body.na-demo .compositor{margin-bottom:max(.7rem,env(safe-area-inset-bottom,0px)
 .saidas-conv .saida-conv span{font-size:.88rem}
 .fim-demo{display:flex;flex-direction:column;gap:.45rem;padding:.8rem 1rem;border-radius:12px;
   border:1px dashed var(--agua);background:linear-gradient(120deg,var(--agua-fraca),transparent 80%)}
-.fim-demo > b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.12rem}
+.fim-demo > b{font-family:var(--display);font-size:1.12rem}
 .fim-demo ul{margin:0;padding-left:1.15rem;display:flex;flex-direction:column;gap:.15rem;color:var(--suave)}
 
 @media (prefers-reduced-motion:reduce){ .correcao-unica{animation:none} }
@@ -1653,7 +1657,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
     min-height:0;padding:.35rem .6rem .35rem .45rem}
   .cartao-conversa .piscina .raia::before{content:attr(data-raia);grid-area:n;width:1.5rem;height:1.5rem;
     border-radius:50%;display:grid;place-items:center;background:var(--agua-fraca);color:var(--agua);
-    font-family:"JetBrains Mono",monospace;font-size:.74rem;font-weight:700}
+    font-family:var(--mono);font-size:.74rem;font-weight:700}
   .cartao-conversa .piscina .raia b{grid-area:nome;-webkit-line-clamp:1}
   .cartao-conversa .piscina .raia span{grid-area:escola}
   .cartao-conversa .piscina .raia em{grid-area:tempo;margin:0}
@@ -1699,6 +1703,97 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
 @media (max-width:640px){
   .noite .cartao-conversa .org-para .acoes-cartao .botao,.noite .cartao-conversa .org-para .acoes-cartao .mini{padding-inline:.75rem;font-size:.88rem}
 }
+/* =====================================================================
+   O resultado do claude.ai levado ao GitHub: o quadro de lá, com o código,
+   e o quadro daqui, onde o código é colado.
+   ===================================================================== */
+.ponte{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px))
+          max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:rgba(4,14,20,.72)}
+.ponte-caixa{width:min(34rem,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:.7rem;
+  background:var(--papel);color:var(--tinta);border:1px solid var(--linha);border-radius:6px;
+  padding:1.1rem 1.2rem 1rem;box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
+.ponte-caixa h3{margin:0;font-size:1.25rem}
+.ponte-caixa p{margin:0;line-height:1.5}
+.ponte-acoes{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1.2rem}
+.ponte-acoes a.botao{text-decoration:none}
+.ponte-acoes a.botao[aria-disabled]{opacity:.6;pointer-events:none}
+.ponte-estado{color:var(--agua);font-weight:600;min-height:1.2em}
+.ponte-estado:empty{display:none}
+.ponte-codigo textarea{width:100%;box-sizing:border-box;margin-top:.4rem;font-family:monospace;font-size:.78rem;
+  word-break:break-all;background:var(--papel2);color:var(--tinta);border:1px solid var(--linha);border-radius:6px}
+.ponte-fechar{align-self:flex-end}
+.erro-link{border-left:4px solid var(--grave)}
+.erro-link h3{margin:0 0 .3rem}
+.erro-link p{margin:0}
+.recebido-info{border-left:4px solid var(--agua)}
+.recebido-info h3{margin:0 0 .3rem}
+.recebido-info p{margin:.2rem 0}
+.levar-github{margin:.2rem 0 0}
+/* =====================================================================
+   Redesign (novembro de 2026): as fontes e os botões da página inicial.
+   Títulos em Big Shoulders, texto em Atkinson Hyperlegible Next, números e
+   planilha em Atkinson Hyperlegible Mono. O botão principal é amarelo, de
+   canto reto, com uma faixa de corda de raia embaixo que desliza no mouse e
+   no teclado. O secundário é sempre um link sublinhado.
+   ===================================================================== */
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --corda2:#FFFFFF } }
+:root[data-theme="dark"],html.noite{ --corda2:#FFFFFF }
+h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:normal}
+.mono,code,.tabela .num,.numeros b{font-variant-numeric:tabular-nums}
+
+.botao{position:relative;font-family:var(--texto);font-weight:600;line-height:1.2;
+  background:var(--amarelo);color:#1B1A10;border:0;border-radius:4px;margin-bottom:4px;box-shadow:none}
+.botao::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;border-radius:0 0 2px 2px;
+  background:repeating-linear-gradient(90deg,var(--amarelo) 0 12px,var(--corda2) 12px 16px);
+  background-size:16px 4px;transition:background-position .7s ease;pointer-events:none}
+.botao:hover:not(:disabled)::after,.botao:focus-visible::after{background-position:64px 0}
+.botao:focus-visible{outline:2px solid var(--tinta);outline-offset:6px}
+.noite .botao:hover:not(:disabled){filter:none}
+.botao:disabled::after{opacity:.5}
+/* dentro da folha branca da correção, o mesmo botão */
+.correcao-unica .botao,.correcoes .correcao .botao{background:var(--amarelo);color:#1B1A10}
+.correcao-unica,.correcoes .correcao{--corda2:#1E4B58}
+
+/* o secundário: link sublinhado, nunca botão vazado */
+.mini,.mini.claro,.botao.claro,.correcao-unica .mini.claro,.correcoes .correcao .mini.claro{
+  background:none;border:0;border-radius:0;padding:.35rem .15rem;font-family:var(--texto);
+  color:var(--tinta);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.mini:hover,.mini.claro:hover,.botao.claro:hover{color:var(--agua);border-color:transparent}
+.correcao-unica .mini.claro,.correcoes .correcao .mini.claro{color:#1A2B31}
+.mini.ativo{font-weight:600;color:var(--agua)}
+.link{text-underline-offset:3px;text-decoration-thickness:1px}
+
+/* os títulos em Big Shoulders, que é estreita: um pouco maiores */
+.noite .cartao-conversa h3{font-size:1.5rem;line-height:1.05}
+.cartao h3{font-size:1.35rem;line-height:1.1}
+.saida-conv b,.saidas-conv .saida-conv b,.caminho b,.abertura-conv .caminho b{font-size:1.45em}
+.fim-demo > b{font-size:1.4rem}
+/* a abertura do claude.ai igual à da página: título em primeira pessoa,
+   sem rótulo em cima; os dois caminhos como blocos de canto reto, sem gradiente */
+.abertura-conv{grid-template-areas:"titulo piscina" "texto piscina" "caminhos caminhos" "extra extra"}
+@media (max-width:759px){ .abertura-conv{grid-template-areas:"titulo" "texto" "caminhos" "piscina" "extra"} }
+.abertura-conv h2{font-size:3.1em;line-height:.95}
+.abertura-conv .caminho,.caminho{border-radius:6px}
+.caminho.principal{background:var(--papel);border-color:var(--amarelo);box-shadow:inset 0 -4px 0 var(--amarelo)}
+.caminho:hover,.caminho:focus-visible{transform:none;border-color:var(--amarelo)}
+.abertura-conv .piscina-abertura{border-radius:6px}
+/* o passo: uma frase do que fazer, e o porquê fechado num "Por quê?" */
+.orienta{display:flex;flex-direction:column;gap:.3rem;margin:0}
+.orienta .instrucao{margin:0;font-size:1.06rem;line-height:1.45;font-weight:500;color:var(--tinta)}
+.orienta .instrucao b{color:var(--agua)}
+.orienta details.porque summary{cursor:pointer;width:max-content;font-size:.92rem;color:var(--suave);
+  text-decoration:underline;text-underline-offset:3px;list-style:none}
+.orienta details.porque summary::-webkit-details-marker{display:none}
+.orienta details.porque[open] summary{margin-bottom:.15rem}
+.orienta details.porque p{margin:.25rem 0 0;font-size:.95rem;line-height:1.45;color:var(--suave)}
+/* o caso do problema dentro da folha branca, como na cena da página */
+.correcao-unica .caso{margin:0;color:#56707A;font-size:.98rem;line-height:1.45}
+/* anexar também é secundário: link sublinhado */
+.anexar,.noite .anexar{border:0;background:none;border-radius:0;color:var(--tinta);text-decoration:underline;
+  text-underline-offset:3px;text-decoration-thickness:1px}
+.anexar:hover{color:var(--agua)}
 
 </style>
 </head>
@@ -1730,22 +1825,18 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
   <section id="conversa" class="conversa" aria-label="Conversa com o Claude">
     <!-- a abertura: o que é, e os dois caminhos -->
     <div class="abertura-conv" id="aberturaConv">
-      <span class="olho">natação · balizamento · inteligência artificial</span>
-      <h2>A madrugada antes da competição agora cabe <em>numa conversa</em>.</h2>
-      <p class="linha-fina">Antes de uma competição de natação, alguém passa a noite decidindo quem
-        nada com quem e em qual faixa da piscina. Isso é o balizamento. O Claude faz com você:
-        lê as planilhas, arruma as bagunçadas e só muda algo com o seu Sim.</p>
+      <h2>Criado por um árbitro, para o bem do esporte!</h2>
+      <p class="linha-fina">Balizamento é decidir quem nada com quem e em qual faixa da piscina.
+        Você faz isso aqui, com o Claude.</p>
       <div class="piscina-abertura" id="piscinaAbertura" aria-hidden="true"></div>
       <div class="caminhos">
         <button type="button" class="caminho principal" data-caminho="demo">
-          <span class="selo-caminho">uns 3 minutos</span>
           <b>Ver a demonstração</b>
-          <span>Um campeonato inventado, com erros escondidos de propósito. Você vê a IA achar e
-            corrigir cada um.</span>
+          <span>Um campeonato inventado, com erros de propósito. Leva uns 3 minutos.</span>
         </button>
         <button type="button" class="caminho" data-caminho="minhas">
           <b>Começar com as minhas planilhas</b>
-          <span>Envie a lista de provas e a lista de inscritos. O Claude guia o resto.</span>
+          <span>Envie a lista de provas e a lista de inscritos.</span>
         </button>
       </div>
       <div class="recomecar" id="recomecar" hidden>
@@ -1754,8 +1845,8 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
         <button type="button" class="mini claro" id="recomecarNao">Não</button>
       </div>
       <button type="button" class="link" id="continuarConversa" hidden>voltar para onde eu estava</button>
-      <p class="garantia">O Claude usa a sua conta do claude.ai. Nome de atleta nunca vai para
-        ele: vira PESSOA 1, PESSOA 2, e volta a ser nome só na sua tela.</p>
+      <p class="garantia">O Claude usa a sua conta do claude.ai. Os nomes dos atletas vão para
+        ele trocados por código.</p>
     </div>
     <div class="fio" id="fio" aria-live="polite"></div>
     <form class="compositor" id="compositor">
@@ -1773,13 +1864,16 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
   <!-- ============ 1. PROGRAMA DE PROVAS ============ -->
   <section class="tela" data-tela="programa">
     <div class="cartao convite-claude" id="conviteClaude" hidden>
-      <h3>Quer fazer o balizamento conversando?</h3>
+      <h3>Faça o balizamento conversando com o Claude</h3>
       <p class="nota">Aberto no claude.ai, o Balizador funciona como uma conversa
         com o Claude, que conduz cada etapa com você e organiza planilhas fora do
         formato. Aqui, os cinco passos funcionam do jeito de sempre.</p>
       <p><a href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank"
         rel="noopener">Abrir o Balizador no claude.ai</a></p>
     </div>
+
+    <!-- fora do claude.ai: o link que veio de lá não abriu -->
+    <div class="cartao erro-link" id="erroLink" role="alert" hidden></div>
 
     <h2>Comece pelo programa de provas
       <button type="button" class="link" id="btnOqueEPrograma">para que serve?</button></h2>
@@ -1839,7 +1933,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
     </div>
 
     <div class="cartao">
-      <h3>Quer ver uma competição pronta primeiro?</h3>
+      <h3>Veja uma competição pronta primeiro</h3>
       <p class="nota">Quatro competições inventadas, cada uma com o programa e
         os inscritos casando um com o outro. Baixe as duas planilhas de uma
         delas e passe pelo app inteiro sem precisar montar nada.</p>
@@ -1847,7 +1941,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
     </div>
 
     <div class="cartao">
-      <h3>Quer testar a etapa de IA?</h3>
+      <h3>Teste a etapa de IA</h3>
       <p class="nota">Três planilhas de inscritos fora do formato, com dados
         inventados. Baixe o programa do JEPB 2026 aí em cima e depois envie uma
         destas no passo dos inscritos: o app recusa e oferece organizar com IA.</p>
@@ -1857,7 +1951,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
 
   <!-- ============ 2. COMPETIÇÃO ============ -->
   <section class="tela" data-tela="competicao" hidden>
-    <h2>Como é a sua competição?</h2>
+    <h2>A sua competição</h2>
     <p class="sub">Responda o que estiver abaixo. É a partir daqui que o app
       decide o que vai exigir da planilha de inscritos.</p>
 
@@ -1900,7 +1994,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
       </div>
 
       <div class="cartao">
-        <h3>Como é a piscina?</h3>
+        <h3>A piscina</h3>
         <div class="campos">
           <label class="campo">Quantas raias?
             <input id="raias" type="number" min="2" max="12" placeholder="6">
@@ -1921,7 +2015,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
       </div>
 
       <div class="cartao">
-        <h3>O que essa competição tem?</h3>
+        <h3>O que entra na competição</h3>
         <label class="marcavel">
           <input type="checkbox" id="temTempo">
           <span>Tempo de inscrição</span>
@@ -1950,7 +2044,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
       </div>
 
       <div class="cartao">
-        <h3>Quantas provas cada atleta pode nadar?</h3>
+        <h3>Provas por atleta</h3>
         <div class="campos">
           <label class="campo">Individuais
             <input id="limiteInd" type="number" min="1" max="20" placeholder="2">
@@ -1976,7 +2070,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
       </div>
 
       <div class="cartao largo" id="cartaoEtapas">
-        <h3>A competição tem etapas? <span class="opcional" id="etiquetaEtapas">opcional</span></h3>
+        <h3>Etapas <span class="opcional" id="etiquetaEtapas">opcional</span></h3>
         <p class="nota" id="notaEtapas"></p>
         <div class="lista-etapas">
           <div class="cabecalho-lista">
@@ -1991,7 +2085,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
       </div>
 
       <div class="cartao largo">
-        <h3>Alguma categoria nada junto com outra? <span class="opcional">opcional</span></h3>
+        <h3>Categorias que nadam juntas <span class="opcional">opcional</span></h3>
         <p class="nota" id="notaGrupos">Quando duas categorias dividem as mesmas
           raias, o balizamento tem de sair com uma prova só, no nome que o
           programa usa. <b>Onde o programa já traz um <code>+</code> no nome da
@@ -2107,7 +2201,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
 
     <!-- 3c. a etapa opcional de IA: só existe quando a planilha foi recusada -->
     <div id="painelIA" hidden>
-    <h2>Quer que a IA organize esta planilha?</h2>
+    <h2>O Claude pode organizar esta planilha</h2>
     <p class="sub">A IA só lê a planilha e põe cada inscrição no formato do app.
       Séries e raias continuam sendo montadas aqui, pelas regras de sempre, e
       nada segue sem a sua revisão.
@@ -2117,7 +2211,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
 
     <!-- 3d. a revisão humana do que a IA organizou -->
     <div id="painelRevisao" hidden>
-    <h2>Está certo o que a IA organizou?</h2>
+    <h2>Confira o que o Claude organizou</h2>
     <p class="sub">Cada linha mostra a planilha como ela está, ao lado de como a
       inscrição vai entrar no balizamento. Corrija o que estiver errado.</p>
     <div id="telaRevisao"></div>
@@ -2143,7 +2237,10 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
     <p class="sub">Os arquivos são montados aqui no seu computador, sempre, com
       ou sem a etapa de IA. Veja a prévia antes de baixar: é a mesma coisa que
       vai sair no arquivo.</p>
+    <div class="cartao recebido-info" id="recebidoInfo" hidden></div>
     <div id="resumoGerar"></div>
+    <p class="nota levar-github" id="levarGithubNota" hidden>Também dá para
+      <button type="button" class="link" id="levarGithub">abrir este balizamento no app do GitHub</button>.</p>
 
     <div class="cartao">
       <h3>Logos das instituições <span class="opcional">opcional</span></h3>
@@ -9588,19 +9685,27 @@ Para cada linha recebida, devolva:
      claude.ai (o GitHub Pages, o arquivo aberto com duplo clique) as duas não
      existem: a etapa de IA e a conversa somem, e o resto funciona igual.
   ------------------------------------------------------------------ */
-  const claudeApp = { sample: null, downloads: null, pronto: false };
+  // noClaude: a página está aberta dentro do claude.ai (com ou sem as funções)
+  const claudeApp = { sample: null, downloads: null, pronto: false, noClaude: false };
+  // o app sem IA, no GitHub Pages, onde o download funciona para qualquer um
+  const LINK_GITHUB = "https://erickchoai.github.io/balizador/app/";
   // onde o Balizador está publicado no claude.ai, com a IA e a conversa
   const LINK_CLAUDE = "https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6";
 
   async function iniciarClaude() {
     const c = window.claude;
     if (c && typeof c.use === "function") {
+      claudeApp.noClaude = true;
       const usar = (nome) => c.use(nome).catch(() => null);
       const [sample, downloads] = await Promise.all([usar("sample"), usar("downloads")]);
       claudeApp.sample = sample;
       claudeApp.downloads = downloads;
     }
     claudeApp.pronto = true;
+    // fora do claude.ai, o quadro para colar o resultado que veio de lá;
+    // dentro, o link que leva o resultado para o GitHub
+    if (!claudeApp.noClaude) lerDoEndereco();
+    else if ($("#levarGithubNota")) $("#levarGithubNota").hidden = false;
     // com o Claude disponível, o app abre na conversa (balizador.conversa.js)
     if (window.BalizadorConversa) window.BalizadorConversa.iniciar();
   }
@@ -9625,7 +9730,7 @@ Para cada linha recebida, devolva:
     if (claudeApp.pronto && !claudeApp.sample) {
       return `
       <div class="recusa pergunta oferta-ia">
-        <h3>Quer que a IA organize ${parcial ? "as abas ignoradas" : "esta planilha"}?</h3>
+        <h3>O Claude pode organizar ${parcial ? "as abas ignoradas" : "esta planilha"}</h3>
         <p>Isso funciona quando o Balizador é aberto pelo link do claude.ai: a IA
            usa a conta Claude de quem está usando o app, sem chave nenhuma.
            Aqui, corrija a planilha ou baixe a planilha modelo.</p>
@@ -9635,8 +9740,8 @@ Para cada linha recebida, devolva:
     }
     return `
       <div class="recusa pergunta oferta-ia">
-        <h3>${parcial ? "Quer que a IA organize as abas ignoradas?"
-                      : "Quer que a IA organize esta planilha?"}</h3>
+        <h3>${parcial ? "O Claude pode organizar as abas ignoradas"
+                      : "O Claude pode organizar esta planilha"}</h3>
         <p>Ela lê a planilha e põe cada inscrição no formato do app. Séries e
            raias continuam sendo montadas aqui, pelas regras de sempre, e você
            revisa linha por linha antes de seguir.</p>
@@ -9700,7 +9805,7 @@ Para cada linha recebida, devolva:
   function cartaoContaIA() {
     return `
       <div class="cartao">
-        <h3>Com que conta a IA trabalha?</h3>
+        <h3>A conta que a IA usa</h3>
         ${!claudeApp.sample ? `<p class="alerta">A IA só funciona com o Balizador
           aberto pelo link do claude.ai. O resto do app funciona igual.</p>` : ""}
         <p class="nota">Com a sua conta Claude, a mesma em que você entrou no
@@ -9716,7 +9821,7 @@ Para cada linha recebida, devolva:
     const vao = ia.amostra.reduce((s, a) => s + a.linhas.length, 0);
     return `
       <div class="cartao">
-        <h3>O que vai ser enviado?</h3>
+        <h3>O texto que vai ser enviado</h3>
         <div class="fichas">
           <div class="ficha"><b>${vao}</b><span>linhas de ${total}, de
             ${ia.amostra.length} aba(s)</span></div>
@@ -9786,7 +9891,7 @@ Para cada linha recebida, devolva:
     }
     return `
       <div class="cartao">
-        <h3>O que a IA entendeu?</h3>
+        <h3>O que o Claude entendeu</h3>
         <table class="tabela"><thead><tr><th>ABA</th><th>COMO ELA ESTÁ</th>
           <th>INSCRIÇÕES</th><th></th></tr></thead><tbody>${linhas}</tbody></table>
         ${notas.length ? `<p class="nota"><b>Do que a IA não teve certeza:</b></p>
@@ -9803,7 +9908,7 @@ Para cada linha recebida, devolva:
     const p = ia.pedidosAba[aba];
     return `
       <div class="recusa leve">
-        <h3>Mando a aba ${AT(aba)} inteira?</h3>
+        <h3>O Claude precisa ver a aba ${AT(aba)} inteira</h3>
         <p>O mapa não deu conta desta aba. Posso mandar a aba inteira,
           ${g.linhas.length} linhas, com os nomes e as datas trocados por código,
           para a IA transcrever linha a linha. Tudo volta para a mesma revisão.</p>
@@ -9824,7 +9929,7 @@ Para cada linha recebida, devolva:
     const troca = (v) => IA.mascararCelula(v, ia.mascara, ia.voc);
     return `
       <div class="cartao">
-        <h3>E as provas que o app não reconheceu?</h3>
+        <h3>As provas que o app não reconheceu</h3>
         <p class="nota">Em ${n} inscrição(ões) a prova está escrita de um jeito que o
           app não casou sozinho com o programa. Para casar, vão só estes nomes de
           prova e o programa, sem nenhum dado de atleta.</p>
@@ -10292,6 +10397,8 @@ Para cada linha recebida, devolva:
   }
 
   function montar() {
+    // balizamento trazido do claude.ai: já vem pronto e não se monta de novo
+    if (estado.recebido) return;
     const p = lerConfig();
     estado.provas = D.montarBalizamento(inscricoesAjustadas(), p);
     if (p.etapas && p.etapas.length === 0) {
@@ -11618,7 +11725,10 @@ Para cada linha recebida, devolva:
 
   // as que valem: só as que têm imagem de verdade
   function logosParaSaida() {
-    return estado.logos.filter((l) => l && l.dados);
+    const daqui = estado.logos.filter((l) => l && l.dados);
+    // as logos que vieram junto com o resultado do claude.ai, se não houver outras
+    if (!daqui.length && estado.recebido && Array.isArray(estado.recebido.logos)) return estado.recebido.logos;
+    return daqui;
   }
 
   /* ---------------- tela 5: gerar ---------------- */
@@ -11735,6 +11845,9 @@ Para cada linha recebida, devolva:
       }
       return;
     }
+    // dentro do claude.ai sem a função de salvar, o link de download é
+    // bloqueado sem aviso: melhor dizer o que fazer
+    if (claudeApp.noClaude) return abrirPonte({ saida: false });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -11746,6 +11859,181 @@ Para cada linha recebida, devolva:
 
   function baseNome() {
     return (estado.perfil.nome || "BALIZAMENTO").replace(/[\\/:*?"<>|]/g, "").trim();
+  }
+
+  /* ---------------- o resultado levado do claude.ai ao GitHub ----------------
+     No link público do claude.ai a página não pode salvar arquivo. Então o
+     resultado vai dentro de um link para o app do GitHub: o balizamento
+     pronto (provas, séries e raias, a configuração da competição, a
+     conferência e as logos), comprimido, depois do # do endereço. O que vem
+     depois do # o navegador não manda ao servidor, então o GitHub não recebe
+     esses dados. O app de lá lê o link e gera os arquivos com as mesmas
+     funções, a partir dos mesmos dados, e sai igual. */
+  const paraBase64 = (bytes) => {
+    let s = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    // a versão de endereço: sem + / = , que o link estragaria
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  };
+  const deBase64 = (t) => {
+    const b = t.replace(/-/g, "+").replace(/_/g, "/");
+    return Uint8Array.from(atob(b + "===".slice((b.length + 3) % 4)), (c) => c.charCodeAt(0));
+  };
+  const passarPor = async (bytes, fluxo) =>
+    new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(fluxo)).arrayBuffer());
+
+  async function codigoDoResultado() {
+    montar();
+    const dados = { v: 1, quando: new Date().toISOString(), perfil: estado.perfil, provas: estado.provas,
+                    erros: estado.erros, limites: estado.limites, logos: logosParaSaida() };
+    const bytes = new TextEncoder().encode(JSON.stringify(dados));
+    if (typeof CompressionStream !== "function") return "bz0." + paraBase64(bytes);
+    return "bz1." + paraBase64(await passarPor(bytes, new CompressionStream("deflate")));
+  }
+
+  async function linkDoResultado() {
+    return LINK_GITHUB + "#" + await codigoDoResultado();
+  }
+
+  async function lerCodigo(texto) {
+    const m = String(texto || "").replace(/\s+/g, "").match(/bz([01])\.([A-Za-z0-9_-]+)/i);
+    if (!m) throw new Error("Este link não traz um balizamento.");
+    const incompleto = "O link veio cortado. Volte ao claude.ai e abra o link de novo.";
+    let bytes;
+    try { bytes = deBase64(m[2]); } catch (e) { throw new Error(incompleto); }
+    if (m[1] === "1") {
+      if (typeof DecompressionStream !== "function") {
+        throw new Error("Este navegador não abre o link. Use o Chrome, o Edge ou o Safari atualizado.");
+      }
+      try { bytes = await passarPor(bytes, new DecompressionStream("deflate")); }
+      catch (e) { throw new Error(incompleto); }
+    }
+    let dados;
+    try { dados = JSON.parse(new TextDecoder().decode(bytes)); } catch (e) { throw new Error(incompleto); }
+    if (!dados || dados.v !== 1 || !dados.perfil || !Array.isArray(dados.provas)) {
+      throw new Error("Este link não traz um balizamento.");
+    }
+    return dados;
+  }
+
+  // copiar um texto dentro do clique: o jeito novo, o antigo, e por fim deixar selecionado
+  function copiarTexto(texto, caixa) {
+    return new Promise((resolve) => {
+      const antigo = () => {
+        if (!caixa) return resolve(false);
+        caixa.focus();
+        caixa.select();
+        caixa.setSelectionRange(0, caixa.value.length);
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        resolve(ok);
+      };
+      try { navigator.clipboard.writeText(texto).then(() => resolve(true), antigo); }
+      catch (e) { antigo(); }
+    });
+  }
+
+  // no claude.ai: o quadro com o link que abre este balizamento no app do GitHub
+  function abrirPonte(opcoes) {
+    const o = opcoes || {};
+    const velho = $("#ponte");
+    if (velho) velho.remove();
+    const comResultado = !!o.saida && geracaoLiberada();
+    const semSalvar = claudeApp.noClaude && !claudeApp.downloads;
+    const el = document.createElement("div");
+    el.id = "ponte";
+    el.className = "ponte";
+    el.innerHTML = `<div class="ponte-caixa" role="dialog" aria-modal="true" aria-labelledby="ponteTitulo">
+      <h3 id="ponteTitulo">Baixar pelo app do GitHub</h3>
+      <p>${semSalvar ? "Neste link o claude.ai não deixa a página salvar arquivos. " : ""}${comResultado
+        ? "O app do GitHub abre com este mesmo balizamento e baixa os mesmos arquivos."
+        : "No app do GitHub o arquivo baixa normalmente."}</p>
+      ${comResultado ? `<p class="ponte-acoes">
+        <a class="botao" id="ponteAbrir" target="_blank" rel="noopener" aria-disabled="true">Preparando o link</a>
+        <button type="button" class="link" id="ponteCopiar" disabled>Copiar o link para abrir no computador</button></p>
+      <p class="ponte-estado" id="ponteEstado" aria-live="polite"></p>
+      <details class="ponte-codigo"><summary>ver o link</summary>
+        <textarea id="ponteLink" readonly rows="3" aria-label="Link do resultado"></textarea></details>
+      <p class="nota">O link leva os nomes dos atletas. Mande só para quem pode vê-los.
+        O GitHub não recebe esses dados: eles vão depois do # do endereço.</p>`
+      : `<p><a class="botao" href="${LINK_GITHUB}" target="_blank" rel="noopener">Abrir o app do GitHub</a></p>`}
+      <button type="button" class="link ponte-fechar" id="ponteFechar">fechar</button>
+    </div>`;
+    document.body.appendChild(el);
+    const fechar = () => { el.remove(); document.removeEventListener("keydown", tecla); };
+    const tecla = (ev) => { if (ev.key === "Escape") fechar(); };
+    document.addEventListener("keydown", tecla);
+    el.addEventListener("click", (ev) => { if (ev.target === el) fechar(); });
+    $("#ponteFechar").onclick = fechar;
+    if (!comResultado) return;
+    const abrir = $("#ponteAbrir"), copiar = $("#ponteCopiar"), caixa = $("#ponteLink"), estadoTxt = $("#ponteEstado");
+    linkDoResultado().then((link) => {
+      caixa.value = link;
+      abrir.href = link;
+      abrir.removeAttribute("aria-disabled");
+      abrir.textContent = "Abrir no app do GitHub";
+      copiar.disabled = false;
+      abrir.focus();
+    }).catch(() => { estadoTxt.textContent = "Não consegui montar o link. Feche e tente de novo."; });
+    abrir.addEventListener("click", (ev) => { if (!abrir.getAttribute("href")) ev.preventDefault(); });
+    copiar.onclick = async () => {
+      const ok = await copiarTexto(caixa.value, caixa);
+      if (ok) {
+        estadoTxt.textContent = "Link copiado. Mande para você mesmo e abra no computador.";
+        copiar.textContent = "Link copiado";
+        return;
+      }
+      $(".ponte-codigo", el).open = true;
+      caixa.focus();
+      caixa.select();
+      estadoTxt.textContent = "Não consegui copiar sozinho. O link está selecionado: " +
+        "copie com Ctrl+C, ou toque e segure e escolha Copiar.";
+    };
+  }
+
+  // no GitHub: o link que veio do claude.ai abre o balizamento direto na tela de gerar
+  async function lerDoEndereco() {
+    const h = location.hash.slice(1);
+    if (!/^bz[01]\./i.test(h)) return;
+    const erro = $("#erroLink");
+    try {
+      receberResultado(await lerCodigo(h));
+      if (erro) erro.hidden = true;
+    } catch (e) {
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (err) { /* tanto faz */ }
+      if (erro) {
+        erro.innerHTML = `<h3>Não consegui abrir o balizamento</h3><p>${AT((e && e.message) || "O link veio cortado.")}</p>`;
+        erro.hidden = false;
+      }
+    }
+  }
+
+  /* O balizamento que chegou já vem conferido e montado: vai direto para a
+     tela de gerar, e os outros passos ficam trancados para ninguém montar
+     outro por cima sem querer. O endereço perde o # logo em seguida, para os
+     dados não ficarem à vista na barra. */
+  function receberResultado(d) {
+    estado.recebido = d;
+    estado.perfil = Object.assign(perfilPadrao(), d.perfil);
+    estado.provas = d.provas;
+    estado.erros = d.erros || [];
+    estado.limites = d.limites || [];
+    $$(".passo").forEach((p) => p.classList.toggle("bloqueado", p.dataset.passo !== "gerar"));
+    const info = $("#recebidoInfo");
+    if (info) {
+      const atletas = d.provas.reduce((s, p) => s + (p.atletas || 0), 0);
+      const quando = new Date(d.quando);
+      const data = isNaN(quando) ? "" : ` Feito em ${quando.toLocaleDateString("pt-BR")} às ` +
+        `${quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.`;
+      info.innerHTML = `<h3>Balizamento trazido do claude.ai</h3>
+        <p>${AT(estado.perfil.nome || "Competição sem nome")}: ${d.provas.length} provas e ${atletas}
+          atletas.${data} Os arquivos saem com os mesmos dados de lá.</p>
+        <p><a href="${location.pathname}">Começar outro balizamento</a></p>`;
+      info.hidden = false;
+    }
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* tanto faz */ }
+    irPara("gerar");
+    aviso("Balizamento aberto. Os arquivos saem iguais aos do claude.ai.");
   }
 
   function baixarModelo() {
@@ -11873,26 +12161,11 @@ Para cada linha recebida, devolva:
     ao("quantasLogos", "change", renderLogos);
     $$("[data-previa]").forEach((b) =>
       (b.onclick = () => verPrevia(b.dataset.previa)));
-    $("#btnXlsx").onclick = () => {
-      montar();
-      const wb = S.gerarXlsx(estado.provas, estado.perfil,
-                             { erros: estado.erros, limites: estado.limites });
-      const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      baixar(new Blob([out], { type: "application/octet-stream" }),
-             baseNome() + " - BALIZAMENTO.xlsx");
-    };
-    $("#btnPdf").onclick = () => {
-      montar();
-      const doc = S.gerarPdfBalizamento(estado.provas, estado.perfil,
-                                        logosParaSaida());
-      baixar(doc.output("blob"), baseNome() + " - BALIZAMENTO.pdf");
-    };
-    $("#btnPapeletas").onclick = () => {
-      montar();
-      const { doc } = S.gerarPapeletas(estado.provas, estado.perfil,
-                                       logosParaSaida());
-      baixar(doc.output("blob"), baseNome() + " - PAPELETAS.pdf");
-    };
+    // os três arquivos saem de montarSaida, a mesma da prévia e da conversa
+    $("#btnXlsx").onclick = () => baixarSaida("xlsx");
+    $("#btnPdf").onclick = () => baixarSaida("pdf");
+    $("#btnPapeletas").onclick = () => baixarSaida("papeletas");
+    ao("levarGithub", "click", () => abrirPonte({ saida: true }));
     $("#btnPerfilSalvar").onclick = () => {
       const p = lerConfig();
       if (!p.nome) { aviso("Dê um nome à competição antes de salvar."); return; }
@@ -11998,6 +12271,8 @@ Para cada linha recebida, devolva:
   }
 
   function baixarSaida(qual) {
+    // no link público do claude.ai não há como salvar: o resultado vai ao GitHub
+    if (claudeApp.noClaude && !claudeApp.downloads) return abrirPonte({ saida: true });
     const s = montarSaida(qual);
     if (s.tipo === "planilha") {
       const out = XLSX.write(s.wb, { bookType: "xlsx", type: "array" });
@@ -12181,7 +12456,7 @@ Para cada linha recebida, devolva:
   }
 
   window.BalizadorApp = {
-    estado, claudeApp, LINK_CLAUDE,
+    estado, claudeApp, LINK_CLAUDE, LINK_GITHUB, abrirPonte, linkDoResultado, lerCodigo,
     lerConfig, validarConfig, atualizarPreviaData, montar, montarSecoes,
     renderConferencia, irPara, mostrarPainel, liberar, aviso,
     carregarPrograma, carregarArquivo, seguirSemPrograma, juncoesDoPrograma,
@@ -12336,11 +12611,10 @@ Para cada linha recebida, devolva:
     return util;
   }
 
-  /* No celular, o cartão que não cabe na tela vira dois passos. Primeiro vêm
-     o que é e por que importa, com Continuar. Depois vêm o que fazer, a
-     planilha (ou a piscina, a tabela) e os botões. Nada some: vem em duas
-     vezes, e dá para voltar à explicação. No cartão dos arquivos, a divisão
-     é antes do fim da demonstração. */
+  /* No celular, o cartão dos arquivos que não cabe na tela vira dois passos:
+     primeiro os arquivos, com Continuar, depois o fim da demonstração. Nos
+     outros cartões o porquê já fica fechado no "Por quê?", e a planilha ou a
+     piscina encolhe por dentro para o cartão caber. */
   const CELULAR = 640;
   function paginar(el, direto) {
     if (!el || !el.isConnected || el.classList.contains("antigo") || el.dataset.partes) return;
@@ -12355,13 +12629,7 @@ Para cada linha recebida, devolva:
     if (fim) {
       const i = filhos.indexOf(fim);
       p1 = filhos.slice(0, i); p2 = filhos.slice(i); depoisDe = filhos[i - 1];
-    } else {
-      const ori = $(":scope > .orienta", corpo);
-      if (!ori) return;
-      p1 = $$(":scope > li.que, :scope > li.porque", ori);
-      p2 = [$(":scope > li.fazer", ori), ...filhos.filter((f) => f !== ori)].filter(Boolean);
-      depoisDe = ori;
-    }
+    } else return;
     if (!p1.length || !p2.length || !depoisDe) return;
     p1.forEach((x) => x.classList.add("so-parte-1"));
     p2.forEach((x) => x.classList.add("so-parte-2"));
@@ -12372,10 +12640,8 @@ Para cada linha recebida, devolva:
     const volta = document.createElement("button");
     volta.type = "button";
     volta.className = "link volta-parte parte-extra so-parte-2";
-    volta.textContent = fim ? "voltar aos arquivos" : "rever a explicação";
-    // o link de voltar vai no fim da linha "o que fazer", para não gastar uma linha
-    const fazer = fim ? null : $(":scope > .orienta > li.fazer p", corpo);
-    (fazer || corpo).appendChild(volta);
+    volta.textContent = "voltar aos arquivos";
+    corpo.appendChild(volta);
     el.dataset.partes = "2";
     const mostrar = (n) => {
       el.classList.toggle("parte-1", n === 1);
@@ -12424,13 +12690,17 @@ Para cada linha recebida, devolva:
     el.setAttribute("inert", "");
   }
 
-  /* As três linhas que orientam cada passo, cada uma com uma ideia só: o que
-     é, por que importa e o que fazer agora. */
+  /* Cada passo diz o que fazer numa frase. O que é e por que importa ficam
+     num "Por quê?" que abre ao tocar: quem já sabe segue direto, quem nunca
+     viu uma competição abre e lê. */
   function orienta(o) {
-    const L = [["que", "O que é"], ["porque", "Por que importa"], ["fazer", "O que fazer"]]
-      .filter(([k]) => o && o[k]);
-    return L.length ? `<ul class="orienta">${L.map(([k, rot]) =>
-      `<li class="${k}"><span>${rot}</span><p>${o[k]}</p></li>`).join("")}</ul>` : "";
+    if (!o) return "";
+    const instrucao = o.fazer || o.que || o.porque || "";
+    const resto = [o.fazer ? o.que : null, (o.fazer || o.que) ? o.porque : null].filter(Boolean);
+    if (!instrucao) return "";
+    return `<div class="orienta"><p class="instrucao">${instrucao}</p>${resto.length
+      ? `<details class="porque"><summary>Por quê?</summary>${resto.map((t) => `<p>${t}</p>`).join("")}</details>`
+      : ""}</div>`;
   }
 
   function bolha(quem, html) {
@@ -12473,7 +12743,7 @@ Para cada linha recebida, devolva:
     el.dataset.tipo = tipo;
     el.id = "cartao" + (++conv.numero);
     el.innerHTML = `
-      <header><span class="etapa">${rotuloEtapa(etapa)}</span><h3>${titulo}</h3></header>
+      <header><h3>${titulo}</h3></header>
       <p class="resumo">${AT(resumo || titulo)}</p>
       <div class="corpo">${corpo}</div>`;
     // a fala da pessoa e as notas do app não seguram a tela: o cartão sim
@@ -12637,8 +12907,8 @@ Para cada linha recebida, devolva:
 
   /* ---------------- a demonstração guiada ----------------
      Um campeonato inventado, com erros plantados de propósito, num passo de
-     cada vez. Cada passo é um cartão que cabe na tela, com três linhas: o que
-     é, por que importa e o que fazer. A pessoa segue clicando; nada anda
+     cada vez. Cada passo é um cartão que cabe na tela, com uma frase do que
+     fazer e o porquê num "Por quê?" que abre ao tocar. A pessoa segue clicando; nada anda
      sozinho. O Claude de verdade faz o trabalho de IA e fala antes dos
      cartões em que ele age; se ele demorar ou falhar, entra a resposta de
      reserva preparada para estas planilhas, com aviso na tela. */
@@ -12724,8 +12994,8 @@ Para cada linha recebida, devolva:
     const d = E.demoInscritos();
     return passoFolha("folha-inscritos", "Inscritos", "Esta é a ficha que as escolas mandaram", d, false, {
       que: "Uma aba por escola. O X ou o tempo diz em que prova cada atleta vai nadar.",
-      porque: "Escondemos 2 erros, em vermelho: um tempo sem a vírgula e um atleta repetido.",
-      fazer: "Clique em <b>Entregar ao app</b>. Ele tem de achar os dois sozinho.",
+      porque: "Um tempo sem a vírgula e um atleta repetido são erros comuns de ficha.",
+      fazer: "Escondemos 2 erros em vermelho. Clique em <b>Entregar ao app</b> e veja se ele acha os dois.",
     }, "Entregar ao app", "Ficha das escolas", () => receberArquivo(arquivoDe(d.wb, d.nome), "inscritos"));
   }
 
@@ -12791,7 +13061,7 @@ Para cada linha recebida, devolva:
     const programa = tipo === "programa";
     const id = "anexo" + (conv.numero + 1);
     return cartao("arquivo-" + tipo, programa ? "Programa" : "Inscritos",
-      programa ? "Onde está a lista de provas?" : "Onde está a lista de inscritos?", `
+      programa ? "Envie a lista de provas" : "Envie a lista de inscritos", `
       ${orienta(programa ? {
         que: "A planilha com as provas do campeonato, na ordem, como 50 m livre.",
         fazer: "Arraste a planilha para o quadro abaixo, ou clique nele para escolher.",
@@ -12907,7 +13177,7 @@ Para cada linha recebida, devolva:
     const principais = CAMPOS.filter((c) => PRINCIPAIS.includes(c[0]))
       .map((c) => (c[0] === "nomeComp" ? [c[0], c[1], c[2], ""] : c));
     const outros = CAMPOS.filter((c) => !PRINCIPAIS.includes(c[0]));
-    return cartao("competicao", "Competição", "Como é a competição?", `
+    return cartao("competicao", "Competição", "Confira a competição", `
       ${orienta(falta && falta.length ? {
         fazer: "Preencha o que falta, logo abaixo, e clique em <b>Confirmar a competição</b>.",
       } : {
@@ -13118,12 +13388,12 @@ Para cada linha recebida, devolva:
       const props = lista.filter((y) => y.tipo === "correcao").length;
       return cartao("problema", "Conferência", `${conta} ${AT(s ? s.titulo : "Correção proposta")}`, `
         ${orienta({
-          que: AT(x.p.caso),
           porque,
-          fazer: "<b>Sim</b> aplica a correção abaixo. <b>Não</b> deixa como está, e você decide depois.",
+          fazer: "<b>Sim</b> aplica a correção. <b>Não</b> deixa como está, e você decide depois.",
         })}
         <div class="correcao-unica" data-correcao="${AT(x.p.id)}">
           <span class="rot">CORREÇÃO PROPOSTA</span>
+          <p class="caso">${AT(x.p.caso)}</p>
           <p class="pergunta"><b>${AT(x.p.pergunta)}</b></p>
           <div class="acoes-cartao">
             <button type="button" class="botao" data-acao="correcao_sim">Sim, corrigir</button>
@@ -13135,9 +13405,8 @@ Para cada linha recebida, devolva:
     }
     return cartao("problema", "Conferência", `${conta} ${AT(s.titulo)}`, `
       ${orienta({
-        que: `${s.itens.length === 1 ? "1 caso" : s.itens.length + " casos"} que o app não sabe corrigir sozinho.`,
         porque,
-        fazer: "Peça ao Claude para explicar, resolva na tela completa ou siga assim mesmo.",
+        fazer: `O app não corrige ${s.itens.length === 1 ? "este caso" : `estes ${s.itens.length} casos`} sozinho. Peça ao Claude para explicar, resolva na tela completa ou siga assim mesmo.`,
       })}
       <div class="rola-tabela">${tabelaItens(s, 4)}</div>
       <div class="acoes-cartao" data-bloco="${AT(s.id)}" data-titulo="${AT(s.titulo)}">
@@ -13253,9 +13522,8 @@ Para cada linha recebida, devolva:
         <button type="button" class="link" data-acao="previa_${q}">ver a prévia</button></div></div>`;
     const fim = conv.demo ? `<div class="fim-demo">
         <b>Fim da demonstração</b>
-        <ul><li>A IA corrigiu a lista de provas e reescreveu a ficha das escolas.</li>
-          <li>O app conferiu tudo e montou as séries pelas regras.</li>
-          <li>Nada mudou sem o seu Sim.</li></ul>
+        <ul><li>O Claude corrigiu a lista de provas e reescreveu a ficha das escolas.</li>
+          <li>O app conferiu tudo e montou as séries pela regra.</li></ul>
         <div class="acoes-cartao">
           <button type="button" class="botao" data-recomecar="minhas">Começar com as minhas planilhas</button>
           <button type="button" class="mini claro" data-recomecar="demo">Ver a demonstração de novo</button>
@@ -13270,6 +13538,8 @@ Para cada linha recebida, devolva:
         ${item("papeletas", "Papeletas de raia", "O papel do cronometrista de cada raia.")}
         ${item("xlsx", "Planilha", "Tudo editável no Excel.")}
       </div>
+      <p class="nota levar-github">Também dá para <button type="button" class="link"
+        data-acao="levar_github">abrir este balizamento no app do GitHub</button>.</p>
       ${conv.demo ? "" : `<p class="nota">As logos das instituições entram pela tela completa.
         <button type="button" class="link" data-acao="tela_gerar">pôr as logos</button></p>`}
       ${fim}`,
@@ -13334,7 +13604,7 @@ Para cada linha recebida, devolva:
     if (!o) return nota("Não há planilha recusada esperando a IA.");
     const total = o.amostra.reduce((s, x) => s + x.total, 0);
     const vao = o.amostra.reduce((s, x) => s + x.linhas.length, 0);
-    return cartao("organizar", "Inscritos", "A IA pode reescrever esta planilha?", `
+    return cartao("organizar", "Inscritos", "O Claude pode reescrever esta planilha", `
       ${orienta({
         que: "A IA olha como a planilha está montada e diz onde está cada coisa.",
         porque: "Assim o app consegue ler a ficha do jeito que ela veio.",
@@ -13425,7 +13695,7 @@ Para cada linha recebida, devolva:
     const o = org, g = o.grades.find((x) => x.aba === aba);
     if (!o.pedidosAba[aba]) o.pedidosAba[aba] = IA.pedidoDaAbaInteira(g, o.mascara, o.voc, app().lerConfig());
     const p = o.pedidosAba[aba];
-    return cartao("aba-inteira", "Inscritos", `Posso mandar a aba ${AT(aba)} inteira?`, `
+    return cartao("aba-inteira", "Inscritos", `O Claude precisa ver a aba ${AT(aba)} inteira`, `
       <p>O mapa não deu conta desta aba. Com ela inteira, ${g.linhas.length} linhas com os nomes e as
         datas trocados por código, eu transcrevo inscrição por inscrição. Tudo volta para a mesma
         tabela, para você conferir.</p>
@@ -13470,7 +13740,7 @@ Para cada linha recebida, devolva:
     const o = org;
     const troca = (v) => IA.mascararCelula(v, o.mascara, o.voc);
     const n = o.pendentes.reduce((s, p) => s + p.linhas.length, 0);
-    return cartao("provas-ia", "Inscritos", "A IA pode ligar estas provas às da lista?", `
+    return cartao("provas-ia", "Inscritos", "O Claude pode ligar estas provas às da lista", `
       ${orienta({
         que: `A ficha escreve o nome das provas ${o.pendentes.length === 1 ? "de um jeito diferente" : `de ${o.pendentes.length} jeitos diferentes`} da lista.`,
         porque: "Cada inscrição precisa cair na prova certa da lista.",
@@ -13631,7 +13901,7 @@ Para cada linha recebida, devolva:
     if (!ruins.length) return cartaoPrograma();
     const pedido = IA.pedidoDoPrograma(ruins, r.provas);
     corrProg = { r, ruins, pedido, itens: null, decisao: {} };
-    return cartao("proposta-programa", "Programa", `A IA pode corrigir ${ruins.length === 1 ? "esta linha" : `estas ${ruins.length} linhas`}?`, `
+    return cartao("proposta-programa", "Programa", `O Claude pode corrigir ${ruins.length === 1 ? "esta linha" : `estas ${ruins.length} linhas`}`, `
       ${orienta({
         porque: "A prova de uma linha que o app não entende ficaria de fora.",
         fazer: "Clique em <b>Sim</b>. A IA sugere a correção, e você confere uma por uma.",
@@ -13889,11 +14159,13 @@ Para cada linha recebida, devolva:
         return;
       }
       case "tela_gerar": return irParaTela("gerar");
+      case "levar_github": return a.abrirPonte({ saida: true });
       default:
         if (nome.startsWith("baixar_")) {
           const q = nome.slice(7);
           await a.baixarSaida(q);
-          conv.baixados.add(q);
+          // no link público o arquivo não sai daqui: vai pelo GitHub, não conta como baixado
+          if (!a.claudeApp.noClaude || a.claudeApp.downloads) conv.baixados.add(q);
           return renderTrilha();
         }
         if (nome.startsWith("previa_")) {
@@ -14289,7 +14561,7 @@ O caminho tem cinco etapas, nesta ordem:
 5. Arquivos: o PDF do balizamento, as papeletas e a planilha.
 
 Como conduzir:
-- Uma coisa de cada vez, em uma frase curta (no máximo duas): o que você viu, em palavras simples. O cartão que vem depois diz por que importa e o que fazer. Os cartões aparecem logo depois da sua fala e mostram os detalhes e os botões Sim e Não: não repita o que eles mostram nem descreva os botões.
+- Uma coisa de cada vez, em uma frase curta (no máximo duas): o que você viu, em palavras simples. O cartão que vem depois diz o que fazer, e o porquê fica num "Por quê?" que a pessoa abre se quiser. Os cartões aparecem logo depois da sua fala e mostram os detalhes e os botões Sim e Não: não repita o que eles mostram nem descreva os botões.
 - Sempre que a próxima ação for da pessoa, chame a ferramenta mostrar com o cartão certo, para ela agir ali mesmo. Não chame mostrar para um cartão que a mensagem diz que vai aparecer depois da sua fala.
 - Nunca escreva uma chamada de ferramenta como texto (nada de tool_call, JSON de ferramenta ou marcação parecida). Se não tiver a ferramenta, só fale.
 - Competição: depois do programa, proponha valores com base nele (revezamento quando há provas 4x; paradesporto quando há categorias paralímpicas ou segmentos DF, DV, DI, DA, TEA) e pergunte o que só a pessoa sabe, principalmente quantas raias tem a piscina e quantas provas individuais cada atleta pode nadar. Quando ela responder, preencha com preencher_competicao e peça para conferir no cartão. Use confirmar_competicao só quando ela disser que está certo.

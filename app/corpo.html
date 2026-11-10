@@ -25,22 +25,18 @@
   <section id="conversa" class="conversa" aria-label="Conversa com o Claude">
     <!-- a abertura: o que é, e os dois caminhos -->
     <div class="abertura-conv" id="aberturaConv">
-      <span class="olho">natação · balizamento · inteligência artificial</span>
-      <h2>A madrugada antes da competição agora cabe <em>numa conversa</em>.</h2>
-      <p class="linha-fina">Antes de uma competição de natação, alguém passa a noite decidindo quem
-        nada com quem e em qual faixa da piscina. Isso é o balizamento. O Claude faz com você:
-        lê as planilhas, arruma as bagunçadas e só muda algo com o seu Sim.</p>
+      <h2>Criado por um árbitro, para o bem do esporte!</h2>
+      <p class="linha-fina">Balizamento é decidir quem nada com quem e em qual faixa da piscina.
+        Você faz isso aqui, com o Claude.</p>
       <div class="piscina-abertura" id="piscinaAbertura" aria-hidden="true"></div>
       <div class="caminhos">
         <button type="button" class="caminho principal" data-caminho="demo">
-          <span class="selo-caminho">uns 3 minutos</span>
           <b>Ver a demonstração</b>
-          <span>Um campeonato inventado, com erros escondidos de propósito. Você vê a IA achar e
-            corrigir cada um.</span>
+          <span>Um campeonato inventado, com erros de propósito. Leva uns 3 minutos.</span>
         </button>
         <button type="button" class="caminho" data-caminho="minhas">
           <b>Começar com as minhas planilhas</b>
-          <span>Envie a lista de provas e a lista de inscritos. O Claude guia o resto.</span>
+          <span>Envie a lista de provas e a lista de inscritos.</span>
         </button>
       </div>
       <div class="recomecar" id="recomecar" hidden>
@@ -49,8 +45,8 @@
         <button type="button" class="mini claro" id="recomecarNao">Não</button>
       </div>
       <button type="button" class="link" id="continuarConversa" hidden>voltar para onde eu estava</button>
-      <p class="garantia">O Claude usa a sua conta do claude.ai. Nome de atleta nunca vai para
-        ele: vira PESSOA 1, PESSOA 2, e volta a ser nome só na sua tela.</p>
+      <p class="garantia">O Claude usa a sua conta do claude.ai. Os nomes dos atletas vão para
+        ele trocados por código.</p>
     </div>
     <div class="fio" id="fio" aria-live="polite"></div>
     <form class="compositor" id="compositor">
@@ -68,13 +64,16 @@
   <!-- ============ 1. PROGRAMA DE PROVAS ============ -->
   <section class="tela" data-tela="programa">
     <div class="cartao convite-claude" id="conviteClaude" hidden>
-      <h3>Quer fazer o balizamento conversando?</h3>
+      <h3>Faça o balizamento conversando com o Claude</h3>
       <p class="nota">Aberto no claude.ai, o Balizador funciona como uma conversa
         com o Claude, que conduz cada etapa com você e organiza planilhas fora do
         formato. Aqui, os cinco passos funcionam do jeito de sempre.</p>
       <p><a href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank"
         rel="noopener">Abrir o Balizador no claude.ai</a></p>
     </div>
+
+    <!-- fora do claude.ai: o link que veio de lá não abriu -->
+    <div class="cartao erro-link" id="erroLink" role="alert" hidden></div>
 
     <h2>Comece pelo programa de provas
       <button type="button" class="link" id="btnOqueEPrograma">para que serve?</button></h2>
@@ -134,7 +133,7 @@
     </div>
 
     <div class="cartao">
-      <h3>Quer ver uma competição pronta primeiro?</h3>
+      <h3>Veja uma competição pronta primeiro</h3>
       <p class="nota">Quatro competições inventadas, cada uma com o programa e
         os inscritos casando um com o outro. Baixe as duas planilhas de uma
         delas e passe pelo app inteiro sem precisar montar nada.</p>
@@ -142,7 +141,7 @@
     </div>
 
     <div class="cartao">
-      <h3>Quer testar a etapa de IA?</h3>
+      <h3>Teste a etapa de IA</h3>
       <p class="nota">Três planilhas de inscritos fora do formato, com dados
         inventados. Baixe o programa do JEPB 2026 aí em cima e depois envie uma
         destas no passo dos inscritos: o app recusa e oferece organizar com IA.</p>
@@ -152,7 +151,7 @@
 
   <!-- ============ 2. COMPETIÇÃO ============ -->
   <section class="tela" data-tela="competicao" hidden>
-    <h2>Como é a sua competição?</h2>
+    <h2>A sua competição</h2>
     <p class="sub">Responda o que estiver abaixo. É a partir daqui que o app
       decide o que vai exigir da planilha de inscritos.</p>
 
@@ -195,7 +194,7 @@
       </div>
 
       <div class="cartao">
-        <h3>Como é a piscina?</h3>
+        <h3>A piscina</h3>
         <div class="campos">
           <label class="campo">Quantas raias?
             <input id="raias" type="number" min="2" max="12" placeholder="6">
@@ -216,7 +215,7 @@
       </div>
 
       <div class="cartao">
-        <h3>O que essa competição tem?</h3>
+        <h3>O que entra na competição</h3>
         <label class="marcavel">
           <input type="checkbox" id="temTempo">
           <span>Tempo de inscrição</span>
@@ -245,7 +244,7 @@
       </div>
 
       <div class="cartao">
-        <h3>Quantas provas cada atleta pode nadar?</h3>
+        <h3>Provas por atleta</h3>
         <div class="campos">
           <label class="campo">Individuais
             <input id="limiteInd" type="number" min="1" max="20" placeholder="2">
@@ -271,7 +270,7 @@
       </div>
 
       <div class="cartao largo" id="cartaoEtapas">
-        <h3>A competição tem etapas? <span class="opcional" id="etiquetaEtapas">opcional</span></h3>
+        <h3>Etapas <span class="opcional" id="etiquetaEtapas">opcional</span></h3>
         <p class="nota" id="notaEtapas"></p>
         <div class="lista-etapas">
           <div class="cabecalho-lista">
@@ -286,7 +285,7 @@
       </div>
 
       <div class="cartao largo">
-        <h3>Alguma categoria nada junto com outra? <span class="opcional">opcional</span></h3>
+        <h3>Categorias que nadam juntas <span class="opcional">opcional</span></h3>
         <p class="nota" id="notaGrupos">Quando duas categorias dividem as mesmas
           raias, o balizamento tem de sair com uma prova só, no nome que o
           programa usa. <b>Onde o programa já traz um <code>+</code> no nome da
@@ -402,7 +401,7 @@
 
     <!-- 3c. a etapa opcional de IA: só existe quando a planilha foi recusada -->
     <div id="painelIA" hidden>
-    <h2>Quer que a IA organize esta planilha?</h2>
+    <h2>O Claude pode organizar esta planilha</h2>
     <p class="sub">A IA só lê a planilha e põe cada inscrição no formato do app.
       Séries e raias continuam sendo montadas aqui, pelas regras de sempre, e
       nada segue sem a sua revisão.
@@ -412,7 +411,7 @@
 
     <!-- 3d. a revisão humana do que a IA organizou -->
     <div id="painelRevisao" hidden>
-    <h2>Está certo o que a IA organizou?</h2>
+    <h2>Confira o que o Claude organizou</h2>
     <p class="sub">Cada linha mostra a planilha como ela está, ao lado de como a
       inscrição vai entrar no balizamento. Corrija o que estiver errado.</p>
     <div id="telaRevisao"></div>
@@ -438,7 +437,10 @@
     <p class="sub">Os arquivos são montados aqui no seu computador, sempre, com
       ou sem a etapa de IA. Veja a prévia antes de baixar: é a mesma coisa que
       vai sair no arquivo.</p>
+    <div class="cartao recebido-info" id="recebidoInfo" hidden></div>
     <div id="resumoGerar"></div>
+    <p class="nota levar-github" id="levarGithubNota" hidden>Também dá para
+      <button type="button" class="link" id="levarGithub">abrir este balizamento no app do GitHub</button>.</p>
 
     <div class="cartao">
       <h3>Logos das instituições <span class="opcional">opcional</span></h3>

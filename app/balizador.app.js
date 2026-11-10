@@ -1483,19 +1483,27 @@
      claude.ai (o GitHub Pages, o arquivo aberto com duplo clique) as duas não
      existem: a etapa de IA e a conversa somem, e o resto funciona igual.
   ------------------------------------------------------------------ */
-  const claudeApp = { sample: null, downloads: null, pronto: false };
+  // noClaude: a página está aberta dentro do claude.ai (com ou sem as funções)
+  const claudeApp = { sample: null, downloads: null, pronto: false, noClaude: false };
+  // o app sem IA, no GitHub Pages, onde o download funciona para qualquer um
+  const LINK_GITHUB = "https://erickchoai.github.io/balizador/app/";
   // onde o Balizador está publicado no claude.ai, com a IA e a conversa
   const LINK_CLAUDE = "https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6";
 
   async function iniciarClaude() {
     const c = window.claude;
     if (c && typeof c.use === "function") {
+      claudeApp.noClaude = true;
       const usar = (nome) => c.use(nome).catch(() => null);
       const [sample, downloads] = await Promise.all([usar("sample"), usar("downloads")]);
       claudeApp.sample = sample;
       claudeApp.downloads = downloads;
     }
     claudeApp.pronto = true;
+    // fora do claude.ai, o quadro para colar o resultado que veio de lá;
+    // dentro, o link que leva o resultado para o GitHub
+    if (!claudeApp.noClaude) lerDoEndereco();
+    else if ($("#levarGithubNota")) $("#levarGithubNota").hidden = false;
     // com o Claude disponível, o app abre na conversa (balizador.conversa.js)
     if (window.BalizadorConversa) window.BalizadorConversa.iniciar();
   }
@@ -1520,7 +1528,7 @@
     if (claudeApp.pronto && !claudeApp.sample) {
       return `
       <div class="recusa pergunta oferta-ia">
-        <h3>Quer que a IA organize ${parcial ? "as abas ignoradas" : "esta planilha"}?</h3>
+        <h3>O Claude pode organizar ${parcial ? "as abas ignoradas" : "esta planilha"}</h3>
         <p>Isso funciona quando o Balizador é aberto pelo link do claude.ai: a IA
            usa a conta Claude de quem está usando o app, sem chave nenhuma.
            Aqui, corrija a planilha ou baixe a planilha modelo.</p>
@@ -1530,8 +1538,8 @@
     }
     return `
       <div class="recusa pergunta oferta-ia">
-        <h3>${parcial ? "Quer que a IA organize as abas ignoradas?"
-                      : "Quer que a IA organize esta planilha?"}</h3>
+        <h3>${parcial ? "O Claude pode organizar as abas ignoradas"
+                      : "O Claude pode organizar esta planilha"}</h3>
         <p>Ela lê a planilha e põe cada inscrição no formato do app. Séries e
            raias continuam sendo montadas aqui, pelas regras de sempre, e você
            revisa linha por linha antes de seguir.</p>
@@ -1595,7 +1603,7 @@
   function cartaoContaIA() {
     return `
       <div class="cartao">
-        <h3>Com que conta a IA trabalha?</h3>
+        <h3>A conta que a IA usa</h3>
         ${!claudeApp.sample ? `<p class="alerta">A IA só funciona com o Balizador
           aberto pelo link do claude.ai. O resto do app funciona igual.</p>` : ""}
         <p class="nota">Com a sua conta Claude, a mesma em que você entrou no
@@ -1611,7 +1619,7 @@
     const vao = ia.amostra.reduce((s, a) => s + a.linhas.length, 0);
     return `
       <div class="cartao">
-        <h3>O que vai ser enviado?</h3>
+        <h3>O texto que vai ser enviado</h3>
         <div class="fichas">
           <div class="ficha"><b>${vao}</b><span>linhas de ${total}, de
             ${ia.amostra.length} aba(s)</span></div>
@@ -1681,7 +1689,7 @@
     }
     return `
       <div class="cartao">
-        <h3>O que a IA entendeu?</h3>
+        <h3>O que o Claude entendeu</h3>
         <table class="tabela"><thead><tr><th>ABA</th><th>COMO ELA ESTÁ</th>
           <th>INSCRIÇÕES</th><th></th></tr></thead><tbody>${linhas}</tbody></table>
         ${notas.length ? `<p class="nota"><b>Do que a IA não teve certeza:</b></p>
@@ -1698,7 +1706,7 @@
     const p = ia.pedidosAba[aba];
     return `
       <div class="recusa leve">
-        <h3>Mando a aba ${AT(aba)} inteira?</h3>
+        <h3>O Claude precisa ver a aba ${AT(aba)} inteira</h3>
         <p>O mapa não deu conta desta aba. Posso mandar a aba inteira,
           ${g.linhas.length} linhas, com os nomes e as datas trocados por código,
           para a IA transcrever linha a linha. Tudo volta para a mesma revisão.</p>
@@ -1719,7 +1727,7 @@
     const troca = (v) => IA.mascararCelula(v, ia.mascara, ia.voc);
     return `
       <div class="cartao">
-        <h3>E as provas que o app não reconheceu?</h3>
+        <h3>As provas que o app não reconheceu</h3>
         <p class="nota">Em ${n} inscrição(ões) a prova está escrita de um jeito que o
           app não casou sozinho com o programa. Para casar, vão só estes nomes de
           prova e o programa, sem nenhum dado de atleta.</p>
@@ -2187,6 +2195,8 @@
   }
 
   function montar() {
+    // balizamento trazido do claude.ai: já vem pronto e não se monta de novo
+    if (estado.recebido) return;
     const p = lerConfig();
     estado.provas = D.montarBalizamento(inscricoesAjustadas(), p);
     if (p.etapas && p.etapas.length === 0) {
@@ -3513,7 +3523,10 @@
 
   // as que valem: só as que têm imagem de verdade
   function logosParaSaida() {
-    return estado.logos.filter((l) => l && l.dados);
+    const daqui = estado.logos.filter((l) => l && l.dados);
+    // as logos que vieram junto com o resultado do claude.ai, se não houver outras
+    if (!daqui.length && estado.recebido && Array.isArray(estado.recebido.logos)) return estado.recebido.logos;
+    return daqui;
   }
 
   /* ---------------- tela 5: gerar ---------------- */
@@ -3630,6 +3643,9 @@
       }
       return;
     }
+    // dentro do claude.ai sem a função de salvar, o link de download é
+    // bloqueado sem aviso: melhor dizer o que fazer
+    if (claudeApp.noClaude) return abrirPonte({ saida: false });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -3641,6 +3657,181 @@
 
   function baseNome() {
     return (estado.perfil.nome || "BALIZAMENTO").replace(/[\\/:*?"<>|]/g, "").trim();
+  }
+
+  /* ---------------- o resultado levado do claude.ai ao GitHub ----------------
+     No link público do claude.ai a página não pode salvar arquivo. Então o
+     resultado vai dentro de um link para o app do GitHub: o balizamento
+     pronto (provas, séries e raias, a configuração da competição, a
+     conferência e as logos), comprimido, depois do # do endereço. O que vem
+     depois do # o navegador não manda ao servidor, então o GitHub não recebe
+     esses dados. O app de lá lê o link e gera os arquivos com as mesmas
+     funções, a partir dos mesmos dados, e sai igual. */
+  const paraBase64 = (bytes) => {
+    let s = "";
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    // a versão de endereço: sem + / = , que o link estragaria
+    return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  };
+  const deBase64 = (t) => {
+    const b = t.replace(/-/g, "+").replace(/_/g, "/");
+    return Uint8Array.from(atob(b + "===".slice((b.length + 3) % 4)), (c) => c.charCodeAt(0));
+  };
+  const passarPor = async (bytes, fluxo) =>
+    new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(fluxo)).arrayBuffer());
+
+  async function codigoDoResultado() {
+    montar();
+    const dados = { v: 1, quando: new Date().toISOString(), perfil: estado.perfil, provas: estado.provas,
+                    erros: estado.erros, limites: estado.limites, logos: logosParaSaida() };
+    const bytes = new TextEncoder().encode(JSON.stringify(dados));
+    if (typeof CompressionStream !== "function") return "bz0." + paraBase64(bytes);
+    return "bz1." + paraBase64(await passarPor(bytes, new CompressionStream("deflate")));
+  }
+
+  async function linkDoResultado() {
+    return LINK_GITHUB + "#" + await codigoDoResultado();
+  }
+
+  async function lerCodigo(texto) {
+    const m = String(texto || "").replace(/\s+/g, "").match(/bz([01])\.([A-Za-z0-9_-]+)/i);
+    if (!m) throw new Error("Este link não traz um balizamento.");
+    const incompleto = "O link veio cortado. Volte ao claude.ai e abra o link de novo.";
+    let bytes;
+    try { bytes = deBase64(m[2]); } catch (e) { throw new Error(incompleto); }
+    if (m[1] === "1") {
+      if (typeof DecompressionStream !== "function") {
+        throw new Error("Este navegador não abre o link. Use o Chrome, o Edge ou o Safari atualizado.");
+      }
+      try { bytes = await passarPor(bytes, new DecompressionStream("deflate")); }
+      catch (e) { throw new Error(incompleto); }
+    }
+    let dados;
+    try { dados = JSON.parse(new TextDecoder().decode(bytes)); } catch (e) { throw new Error(incompleto); }
+    if (!dados || dados.v !== 1 || !dados.perfil || !Array.isArray(dados.provas)) {
+      throw new Error("Este link não traz um balizamento.");
+    }
+    return dados;
+  }
+
+  // copiar um texto dentro do clique: o jeito novo, o antigo, e por fim deixar selecionado
+  function copiarTexto(texto, caixa) {
+    return new Promise((resolve) => {
+      const antigo = () => {
+        if (!caixa) return resolve(false);
+        caixa.focus();
+        caixa.select();
+        caixa.setSelectionRange(0, caixa.value.length);
+        let ok = false;
+        try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+        resolve(ok);
+      };
+      try { navigator.clipboard.writeText(texto).then(() => resolve(true), antigo); }
+      catch (e) { antigo(); }
+    });
+  }
+
+  // no claude.ai: o quadro com o link que abre este balizamento no app do GitHub
+  function abrirPonte(opcoes) {
+    const o = opcoes || {};
+    const velho = $("#ponte");
+    if (velho) velho.remove();
+    const comResultado = !!o.saida && geracaoLiberada();
+    const semSalvar = claudeApp.noClaude && !claudeApp.downloads;
+    const el = document.createElement("div");
+    el.id = "ponte";
+    el.className = "ponte";
+    el.innerHTML = `<div class="ponte-caixa" role="dialog" aria-modal="true" aria-labelledby="ponteTitulo">
+      <h3 id="ponteTitulo">Baixar pelo app do GitHub</h3>
+      <p>${semSalvar ? "Neste link o claude.ai não deixa a página salvar arquivos. " : ""}${comResultado
+        ? "O app do GitHub abre com este mesmo balizamento e baixa os mesmos arquivos."
+        : "No app do GitHub o arquivo baixa normalmente."}</p>
+      ${comResultado ? `<p class="ponte-acoes">
+        <a class="botao" id="ponteAbrir" target="_blank" rel="noopener" aria-disabled="true">Preparando o link</a>
+        <button type="button" class="link" id="ponteCopiar" disabled>Copiar o link para abrir no computador</button></p>
+      <p class="ponte-estado" id="ponteEstado" aria-live="polite"></p>
+      <details class="ponte-codigo"><summary>ver o link</summary>
+        <textarea id="ponteLink" readonly rows="3" aria-label="Link do resultado"></textarea></details>
+      <p class="nota">O link leva os nomes dos atletas. Mande só para quem pode vê-los.
+        O GitHub não recebe esses dados: eles vão depois do # do endereço.</p>`
+      : `<p><a class="botao" href="${LINK_GITHUB}" target="_blank" rel="noopener">Abrir o app do GitHub</a></p>`}
+      <button type="button" class="link ponte-fechar" id="ponteFechar">fechar</button>
+    </div>`;
+    document.body.appendChild(el);
+    const fechar = () => { el.remove(); document.removeEventListener("keydown", tecla); };
+    const tecla = (ev) => { if (ev.key === "Escape") fechar(); };
+    document.addEventListener("keydown", tecla);
+    el.addEventListener("click", (ev) => { if (ev.target === el) fechar(); });
+    $("#ponteFechar").onclick = fechar;
+    if (!comResultado) return;
+    const abrir = $("#ponteAbrir"), copiar = $("#ponteCopiar"), caixa = $("#ponteLink"), estadoTxt = $("#ponteEstado");
+    linkDoResultado().then((link) => {
+      caixa.value = link;
+      abrir.href = link;
+      abrir.removeAttribute("aria-disabled");
+      abrir.textContent = "Abrir no app do GitHub";
+      copiar.disabled = false;
+      abrir.focus();
+    }).catch(() => { estadoTxt.textContent = "Não consegui montar o link. Feche e tente de novo."; });
+    abrir.addEventListener("click", (ev) => { if (!abrir.getAttribute("href")) ev.preventDefault(); });
+    copiar.onclick = async () => {
+      const ok = await copiarTexto(caixa.value, caixa);
+      if (ok) {
+        estadoTxt.textContent = "Link copiado. Mande para você mesmo e abra no computador.";
+        copiar.textContent = "Link copiado";
+        return;
+      }
+      $(".ponte-codigo", el).open = true;
+      caixa.focus();
+      caixa.select();
+      estadoTxt.textContent = "Não consegui copiar sozinho. O link está selecionado: " +
+        "copie com Ctrl+C, ou toque e segure e escolha Copiar.";
+    };
+  }
+
+  // no GitHub: o link que veio do claude.ai abre o balizamento direto na tela de gerar
+  async function lerDoEndereco() {
+    const h = location.hash.slice(1);
+    if (!/^bz[01]\./i.test(h)) return;
+    const erro = $("#erroLink");
+    try {
+      receberResultado(await lerCodigo(h));
+      if (erro) erro.hidden = true;
+    } catch (e) {
+      try { history.replaceState(null, "", location.pathname + location.search); } catch (err) { /* tanto faz */ }
+      if (erro) {
+        erro.innerHTML = `<h3>Não consegui abrir o balizamento</h3><p>${AT((e && e.message) || "O link veio cortado.")}</p>`;
+        erro.hidden = false;
+      }
+    }
+  }
+
+  /* O balizamento que chegou já vem conferido e montado: vai direto para a
+     tela de gerar, e os outros passos ficam trancados para ninguém montar
+     outro por cima sem querer. O endereço perde o # logo em seguida, para os
+     dados não ficarem à vista na barra. */
+  function receberResultado(d) {
+    estado.recebido = d;
+    estado.perfil = Object.assign(perfilPadrao(), d.perfil);
+    estado.provas = d.provas;
+    estado.erros = d.erros || [];
+    estado.limites = d.limites || [];
+    $$(".passo").forEach((p) => p.classList.toggle("bloqueado", p.dataset.passo !== "gerar"));
+    const info = $("#recebidoInfo");
+    if (info) {
+      const atletas = d.provas.reduce((s, p) => s + (p.atletas || 0), 0);
+      const quando = new Date(d.quando);
+      const data = isNaN(quando) ? "" : ` Feito em ${quando.toLocaleDateString("pt-BR")} às ` +
+        `${quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}.`;
+      info.innerHTML = `<h3>Balizamento trazido do claude.ai</h3>
+        <p>${AT(estado.perfil.nome || "Competição sem nome")}: ${d.provas.length} provas e ${atletas}
+          atletas.${data} Os arquivos saem com os mesmos dados de lá.</p>
+        <p><a href="${location.pathname}">Começar outro balizamento</a></p>`;
+      info.hidden = false;
+    }
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) { /* tanto faz */ }
+    irPara("gerar");
+    aviso("Balizamento aberto. Os arquivos saem iguais aos do claude.ai.");
   }
 
   function baixarModelo() {
@@ -3768,26 +3959,11 @@
     ao("quantasLogos", "change", renderLogos);
     $$("[data-previa]").forEach((b) =>
       (b.onclick = () => verPrevia(b.dataset.previa)));
-    $("#btnXlsx").onclick = () => {
-      montar();
-      const wb = S.gerarXlsx(estado.provas, estado.perfil,
-                             { erros: estado.erros, limites: estado.limites });
-      const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      baixar(new Blob([out], { type: "application/octet-stream" }),
-             baseNome() + " - BALIZAMENTO.xlsx");
-    };
-    $("#btnPdf").onclick = () => {
-      montar();
-      const doc = S.gerarPdfBalizamento(estado.provas, estado.perfil,
-                                        logosParaSaida());
-      baixar(doc.output("blob"), baseNome() + " - BALIZAMENTO.pdf");
-    };
-    $("#btnPapeletas").onclick = () => {
-      montar();
-      const { doc } = S.gerarPapeletas(estado.provas, estado.perfil,
-                                       logosParaSaida());
-      baixar(doc.output("blob"), baseNome() + " - PAPELETAS.pdf");
-    };
+    // os três arquivos saem de montarSaida, a mesma da prévia e da conversa
+    $("#btnXlsx").onclick = () => baixarSaida("xlsx");
+    $("#btnPdf").onclick = () => baixarSaida("pdf");
+    $("#btnPapeletas").onclick = () => baixarSaida("papeletas");
+    ao("levarGithub", "click", () => abrirPonte({ saida: true }));
     $("#btnPerfilSalvar").onclick = () => {
       const p = lerConfig();
       if (!p.nome) { aviso("Dê um nome à competição antes de salvar."); return; }
@@ -3893,6 +4069,8 @@
   }
 
   function baixarSaida(qual) {
+    // no link público do claude.ai não há como salvar: o resultado vai ao GitHub
+    if (claudeApp.noClaude && !claudeApp.downloads) return abrirPonte({ saida: true });
     const s = montarSaida(qual);
     if (s.tipo === "planilha") {
       const out = XLSX.write(s.wb, { bookType: "xlsx", type: "array" });
@@ -4076,7 +4254,7 @@
   }
 
   window.BalizadorApp = {
-    estado, claudeApp, LINK_CLAUDE,
+    estado, claudeApp, LINK_CLAUDE, LINK_GITHUB, abrirPonte, linkDoResultado, lerCodigo,
     lerConfig, validarConfig, atualizarPreviaData, montar, montarSecoes,
     renderConferencia, irPara, mostrarPainel, liberar, aviso,
     carregarPrograma, carregarArquivo, seguirSemPrograma, juncoesDoPrograma,

@@ -48,9 +48,9 @@ const FONTES =
   '<link rel="preconnect" href="https://fonts.googleapis.com">' +
   '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' +
   '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?' +
-  'family=Bricolage+Grotesque:opsz,wght@12..96,600..800&' +
-  'family=Instrument+Sans:wght@400..600&' +
-  'family=JetBrains+Mono:wght@400..500&display=swap">';
+  'family=Atkinson+Hyperlegible+Mono:wght@400;600&' +
+  'family=Atkinson+Hyperlegible+Next:wght@400;600;700&' +
+  'family=Big+Shoulders:wght@700;800&display=swap">';
 
 /* O ícone da aba, desenhado aqui mesmo e embutido como data URI: assim o
    arquivo continua sendo um só e funciona offline, sem o mundinho cinza que o

@@ -1,4 +1,8 @@
 :root{
+  --display:"Big Shoulders","Big Shoulders Display","Arial Narrow",sans-serif;
+  --texto:"Atkinson Hyperlegible Next","Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"Atkinson Hyperlegible Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --amarelo:#F2C14E; --corda2:#1E4B58;
   /* diz ao navegador em que tema ele está: é isto que faz o calendário do
      campo de data abrir claro no claro e escuro no escuro, com o ícone
      visível. Sem isto o ícone sai preto no fundo preto. */
@@ -40,15 +44,15 @@
 [hidden]{display:none!important}
 body{
   margin:0;background:var(--fundo);color:var(--tinta);
-  font-family:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-family:var(--texto);
   font-size:17.5px;line-height:1.62;-webkit-font-smoothing:antialiased;
 }
-h1,h2,h3{font-family:"Bricolage Grotesque",system-ui,sans-serif;margin:0;text-wrap:balance}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
 h1{font-size:1.75rem;font-weight:700;letter-spacing:-.025em;line-height:1.05}
 h2{font-size:2.05rem;font-weight:700;letter-spacing:-.025em;margin-bottom:.3rem;line-height:1.12}
 h3{font-size:1.28rem;font-weight:700;letter-spacing:-.012em;margin-bottom:.2rem}
 p{margin:0}
-.mono{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.85em}
+.mono{font-family:var(--mono);font-size:.85em}
 
 /* ---------- topo ---------- */
 .topo{
@@ -60,7 +64,7 @@ p{margin:0}
 .sigla{
   display:grid;place-items:center;width:2.9rem;height:2.9rem;border-radius:9px;
   background:var(--agua);color:var(--papel);
-  font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.15rem;letter-spacing:.01em;
+  font-family:var(--display);font-weight:800;font-size:1.15rem;letter-spacing:.01em;
 }
 .marca p{color:var(--suave);font-size:.95rem}
 .passos{display:flex;gap:.25rem;flex-wrap:wrap}
@@ -70,7 +74,7 @@ p{margin:0}
   display:flex;align-items:center;gap:.45rem;border-radius:3px 3px 0 0;
 }
 .passo b{
-  font-family:"JetBrains Mono",monospace;font-size:.78rem;font-weight:500;
+  font-family:var(--mono);font-size:.78rem;font-weight:500;
   background:var(--papel2);color:var(--suave);
   width:1.6rem;height:1.6rem;display:grid;place-items:center;border-radius:50%;
 }
@@ -95,10 +99,10 @@ main{margin:0 auto}
 }
 .cartao-tipo:hover{border-color:var(--agua)}
 .cartao-tipo.marcado{border-left-color:var(--agua);background:var(--agua-fraca)}
-.cartao-tipo strong{font-family:"Bricolage Grotesque",sans-serif;font-size:.98rem}
+.cartao-tipo strong{font-family:var(--display);font-size:.98rem}
 .cartao-tipo span{color:var(--suave);font-size:.85rem;line-height:1.4}
 .cartao-tipo em{
-  font-family:"JetBrains Mono",monospace;font-size:.68rem;font-style:normal;
+  font-family:var(--mono);font-size:.68rem;font-style:normal;
   color:var(--agua);text-transform:uppercase;letter-spacing:.04em;margin-top:.15rem;
 }
 
@@ -112,7 +116,7 @@ main{margin:0 auto}
   display:flex;flex-direction:column;gap:.85rem;
 }
 .opcional{
-  font-family:"JetBrains Mono",monospace;font-size:.65rem;font-weight:400;
+  font-family:var(--mono);font-size:.65rem;font-weight:400;
   text-transform:uppercase;letter-spacing:.08em;color:var(--suave);
   border:1px solid var(--linha);border-radius:2px;padding:.1rem .35rem;
   margin-left:.4rem;vertical-align:middle;
@@ -122,7 +126,7 @@ main{margin:0 auto}
 .campos > .campo.largo{flex:1}
 .campo.largo{min-width:16rem}
 textarea{
-  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.8rem;line-height:1.5;
+  font-family:var(--mono);font-size:.8rem;line-height:1.5;
   color:var(--tinta);background:var(--fundo);border:1px solid var(--linha);
   border-radius:3px;padding:.55rem .65rem;width:100%;resize:vertical;
 }
@@ -208,7 +212,7 @@ input[type=number]{width:6rem}
   transition:border-color .12s,background .12s;
 }
 .zona:hover,.zona.sobre{border-color:var(--agua);background:var(--agua-fraca)}
-.zona strong{font-family:"Bricolage Grotesque",sans-serif;font-size:1.2rem}
+.zona strong{font-family:var(--display);font-size:1.2rem}
 .zona span{color:var(--suave);font-size:.95rem}
 
 /* ---------- atalhos e blocos condicionais ---------- */
@@ -257,12 +261,12 @@ input.pendente,select.pendente,textarea.pendente{
 .grade thead th{background:var(--papel2);font-weight:600;position:relative;
   padding-top:1.1rem}
 .grade .col{
-  position:absolute;top:.05rem;left:.5rem;font-family:"JetBrains Mono",monospace;
+  position:absolute;top:.05rem;left:.5rem;font-family:var(--mono);
   font-size:.6rem;font-weight:400;color:var(--suave);letter-spacing:.05em;
 }
 .grade .lin{
   background:var(--papel2);color:var(--suave);text-align:center;width:2rem;
-  font-family:"JetBrains Mono",monospace;font-size:.7rem;
+  font-family:var(--mono);font-size:.7rem;
 }
 .grade .vazia{background:repeating-linear-gradient(45deg,
   transparent,transparent 4px,var(--papel2) 4px,var(--papel2) 8px);min-width:2.5rem}
@@ -306,7 +310,7 @@ input.pendente,select.pendente,textarea.pendente{
   padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.25rem;
 }
 .ficha b{
-  font-family:"Bricolage Grotesque",sans-serif;font-size:2.2rem;font-weight:700;line-height:1;
+  font-family:var(--display);font-size:2.2rem;font-weight:700;line-height:1;
   font-variant-numeric:tabular-nums;
 }
 .ficha span{font-size:.9rem;color:var(--suave);line-height:1.35}
@@ -324,12 +328,12 @@ input.pendente,select.pendente,textarea.pendente{
   vertical-align:top;
 }
 .tabela thead th{
-  font-family:"JetBrains Mono",monospace;font-size:.73rem;font-weight:500;
+  font-family:var(--mono);font-size:.73rem;font-weight:500;
   text-transform:uppercase;letter-spacing:.07em;color:var(--suave);
   background:var(--papel2);white-space:nowrap;
 }
 .tabela tbody tr:last-child td{border-bottom:0}
-.tabela .num{font-family:"JetBrains Mono",monospace;text-align:right}
+.tabela .num{font-family:var(--mono);text-align:right}
 .tabela .apagado{color:var(--suave)}
 
 /* ---------- programa de provas ---------- */
@@ -344,7 +348,7 @@ input.pendente,select.pendente,textarea.pendente{
   letter-spacing:.06em;text-transform:uppercase;color:var(--suave);
 }
 .discordancia{
-  font-family:"JetBrains Mono",monospace;font-size:.72rem;font-weight:600;
+  font-family:var(--mono);font-size:.72rem;font-weight:600;
   color:var(--ambar);background:var(--ambar-fraca);
   padding:.05rem .3rem;border-radius:2px;margin-left:.3rem;
 }
@@ -361,7 +365,7 @@ input.pendente,select.pendente,textarea.pendente{
 .bloco.aviso h3{border-left-color:var(--ambar);color:var(--ambar)}
 .bloco.info h3{border-left-color:var(--info);color:var(--info)}
 .contador{
-  font-family:"JetBrains Mono",monospace;font-size:.7rem;font-weight:500;
+  font-family:var(--mono);font-size:.7rem;font-weight:500;
   background:var(--papel2);color:var(--suave);padding:.1rem .4rem;border-radius:2px;
 }
 .ok-vazio{
@@ -372,7 +376,7 @@ input.pendente,select.pendente,textarea.pendente{
   background:var(--grave-fraca);color:var(--grave);border-radius:4px;
   padding:.9rem 1rem;
 }
-code{font-family:"JetBrains Mono",monospace;font-size:.85em;
+code{font-family:var(--mono);font-size:.85em;
   background:var(--papel2);padding:.05rem .25rem;border-radius:2px}
 
 /* ---------- saídas ---------- */
@@ -384,7 +388,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
   border-radius:4px;padding:1rem 1.1rem;display:flex;flex-direction:column;gap:.3rem;
 }
 .saida:hover{background:var(--agua-fraca)}
-.saida b{font-family:"Bricolage Grotesque",sans-serif;font-size:1rem}
+.saida b{font-family:var(--display);font-size:1rem}
 .saida span{color:var(--suave);font-size:.84rem;line-height:1.4}
 
 /* ---------- aviso flutuante ---------- */
@@ -417,7 +421,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
   padding:.7rem 0;border-bottom:1px solid var(--linha);
 }
 .linha-exemplo:last-child{border-bottom:0;padding-bottom:0}
-.linha-exemplo b{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:.98rem}
+.linha-exemplo b{display:block;font-family:var(--display);font-size:.98rem}
 .linha-exemplo span{color:var(--suave);font-size:.88rem}
 .acoes-exemplo{display:flex;gap:.4rem;flex-wrap:wrap}
 
@@ -426,7 +430,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
 .recem-chegado{animation:chegou 1.2s ease-out}
 @media (prefers-reduced-motion:reduce){.recem-chegado{animation:none}}
 .valor-calculado.veio-do-programa::after{
-  content:"veio do programa";font-family:"JetBrains Mono",monospace;font-size:.62rem;
+  content:"veio do programa";font-family:var(--mono);font-size:.62rem;
   text-transform:uppercase;letter-spacing:.06em;color:var(--agua);
   border:1px solid var(--agua);border-radius:2px;padding:.05rem .3rem;margin-left:.5rem;
 }
@@ -488,7 +492,7 @@ code{font-family:"JetBrains Mono",monospace;font-size:.85em;
 .bloco.resolvido .contador{background:var(--bom-fraca);color:var(--bom);font-weight:600}
 .bloco.aceito h3{border-left-color:var(--bom);color:var(--bom)}
 .selo-aceito{
-  font-family:"JetBrains Mono",monospace;font-size:.62rem;text-transform:uppercase;
+  font-family:var(--mono);font-size:.62rem;text-transform:uppercase;
   letter-spacing:.06em;color:var(--bom);background:var(--bom-fraca);
   padding:.1rem .4rem;border-radius:2px;
 }
@@ -611,7 +615,7 @@ main{max-width:130rem;padding:2rem clamp(1rem,2.6vw,3.5rem) 5rem}
   display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;
   padding:.8rem 1.1rem;border-bottom:1px solid var(--linha);background:var(--papel2);
 }
-.previa-topo b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.05rem}
+.previa-topo b{font-family:var(--display);font-size:1.05rem}
 .previa-topo .apagado{color:var(--suave);font-size:.9rem}
 .previa-topo button{margin-left:auto}
 .previa-corpo{padding:1rem 1.1rem}
@@ -770,7 +774,7 @@ h2 > .link{font-size:.95rem;font-weight:400;margin-left:.7rem;vertical-align:mid
 .amostra-ia .grade thead th{padding-top:.42rem;position:sticky;top:0;z-index:1}
 .amostra-ia .pulo td{color:var(--suave);font-style:italic;background:var(--papel2)}
 mark.codigo{
-  font-family:"JetBrains Mono",monospace;font-size:.86em;font-weight:500;
+  font-family:var(--mono);font-size:.86em;font-weight:500;
   background:var(--agua-fraca);color:var(--agua);padding:.02rem .25rem;border-radius:3px;
 }
 details.texto-exato summary,details.ignoradas summary{
@@ -778,7 +782,7 @@ details.texto-exato summary,details.ignoradas summary{
   text-underline-offset:2px;
 }
 details.texto-exato pre{
-  font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.78rem;line-height:1.5;
+  font-family:var(--mono);font-size:.78rem;line-height:1.5;
   white-space:pre-wrap;word-break:break-word;max-height:26rem;overflow:auto;
   background:var(--fundo);border:1px solid var(--linha);border-radius:6px;
   padding:.8rem .9rem;margin:.6rem 0 0;
@@ -799,7 +803,7 @@ details.texto-exato pre{
 .tabela.revisao .origem{white-space:nowrap;color:var(--suave);font-size:.9rem}
 .tabela.revisao .origem b{color:var(--tinta)}
 .tabela.revisao .original{
-  font-family:"JetBrains Mono",monospace;font-size:.82rem;color:var(--suave);
+  font-family:var(--mono);font-size:.82rem;color:var(--suave);
   max-width:28rem;
 }
 .tabela.revisao .original .sep{color:var(--linha)}
@@ -819,7 +823,7 @@ details.texto-exato pre{
 .rev-erro .motivos{color:var(--grave)}
 .rev-ok .motivos{color:var(--suave)}
 .num-prova{
-  font-family:"JetBrains Mono",monospace;font-size:.78rem;font-weight:500;
+  font-family:var(--mono);font-size:.78rem;font-weight:500;
   background:var(--agua-fraca);color:var(--agua);padding:.05rem .35rem;border-radius:3px;
 }
 .filtro-revisao .ativo{border-color:var(--agua);color:var(--agua);font-weight:600}
@@ -861,7 +865,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 .degrau:disabled{cursor:default;opacity:.55}
 .degrau .bolinha{
   width:1.55rem;height:1.55rem;border-radius:50%;display:grid;place-items:center;
-  background:var(--papel2);font-family:"JetBrains Mono",monospace;font-size:.75rem;
+  background:var(--papel2);font-family:var(--mono);font-size:.75rem;
 }
 .degrau.feito{color:var(--bom);border-color:var(--bom)}
 .degrau.feito .bolinha{background:var(--bom);color:var(--papel)}
@@ -887,7 +891,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 .fala.claude{align-self:flex-start}
 .fala.claude .texto{background:var(--papel);border:1px solid var(--linha);border-top-left-radius:5px}
 .fala .quem{
-  font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.08em;
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;
   text-transform:uppercase;color:var(--agua);padding-left:.3rem;
 }
 .fala.eu{align-self:flex-end}
@@ -922,7 +926,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 }
 .cartao-conversa header{display:flex;flex-direction:column;gap:.15rem}
 .cartao-conversa .etapa{
-  font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.09em;
+  font-family:var(--mono);font-size:.72rem;letter-spacing:.09em;
   text-transform:uppercase;color:var(--agua);
 }
 .cartao-conversa h3{font-size:1.35rem}
@@ -945,7 +949,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
   background:var(--papel);color:var(--tinta);
   transition:border-color .15s,background .15s,transform .15s;
 }
-.opcao b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.12rem}
+.opcao b{font-family:var(--display);font-size:1.12rem}
 .opcao span{color:var(--suave);font-size:.95rem;line-height:1.4}
 .opcao:hover,.opcao:focus-visible{border-color:var(--agua);background:var(--agua-fraca);transform:translateY(-2px)}
 .opcao:first-child{border-color:var(--agua)}
@@ -955,7 +959,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
   padding:1.8rem 1rem;border:2px dashed var(--linha);border-radius:14px;cursor:pointer;
   background:var(--fundo);transition:border-color .15s,background .15s;
 }
-.zona-conversa b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.2rem}
+.zona-conversa b{font-family:var(--display);font-size:1.2rem}
 .zona-conversa span{color:var(--suave);font-size:.95rem}
 .zona-conversa:hover,.zona-conversa.sobre{border-color:var(--agua);background:var(--agua-fraca)}
 
@@ -963,7 +967,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 
 .numeros{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr))}
 .numeros div{background:var(--papel2);border-radius:12px;padding:.75rem .9rem;display:flex;flex-direction:column;gap:.1rem}
-.numeros b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
+.numeros b{font-family:var(--display);font-size:1.9rem;line-height:1;font-variant-numeric:tabular-nums}
 .numeros span{color:var(--suave);font-size:.9rem}
 .numeros .ruim b{color:var(--grave)}
 .numeros .bom b{color:var(--bom)}
@@ -971,7 +975,7 @@ body.modo-conversa main{max-width:58rem;padding-top:1.2rem;padding-bottom:0}
 .lista-provas{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.15rem}
 .lista-provas li{display:flex;gap:.6rem;align-items:baseline;padding:.3rem .2rem;border-bottom:1px solid var(--linha);font-size:1rem}
 .lista-provas li:last-child{border-bottom:0}
-.lista-provas .num{font-family:"JetBrains Mono",monospace;font-size:.82rem;color:var(--suave);min-width:2.2rem}
+.lista-provas .num{font-family:var(--mono);font-size:.82rem;color:var(--suave);min-width:2.2rem}
 .lista-provas .apagado{margin-left:auto;color:var(--suave);font-size:.85rem}
 details.mais summary,details.bloco-conv summary{cursor:pointer}
 details.mais summary{color:var(--agua);font-size:.98rem}
@@ -1003,7 +1007,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 .bloco-corpo .tabela td{font-size:.92rem}
 .bloco-corpo .confirma{margin:0;flex-basis:100%}
 .selo{
-  font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.06em;
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.06em;
   text-transform:uppercase;padding:.15rem .5rem;border-radius:999px;white-space:nowrap;
 }
 .selo.critico{background:var(--grave-fraca);color:var(--grave)}
@@ -1020,10 +1024,10 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 }
 .piscina .serie{display:grid;grid-template-columns:5rem repeat(var(--raias),minmax(7.5rem,1fr));gap:.35rem}
 .piscina .nserie{
-  font-family:"JetBrains Mono",monospace;font-size:.75rem;color:var(--agua);
+  font-family:var(--mono);font-size:.75rem;color:var(--agua);
   display:flex;align-items:center;text-transform:uppercase;letter-spacing:.05em;
 }
-.piscina .cabeca .nraia{text-align:center;font-family:"JetBrains Mono",monospace;font-size:.78rem;color:var(--agua);font-weight:500}
+.piscina .cabeca .nraia{text-align:center;font-family:var(--mono);font-size:.78rem;color:var(--agua);font-weight:500}
 .raia{
   background:var(--papel);border-radius:8px;padding:.45rem .55rem;min-height:4.1rem;
   display:flex;flex-direction:column;gap:.05rem;overflow:hidden;
@@ -1031,7 +1035,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 }
 .raia b{font-size:.86rem;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .raia span{font-size:.75rem;color:var(--suave);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.raia em{font-style:normal;font-family:"JetBrains Mono",monospace;font-size:.75rem;color:var(--agua);margin-top:auto}
+.raia em{font-style:normal;font-family:var(--mono);font-size:.75rem;color:var(--agua);margin-top:auto}
 .raia.vazia{background:repeating-linear-gradient(135deg,transparent,transparent 6px,var(--papel2) 6px,var(--papel2) 12px);border-bottom-color:transparent}
 .raia.marcada{background:var(--grave-fraca)}
 
@@ -1039,7 +1043,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
   display:flex;gap:1rem;align-items:center;justify-content:space-between;flex-wrap:wrap;
   padding:.8rem 1rem;border:1px solid var(--linha);border-radius:12px;
 }
-.saida-conv b{display:block;font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.1rem}
+.saida-conv b{display:block;font-family:var(--display);font-size:1.1rem}
 .saida-conv span{color:var(--suave);font-size:.95rem}
 
 /* a caixa de mensagem, presa embaixo */
@@ -1052,7 +1056,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 }
 .compositor:focus-within{border-color:var(--agua)}
 .compositor textarea{
-  flex:1;border:0;background:transparent;resize:none;font-family:"Instrument Sans",system-ui,sans-serif;
+  flex:1;border:0;background:transparent;resize:none;font-family:var(--texto);
   font-size:1.05rem;line-height:1.45;padding:.5rem .3rem;max-height:11rem;min-width:0;
 }
 .compositor textarea:focus{outline:none}
@@ -1081,7 +1085,7 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 /* ---------- a IA trabalhando: os passos acendem um a um ---------- */
 .passos-ia{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.55rem}
 .passos-ia li{display:flex;align-items:center;gap:.7rem;color:var(--suave);font-size:1rem}
-.passos-ia li em{font-style:normal;margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--agua)}
+.passos-ia li em{font-style:normal;margin-left:auto;font-family:var(--mono);font-size:.8rem;color:var(--agua)}
 .marca-passo{
   width:1.35rem;height:1.35rem;border-radius:50%;flex:none;border:2px solid var(--linha);
   display:grid;place-items:center;font-size:.75rem;font-weight:700;
@@ -1104,12 +1108,12 @@ details.mais summary{color:var(--agua);font-size:.98rem}
 }
 .linha-org:first-child{border-top:0}
 .linha-org.cabeca{
-  background:var(--papel2);font-family:"JetBrains Mono",monospace;font-size:.7rem;
+  background:var(--papel2);font-family:var(--mono);font-size:.7rem;
   letter-spacing:.07em;color:var(--suave);padding-block:.5rem;
 }
 .org-origem{font-size:.85rem;color:var(--suave);display:flex;flex-direction:column}
 .org-origem b{color:var(--tinta);font-weight:600}
-.org-de{font-family:"JetBrains Mono",monospace;font-size:.8rem;color:var(--suave);overflow-wrap:anywhere}
+.org-de{font-family:var(--mono);font-size:.8rem;color:var(--suave);overflow-wrap:anywhere}
 .org-de .sep{color:var(--linha)}
 .org-para{font-size:.98rem;line-height:1.45;display:flex;flex-direction:column;gap:.4rem;min-width:0}
 .org-para .motivos{margin:0}
@@ -1184,7 +1188,7 @@ body:not(.na-abertura) .abertura-conv{display:none}
 body.na-abertura #fio,body.na-abertura #compositor,
 body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 .abertura-conv{display:flex;flex-direction:column;gap:1.3rem;padding:2.2rem 0 3rem}
-.abertura-conv .olho{font-family:"JetBrains Mono",monospace;font-size:.78rem;letter-spacing:.14em;
+.abertura-conv .olho{font-family:var(--mono);font-size:.78rem;letter-spacing:.14em;
   text-transform:uppercase;color:var(--agua)}
 .abertura-conv h2{font-size:clamp(2rem,5vw,3.4rem);line-height:1.04;font-weight:800;max-width:17ch;margin:0}
 .abertura-conv h2 em{font-style:normal;color:var(--agua)}
@@ -1201,7 +1205,7 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 .faixa:nth-child(3)::before,.faixa:nth-child(4)::before{--c:#F2C14E}
 .faixa .rotulo{position:relative;z-index:1;display:flex;align-items:center;gap:.55rem;width:9.5rem;flex:none;
   padding-left:.8rem;font-size:.92rem;color:var(--tinta)}
-.faixa .rotulo b{font-family:"JetBrains Mono",monospace;font-size:.78rem;color:var(--agua);
+.faixa .rotulo b{font-family:var(--mono);font-size:.78rem;color:var(--agua);
   width:1.3rem;height:1.3rem;border-radius:50%;border:1px solid var(--agua);display:grid;place-items:center}
 .faixa .nada{position:absolute;top:50%;left:9.5rem;width:2.9rem;transform:translateY(-50%);
   animation:travessia 6.5s calc(var(--k) * .55s) ease-in-out infinite both}
@@ -1230,11 +1234,11 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 .caminho{font:inherit;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:.35rem;
   padding:1.3rem 1.4rem;border-radius:18px;border:1.5px solid var(--linha);background:var(--papel);color:var(--tinta);
   transition:border-color .15s,transform .15s,background .15s}
-.caminho b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.4rem;line-height:1.15}
+.caminho b{font-family:var(--display);font-size:1.4rem;line-height:1.15}
 .caminho > span:last-child{color:var(--suave);font-size:1rem;line-height:1.45}
 .caminho:hover,.caminho:focus-visible{border-color:var(--agua);transform:translateY(-3px)}
 .caminho.principal{background:linear-gradient(150deg,rgba(242,193,78,.16),var(--papel) 70%);border-color:var(--agua)}
-.selo-caminho{align-self:flex-start;font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.08em;
+.selo-caminho{align-self:flex-start;font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;
   text-transform:uppercase;color:var(--papel);background:var(--agua);border-radius:999px;padding:.15rem .6rem}
 .recomecar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;padding:.9rem 1rem;border-radius:14px;
   background:var(--grave-fraca);border:1px solid var(--grave)}
@@ -1279,7 +1283,7 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
   100%{left:.3rem;transform:translateY(-50%) scaleX(1)}}
 .fala.tocou .raia-ia{animation:toque .32s ease-out}
 @keyframes toque{50%{box-shadow:inset -18px 0 18px -8px rgba(242,193,78,.9)}}
-.legenda-raia{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.08em;
+.legenda-raia{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;
   color:var(--suave);text-transform:uppercase}
 
 /* o guia da demonstração: texto do app, nunca fala do Claude */
@@ -1288,9 +1292,9 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
   background:linear-gradient(120deg,var(--agua-fraca),transparent 75%)}
 .guia::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:14px 0 0 14px;
   background:repeating-linear-gradient(180deg,#F2C14E 0 10px,#FFFFFF 10px 13px)}
-.guia-passo{font-family:"JetBrains Mono",monospace;font-size:.72rem;letter-spacing:.1em;
+.guia-passo{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;
   text-transform:uppercase;color:var(--agua)}
-.guia b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.3rem;line-height:1.2}
+.guia b{font-family:var(--display);font-size:1.3rem;line-height:1.2}
 .guia p{margin:0;color:var(--suave);font-size:1.02rem;line-height:1.5;max-width:64ch}
 
 /* a planilha como chegou, numa folha branca */
@@ -1300,10 +1304,10 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 .folha-conv figcaption{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;padding:.55rem .9rem;
   background:#DDE7EA;font-size:.9rem}
 .folha-conv .arquivo{font-weight:700}
-.folha-conv .aba-nome{font-family:"JetBrains Mono",monospace;font-size:.75rem;background:#FFFFFF;
+.folha-conv .aba-nome{font-family:var(--mono);font-size:.75rem;background:#FFFFFF;
   border:1px solid #C9D6DA;border-radius:6px;padding:.05rem .5rem}
 .folha-conv .apagado{color:#56707A;font-size:.85rem}
-.folha-conv table{border-collapse:collapse;font-family:"JetBrains Mono",monospace;font-size:.78rem;min-width:100%}
+.folha-conv table{border-collapse:collapse;font-family:var(--mono);font-size:.78rem;min-width:100%}
 .folha-conv th{background:#E9EFF1;color:#8A9EA5;font-weight:500;padding:.2rem .5rem;border:1px solid #D2DDE0}
 .folha-conv td{padding:.22rem .55rem;border:1px solid #D2DDE0;white-space:nowrap;background:#FFFFFF;color:#1A2B31}
 .folha-conv td.lin,.folha-conv th.lin{background:#E9EFF1;color:#8A9EA5;text-align:center}
@@ -1313,14 +1317,14 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
 @keyframes piscaErro{50%{background:#F6AFA7}}
 .notas-folha{margin:0;padding:.7rem 1rem .8rem 2.3rem;display:flex;flex-direction:column;gap:.25rem;
   font-size:.96rem;background:#FDF1EF;color:#7A2A22}
-.notas-folha b{font-family:"JetBrains Mono",monospace;font-size:.85rem;margin-right:.35rem}
+.notas-folha b{font-family:var(--mono);font-size:.85rem;margin-right:.35rem}
 @keyframes entraLinhaConv{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
 
 /* as correções: folhas brancas com Sim e Não, como no quadro 3 */
 .noite .correcoes{background:rgba(255,255,255,.03);border-color:var(--linha)}
 .correcoes .correcao{background:#F4F7F8;color:#1A2B31;border:0;border-top:4px solid #0B7285;
   box-shadow:0 18px 36px -22px rgba(0,0,0,.8);animation:chegaFolha .6s var(--d,0s) both}
-.correcoes .correcao .rot{font-family:"JetBrains Mono",monospace;font-size:.7rem;letter-spacing:.08em;color:#0B7285}
+.correcoes .correcao .rot{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;color:#0B7285}
 .correcoes .correcao .caso{color:#56707A}
 .correcoes .correcao .pergunta{color:#1A2B31}
 .correcoes .correcao .botao{background:#0B7285;color:#FFFFFF}
@@ -1393,11 +1397,11 @@ html.noite{font-size:15px}
 .noite .fala.claude .texto{background:#0D3D4B;border:1px solid #2B6070;border-left:4px solid var(--agua);
   border-radius:4px 14px 14px 14px;font-size:1rem;line-height:1.5;padding:.7rem .95rem}
 .fala .quem{display:flex;align-items:center;gap:.45rem;text-transform:none;letter-spacing:0;
-  font-family:"Instrument Sans",system-ui,sans-serif;font-size:.85rem;color:var(--tinta);padding-left:0}
+  font-family:var(--texto);font-size:.85rem;color:var(--tinta);padding-left:0}
 .fala .quem b{font-weight:700}
 .fala .quem em{font-style:normal;color:var(--suave);font-size:.78rem}
 .selo-ia{width:1.6rem;height:1.6rem;border-radius:50%;display:grid;place-items:center;flex:none;
-  background:var(--agua);color:var(--papel);font-family:"JetBrains Mono",monospace;font-size:.68rem;font-weight:700}
+  background:var(--agua);color:var(--papel);font-family:var(--mono);font-size:.68rem;font-weight:700}
 .noite .fala.eu .texto{font-size:.98rem;padding:.55rem .9rem}
 .noite .guia b{font-size:1.12rem}
 .noite .guia p{font-size:.95rem}
@@ -1446,7 +1450,7 @@ body.na-demo .compositor{margin-bottom:max(.7rem,env(safe-area-inset-bottom,0px)
 /* as três linhas de cada passo */
 .orienta{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem}
 .orienta li{display:grid;grid-template-columns:8.4rem minmax(0,1fr);gap:.8rem;align-items:baseline}
-.orienta li > span{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.09em;
+.orienta li > span{font-family:var(--mono);font-size:.68rem;letter-spacing:.09em;
   text-transform:uppercase;color:var(--suave);white-space:nowrap}
 .orienta li p{margin:0;font-size:1rem;line-height:1.45;color:var(--tinta)}
 .orienta li.que p,.orienta li.porque p{color:var(--suave)}
@@ -1481,12 +1485,12 @@ body.na-demo .compositor{margin-bottom:max(.7rem,env(safe-area-inset-bottom,0px)
 .noite .piscina{gap:.35rem;padding:.5rem}
 
 /* um problema por vez: o contador e a correção numa folha branca */
-.conta-problema{display:inline-block;vertical-align:.15em;margin-right:.45rem;font-family:"JetBrains Mono",monospace;
+.conta-problema{display:inline-block;vertical-align:.15em;margin-right:.45rem;font-family:var(--mono);
   font-size:.62em;letter-spacing:.06em;color:var(--papel);background:var(--grave);border-radius:999px;padding:.15rem .55rem}
 .correcao-unica{display:flex;flex-direction:column;gap:.45rem;padding:.8rem 1rem;border-radius:12px;
   background:#F4F7F8;color:#1A2B31;border-top:4px solid #0B7285;
   box-shadow:0 18px 36px -22px rgba(0,0,0,.8);animation:chegaFolha .6s both}
-.correcao-unica .rot{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.08em;color:#0B7285}
+.correcao-unica .rot{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;color:#0B7285}
 .correcao-unica .pergunta{margin:0;font-size:1.04rem;line-height:1.4;color:#1A2B31}
 .correcao-unica .botao{background:#0B7285;color:#FFFFFF}
 .correcao-unica .mini.claro{background:#FFFFFF;color:#56707A;border-color:#C9D6DA}
@@ -1499,7 +1503,7 @@ body.na-demo .compositor{margin-bottom:max(.7rem,env(safe-area-inset-bottom,0px)
 .saidas-conv .saida-conv span{font-size:.88rem}
 .fim-demo{display:flex;flex-direction:column;gap:.45rem;padding:.8rem 1rem;border-radius:12px;
   border:1px dashed var(--agua);background:linear-gradient(120deg,var(--agua-fraca),transparent 80%)}
-.fim-demo > b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.12rem}
+.fim-demo > b{font-family:var(--display);font-size:1.12rem}
 .fim-demo ul{margin:0;padding-left:1.15rem;display:flex;flex-direction:column;gap:.15rem;color:var(--suave)}
 
 @media (prefers-reduced-motion:reduce){ .correcao-unica{animation:none} }
@@ -1643,7 +1647,7 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
     min-height:0;padding:.35rem .6rem .35rem .45rem}
   .cartao-conversa .piscina .raia::before{content:attr(data-raia);grid-area:n;width:1.5rem;height:1.5rem;
     border-radius:50%;display:grid;place-items:center;background:var(--agua-fraca);color:var(--agua);
-    font-family:"JetBrains Mono",monospace;font-size:.74rem;font-weight:700}
+    font-family:var(--mono);font-size:.74rem;font-weight:700}
   .cartao-conversa .piscina .raia b{grid-area:nome;-webkit-line-clamp:1}
   .cartao-conversa .piscina .raia span{grid-area:escola}
   .cartao-conversa .piscina .raia em{grid-area:tempo;margin:0}
@@ -1689,3 +1693,94 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
 @media (max-width:640px){
   .noite .cartao-conversa .org-para .acoes-cartao .botao,.noite .cartao-conversa .org-para .acoes-cartao .mini{padding-inline:.75rem;font-size:.88rem}
 }
+/* =====================================================================
+   O resultado do claude.ai levado ao GitHub: o quadro de lá, com o código,
+   e o quadro daqui, onde o código é colado.
+   ===================================================================== */
+.ponte{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px))
+          max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  background:rgba(4,14,20,.72)}
+.ponte-caixa{width:min(34rem,100%);max-height:100%;overflow:auto;display:flex;flex-direction:column;gap:.7rem;
+  background:var(--papel);color:var(--tinta);border:1px solid var(--linha);border-radius:6px;
+  padding:1.1rem 1.2rem 1rem;box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
+.ponte-caixa h3{margin:0;font-size:1.25rem}
+.ponte-caixa p{margin:0;line-height:1.5}
+.ponte-acoes{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1.2rem}
+.ponte-acoes a.botao{text-decoration:none}
+.ponte-acoes a.botao[aria-disabled]{opacity:.6;pointer-events:none}
+.ponte-estado{color:var(--agua);font-weight:600;min-height:1.2em}
+.ponte-estado:empty{display:none}
+.ponte-codigo textarea{width:100%;box-sizing:border-box;margin-top:.4rem;font-family:monospace;font-size:.78rem;
+  word-break:break-all;background:var(--papel2);color:var(--tinta);border:1px solid var(--linha);border-radius:6px}
+.ponte-fechar{align-self:flex-end}
+.erro-link{border-left:4px solid var(--grave)}
+.erro-link h3{margin:0 0 .3rem}
+.erro-link p{margin:0}
+.recebido-info{border-left:4px solid var(--agua)}
+.recebido-info h3{margin:0 0 .3rem}
+.recebido-info p{margin:.2rem 0}
+.levar-github{margin:.2rem 0 0}
+/* =====================================================================
+   Redesign (novembro de 2026): as fontes e os botões da página inicial.
+   Títulos em Big Shoulders, texto em Atkinson Hyperlegible Next, números e
+   planilha em Atkinson Hyperlegible Mono. O botão principal é amarelo, de
+   canto reto, com uma faixa de corda de raia embaixo que desliza no mouse e
+   no teclado. O secundário é sempre um link sublinhado.
+   ===================================================================== */
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --corda2:#FFFFFF } }
+:root[data-theme="dark"],html.noite{ --corda2:#FFFFFF }
+h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:normal}
+.mono,code,.tabela .num,.numeros b{font-variant-numeric:tabular-nums}
+
+.botao{position:relative;font-family:var(--texto);font-weight:600;line-height:1.2;
+  background:var(--amarelo);color:#1B1A10;border:0;border-radius:4px;margin-bottom:4px;box-shadow:none}
+.botao::after{content:"";position:absolute;left:0;right:0;bottom:-4px;height:4px;border-radius:0 0 2px 2px;
+  background:repeating-linear-gradient(90deg,var(--amarelo) 0 12px,var(--corda2) 12px 16px);
+  background-size:16px 4px;transition:background-position .7s ease;pointer-events:none}
+.botao:hover:not(:disabled)::after,.botao:focus-visible::after{background-position:64px 0}
+.botao:focus-visible{outline:2px solid var(--tinta);outline-offset:6px}
+.noite .botao:hover:not(:disabled){filter:none}
+.botao:disabled::after{opacity:.5}
+/* dentro da folha branca da correção, o mesmo botão */
+.correcao-unica .botao,.correcoes .correcao .botao{background:var(--amarelo);color:#1B1A10}
+.correcao-unica,.correcoes .correcao{--corda2:#1E4B58}
+
+/* o secundário: link sublinhado, nunca botão vazado */
+.mini,.mini.claro,.botao.claro,.correcao-unica .mini.claro,.correcoes .correcao .mini.claro{
+  background:none;border:0;border-radius:0;padding:.35rem .15rem;font-family:var(--texto);
+  color:var(--tinta);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px}
+.mini:hover,.mini.claro:hover,.botao.claro:hover{color:var(--agua);border-color:transparent}
+.correcao-unica .mini.claro,.correcoes .correcao .mini.claro{color:#1A2B31}
+.mini.ativo{font-weight:600;color:var(--agua)}
+.link{text-underline-offset:3px;text-decoration-thickness:1px}
+
+/* os títulos em Big Shoulders, que é estreita: um pouco maiores */
+.noite .cartao-conversa h3{font-size:1.5rem;line-height:1.05}
+.cartao h3{font-size:1.35rem;line-height:1.1}
+.saida-conv b,.saidas-conv .saida-conv b,.caminho b,.abertura-conv .caminho b{font-size:1.45em}
+.fim-demo > b{font-size:1.4rem}
+/* a abertura do claude.ai igual à da página: título em primeira pessoa,
+   sem rótulo em cima; os dois caminhos como blocos de canto reto, sem gradiente */
+.abertura-conv{grid-template-areas:"titulo piscina" "texto piscina" "caminhos caminhos" "extra extra"}
+@media (max-width:759px){ .abertura-conv{grid-template-areas:"titulo" "texto" "caminhos" "piscina" "extra"} }
+.abertura-conv h2{font-size:3.1em;line-height:.95}
+.abertura-conv .caminho,.caminho{border-radius:6px}
+.caminho.principal{background:var(--papel);border-color:var(--amarelo);box-shadow:inset 0 -4px 0 var(--amarelo)}
+.caminho:hover,.caminho:focus-visible{transform:none;border-color:var(--amarelo)}
+.abertura-conv .piscina-abertura{border-radius:6px}
+/* o passo: uma frase do que fazer, e o porquê fechado num "Por quê?" */
+.orienta{display:flex;flex-direction:column;gap:.3rem;margin:0}
+.orienta .instrucao{margin:0;font-size:1.06rem;line-height:1.45;font-weight:500;color:var(--tinta)}
+.orienta .instrucao b{color:var(--agua)}
+.orienta details.porque summary{cursor:pointer;width:max-content;font-size:.92rem;color:var(--suave);
+  text-decoration:underline;text-underline-offset:3px;list-style:none}
+.orienta details.porque summary::-webkit-details-marker{display:none}
+.orienta details.porque[open] summary{margin-bottom:.15rem}
+.orienta details.porque p{margin:.25rem 0 0;font-size:.95rem;line-height:1.45;color:var(--suave)}
+/* o caso do problema dentro da folha branca, como na cena da página */
+.correcao-unica .caso{margin:0;color:#56707A;font-size:.98rem;line-height:1.45}
+/* anexar também é secundário: link sublinhado */
+.anexar,.noite .anexar{border:0;background:none;border-radius:0;color:var(--tinta);text-decoration:underline;
+  text-underline-offset:3px;text-decoration-thickness:1px}
+.anexar:hover{color:var(--agua)}
