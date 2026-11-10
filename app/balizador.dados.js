@@ -64,7 +64,7 @@
       const ws = wb.Sheets[nomeAba];
       if (!ws || !ws["!ref"]) continue;
       const grade = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: null });
-      if (!grade.length) continue;
+      if (!grade.length || cabecalhoCanonico(grade)) continue;
       const cab = grade[0] || [];
 
       // onde começa cada bloco de prova
@@ -97,7 +97,10 @@
       const cat = categoriaDaAba(nomeAba);
       for (let r = 1; r < grade.length; r++) {
         const linha = grade[r] || [];
-        for (const b of blocos) {
+        // cada bloco da linha é uma inscrição diferente: o sub separa uma da
+        // outra, senão tirar uma da conferência tirava a linha inteira
+        for (let sub = 0; sub < blocos.length; sub++) {
+          const b = blocos[sub];
           const bruto = linha[b.col];
           const cel = (c) => c == null ? ""
             : String(linha[c] == null ? "" : linha[c]).trim();
@@ -107,7 +110,7 @@
             // linha com a instituição preenchida e sem nome nenhum ao lado:
             // no formato em lista isso já era apontado, aqui sumia calado
             if (equipe || cel(b.aux.tempo)) {
-              descartadas.push({ aba: nomeAba, linha: r + 1, equipe,
+              descartadas.push({ aba: nomeAba, linha: r + 1, sub, equipe,
                 prova: tituloProva(b.info.distancia, b.info.estilo,
                                    cat.categoria, cat.naipe || b.info.naipe || ""),
                 motivo: "tem a instituição preenchida mas não tem o nome do atleta" });
@@ -121,7 +124,7 @@
           const excecao = cel(b.aux.excecao);
 
           const base = {
-            aba: nomeAba, linha: r + 1, equipe,
+            aba: nomeAba, linha: r + 1, sub, equipe,
             classe, tempo, tempoTexto: cel(b.aux.tempo),
             nascimento: cel(b.aux.nascimento),
             segmento, excecao,
@@ -259,7 +262,7 @@
       const ws = wb.Sheets[nomeAba];
       if (!ws || !ws["!ref"]) continue;
       const grade = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: null });
-      if (!grade.length || !ehAbaLista(nomeAba, grade)) continue;
+      if (!grade.length || cabecalhoCanonico(grade) || !ehAbaLista(nomeAba, grade)) continue;
 
       const info = { aba: nomeAba, provas: [], linhas: 0 };
       let bloco = null;
@@ -341,63 +344,250 @@
     return { inscricoes, abas, descartadas, repetidas };
   }
 
-  /* ---------------- modelo canônico (uma linha por inscrição) ------- */
+  /* ---------------- formato canônico: uma linha por inscrição ----------
+     É o destino de tudo o que não chega num dos formatos de prova. A planilha
+     feita à mão neste formato e a que a etapa de IA organizou passam pelo
+     mesmo normalizador, e por isso caem nas mesmas provas e nas mesmas
+     conferências. Nada aqui adivinha: o que não for entendido volta com o
+     motivo escrito, para quem estiver revisando decidir.
+
+       NOME | EQUIPE | PROVA (ou DISTÂNCIA e ESTILO) | CATEGORIA | NAIPE |
+       TEMPO | NASCIMENTO | CLASSE | SEGMENTO
+  -------------------------------------------------------------------- */
   const COLUNAS_MODELO = {
-    nome: ["NOME", "ATLETA", "NOME DO ATLETA"],
-    equipe: ["EQUIPE", "ESCOLA", "COLEGIO", "COLÉGIO", "CIDADE", "ENTIDADE"],
+    nome: ["NOME", "ATLETA", "NOME DO ATLETA", "NADADOR", "NADADORA"],
+    equipe: ["EQUIPE", "ESCOLA", "COLEGIO", "CIDADE", "ENTIDADE", "CLUBE",
+             "INSTITUICAO"],
     categoria: ["CATEGORIA", "CLASSE ETARIA", "FAIXA ETARIA"],
-    naipe: ["NAIPE", "SEXO", "GENERO", "GÊNERO"],
-    prova: ["PROVA", "NOME DA PROVA", "NOME DA COMPETICAO", "NOME DA COMPETIÇÃO"],
-    distancia: ["DISTANCIA", "DISTÂNCIA"],
+    naipe: ["NAIPE", "SEXO", "GENERO"],
+    prova: ["PROVA", "NOME DA PROVA"],
+    distancia: ["DISTANCIA", "DIST", "METRAGEM"],
     estilo: ["ESTILO", "NADO"],
     segmento: ["SEGMENTO"],
-    classe: ["CLASSE", "CLASSIFICACAO", "CLASSIFICAÇÃO"],
+    classe: ["CLASSE", "CLASSIFICACAO", "CLASSE FUNCIONAL"],
     tempo: ["TEMPO", "TEMPO DE INSCRICAO", "MELHOR TEMPO"],
     nascimento: ["NASCIMENTO", "DATA DE NASCIMENTO", "DATA NASCIMENTO",
                  "DT NASCIMENTO", "NASC", "ANO", "ANO DE NASCIMENTO"],
+    // de onde a linha veio, quando ela foi organizada a partir de outra
+    // planilha: o app só mostra, quem manda é a posição da linha nesta aba
+    origem: ["ORIGEM", "LINHA DE ORIGEM"],
   };
 
-  function lerPlanilhaLinhas(wb, opts) {
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const linhas = XLSX.utils.sheet_to_json(ws, { raw: false, defval: null });
-    if (!linhas.length) return { inscricoes: [], abas: [] };
-    const chaves = Object.keys(linhas[0]);
-    const mapa = {};
-    for (const [campo, nomes] of Object.entries(COLUNAS_MODELO)) {
-      const achou = chaves.find((c) => nomes.includes(norm(c)));
-      if (achou) mapa[campo] = achou;
-    }
-    if (!mapa.nome) return { inscricoes: [], abas: [], erro: "não achei a coluna NOME" };
+  const textoDe = (v) => String(v == null ? "" : v).trim();
 
-    const inscricoes = [];
-    linhas.forEach((l, idx) => {
-      const nome = String(l[mapa.nome] || "").trim();
-      if (!nome || norm(nome) === "SEM INSCRITOS") return;
-      let dist = mapa.distancia ? String(l[mapa.distancia] || "") : "";
-      let estilo = mapa.estilo ? norm(l[mapa.estilo]) : "";
-      let misto = false, revez = false;
-      if ((!dist || !estilo) && mapa.prova) {
-        const info = lerCabecalhoProva(String(l[mapa.prova] || "")
-          .replace(/^.*?-\s*/, ""));
-        if (info) {
-          dist = info.distancia; estilo = info.estilo;
-          misto = info.misto; revez = info.revezamento;
+  /* A grade de uma aba com o número de linha de verdade. A planilha que não
+     começa na A1 tem o "!ref" deslocado, e contar a partir do zero apontaria
+     a linha errada para quem for conferir no Excel. */
+  function gradeDaAba(ws) {
+    const grade = XLSX.utils.sheet_to_json(ws, {
+      header: 1, raw: false, defval: null, blankrows: true });
+    const ref = ws && ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : null;
+    return { grade, linha0: ref ? ref.s.r : 0, coluna0: ref ? ref.s.c : 0 };
+  }
+
+  // a linha de cabeçalho do formato canônico, nas primeiras linhas da aba:
+  // precisa dizer quem nada (NOME ou EQUIPE) e o que nada (PROVA, ou
+  // DISTÂNCIA com ESTILO)
+  function cabecalhoCanonico(grade) {
+    const ate = Math.min(grade.length, 10);
+    for (let r = 0; r < ate; r++) {
+      const mapa = {};
+      (grade[r] || []).forEach((cel, c) => {
+        const u = norm(cel).replace(/[.:]+$/, "");
+        if (!u) return;
+        for (const [campo, nomes] of Object.entries(COLUNAS_MODELO)) {
+          if (mapa[campo] != null) continue;
+          if (nomes.includes(u)) { mapa[campo] = c; return; }
         }
-      }
-      inscricoes.push({
-        aba: "MODELO", linha: idx + 2, nome,
-        equipe: mapa.equipe ? String(l[mapa.equipe] || "").trim() : "",
-        categoria: mapa.categoria ? String(l[mapa.categoria] || "").trim() : "",
-        naipe: mapa.naipe ? norm(l[mapa.naipe]).slice(0, 4) : "",
-        segmento: mapa.segmento ? String(l[mapa.segmento] || "").trim() : "",
-        classe: mapa.classe ? String(l[mapa.classe] || "").trim() : "",
-        tempo: mapa.tempo ? B.lerTempo(l[mapa.tempo]) : null,
-        tempoTexto: mapa.tempo ? String(l[mapa.tempo] || "").trim() : "",
-        nascimento: mapa.nascimento ? String(l[mapa.nascimento] || "").trim() : "",
-        distancia: dist, estilo, misto, revezamento: revez, atletas: null,
       });
-    });
-    return { inscricoes, abas: [{ aba: "MODELO", linhas: inscricoes.length }] };
+      const quem = mapa.nome != null || mapa.equipe != null;
+      const oque = mapa.prova != null || (mapa.distancia != null && mapa.estilo != null);
+      if (quem && oque) return { linha: r, mapa };
+    }
+    return null;
+  }
+
+  /* A prova escrita de qualquer jeito que ainda dê para ler sem chutar:
+     "50M LIVRE MIRIM FEMININO", "12ª - 50m nado livre Mirim F",
+     "4x50 crawl misto". Devolve só o que entendeu; o resto fica em branco. */
+  function lerProvaPorExtenso(texto) {
+    let t = textoDe(texto)
+      .replace(/^\s*(PROVA\s*)?\d+\s*[ªº°]\s*[-–—:.)]*\s*/i, "")
+      .replace(/^\s*PROVA\s*\d+\s*[-–—:.)]?\s*/i, "")
+      .replace(/^\s*\d+\s*[-–—:.)]\s+/, "")
+      .replace(/^\s*(REVEZAMENTO|REV\.?)\s+/i, "");
+    // maiúsculas sem tirar o acento: a categoria sai como foi escrita,
+    // PRÉ-MIRIM e não PRE-MIRIM
+    const u = t.toUpperCase().replace(/\s+/g, " ").trim();
+    const m = u.match(/^(\d+\s*X\s*\d+|\d+)\s*M?(?:ETROS?)?\s+(?:NADO\s+)?(LIVRE|CRAWL|COSTAS?|DORSO|PEITO|BORBOLETA|GOLFINHO|MEDLEY)\b(.*)$/);
+    if (!m) return null;
+    // o hífen dentro da palavra fica (PRÉ-MIRIM); o que separa pedaços sai
+    let resto = " " + m[3].replace(/^[\s\-–—:]+/, "").replace(/\s[-–—]\s/g, " ")
+                          .replace(/[,;/().]/g, " ") + " ";
+    let naipe = "";
+    const achaNaipe = [["MISTO", /\s(MISTO|MISTA)\s/], ["MASC", /\s(MASCULINO|MASC|M)\s/],
+                       ["FEM", /\s(FEMININO|FEM|F)\s/]];
+    for (const [n, re] of achaNaipe) {
+      if (re.test(resto)) { naipe = n; resto = resto.replace(re, " "); break; }
+    }
+    // "CATEGORIA MIRIM" é MIRIM: o rótulo veio junto do título
+    resto = resto.replace(/\s(CATEGORIA|CAT|NAIPE|PROVA)\s/g, " ");
+    return {
+      distancia: normalizarDistancia(m[1]),
+      estilo: normalizarEstilo(m[2]),
+      categoria: resto.replace(/\s+/g, " ").trim(),
+      naipe,
+    };
+  }
+
+  /**
+   * Uma inscrição a partir dos campos de uma linha no formato canônico.
+   *   campos: { nome, equipe, prova, distancia, estilo, categoria, naipe,
+   *             tempo, nascimento, classe, segmento }, todos texto
+   *   origem: { aba, linha, sub }   sub separa as inscrições da mesma linha
+   * Devolve { inscricao, problemas, avisos }. Havendo problema, a inscrição
+   * vem null: é o caso de quem revisa resolver, não do app adivinhar.
+   */
+  function inscricaoCanonica(campos, origem) {
+    const c = {};
+    for (const k of Object.keys(COLUNAS_MODELO)) c[k] = textoDe(campos[k]);
+    const problemas = [], avisos = [];
+    const porExtenso = c.prova ? lerProvaPorExtenso(c.prova) : null;
+    const ext = porExtenso || {};
+
+    // a coluna própria vale mais que a prova por extenso, e as duas
+    // dizendo coisas diferentes é problema, não escolha
+    const escolhe = (coluna, extenso, nome) => {
+      if (coluna && extenso && coluna !== extenso) {
+        problemas.push(`a prova diz ${extenso} e a coluna ${nome} diz ${coluna}`);
+      }
+      return coluna || extenso || "";
+    };
+    const distancia = escolhe(normalizarDistancia(c.distancia), ext.distancia, "DISTÂNCIA");
+    const estilo = escolhe(normalizarEstilo(c.estilo), ext.estilo, "ESTILO");
+    const naipe = escolhe(normalizarNaipe(c.naipe), ext.naipe, "NAIPE");
+    const categoria = (c.categoria || ext.categoria || "").replace(/\s+/g, " ");
+
+    if (!distancia) {
+      problemas.push(c.distancia ? `não entendi a distância "${c.distancia}"`
+        : c.prova ? `não entendi a prova "${c.prova}"` : "falta a prova");
+    }
+    if (!estilo && (porExtenso || c.estilo || !c.prova)) {
+      problemas.push(c.estilo ? `não entendi o estilo "${c.estilo}"` : "falta o estilo");
+    }
+    if (!naipe) {
+      problemas.push(c.naipe ? `não entendi o naipe "${c.naipe}"`
+        : "falta o naipe: FEMININO, MASCULINO ou MISTO");
+    }
+
+    const revezamento = /^\d+X/.test(distancia);
+    let nome = c.nome, atletas = null, semLista = false;
+    if (revezamento) {
+      // no revezamento quem ocupa a raia é a equipe; nomes escritos são rascunho
+      atletas = c.nome.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+      semLista = atletas.length === 0;
+      nome = c.equipe || atletas[0] || "";
+      if (!c.equipe) problemas.push("revezamento sem a equipe");
+    } else if (!nome) {
+      problemas.push("falta o nome do atleta");
+    } else if (norm(nome) === "SEM INSCRITOS") {
+      problemas.push("a linha diz SEM INSCRITOS");
+    }
+
+    const tempo = c.tempo ? B.lerTempo(c.tempo) : null;
+    // "sem tempo" escrito de qualquer jeito é sem tempo, e não tem o que avisar
+    const semTempo = /^(9{1,2}[:.,]9{2}([:.,]9{1,2})?|SEM TEMPO|SEM MARCA|S\/?T|N\/?T|-+|–|—|X)$/i;
+    if (c.tempo && tempo == null && !semTempo.test(c.tempo)) {
+      avisos.push(`o tempo "${c.tempo}" não foi entendido e vai como sem tempo`);
+    }
+
+    if (problemas.length) return { inscricao: null, problemas, avisos };
+    origem = origem || {};
+    const inscricao = {
+      aba: origem.aba || "", linha: origem.linha || 0,
+      nome, equipe: c.equipe, categoria, naipe,
+      // a linha já disse categoria e naipe: o nome da aba não entra
+      categoriaDefinida: true,
+      segmento: c.segmento, classe: c.classe,
+      tempo, tempoTexto: c.tempo, nascimento: c.nascimento, excecao: "",
+      distancia, estilo, misto: naipe === "MISTO", revezamento,
+      atletas, semLista,
+    };
+    if (origem.sub != null) inscricao.sub = origem.sub;
+    if (c.origem) inscricao.origem = c.origem;
+    return { inscricao, problemas, avisos };
+  }
+
+  // a linha da planilha como ela estava, para quem confere ver do que se fala
+  function vistoDaLinha(linha) {
+    return (linha || []).map(textoDe).filter(Boolean).join("  ·  ");
+  }
+
+  /* Lê todas as abas que estiverem no formato canônico. Uma linha que não dê
+     para entender volta em `recusadas`, com o motivo: é a conferência do
+     formato que decide se a planilha passa. */
+  function lerPlanilhaLinhas(wb, opts) {
+    opts = opts || {};
+    const ignorar = (opts.ignorar || []).map(norm);
+    const inscricoes = [], abas = [], recusadas = [];
+    for (const nomeAba of wb.SheetNames) {
+      if (ignorar.includes(norm(nomeAba))) continue;
+      const ws = wb.Sheets[nomeAba];
+      if (!ws || !ws["!ref"]) continue;
+      const { grade, linha0 } = gradeDaAba(ws);
+      const cab = cabecalhoCanonico(grade);
+      if (!cab) continue;
+      const info = { aba: nomeAba, provas: [], linhas: 0 };
+      const vistas = new Set();
+      for (let r = cab.linha + 1; r < grade.length; r++) {
+        const linha = grade[r] || [];
+        if (!linha.some((x) => textoDe(x))) continue;
+        const campos = {};
+        for (const [campo, col] of Object.entries(cab.mapa)) campos[campo] = linha[col];
+        if (norm(campos.nome) === "SEM INSCRITOS") continue;
+        const n = linha0 + r + 1;
+        const lida = inscricaoCanonica(campos, { aba: nomeAba, linha: n });
+        if (!lida.inscricao) {
+          recusadas.push({ aba: nomeAba, linha: n, texto: vistoDaLinha(linha),
+                           motivo: lida.problemas.join("; ") });
+          continue;
+        }
+        const i = lida.inscricao;
+        const k = i.distancia + " " + i.estilo;
+        if (!vistas.has(k)) { vistas.add(k); info.provas.push({ distancia: i.distancia, estilo: i.estilo }); }
+        inscricoes.push(i);
+        info.linhas++;
+      }
+      abas.push(info);
+    }
+    return { inscricoes, abas, recusadas, descartadas: [], repetidas: [] };
+  }
+
+  /* Confere uma aba no formato canônico. As colunas que o tipo de competição
+     exige têm de existir, e toda linha tem de ser entendida: uma inscrição
+     que somisse aqui só apareceria como falta no dia da prova. */
+  function conferirAbaLinhas(nomeAba, ws, grade, cab, tipo) {
+    const faltando = new Set();
+    for (const campo of (CAMPOS_EXIGIDOS[tipo] || [])) {
+      if (campo === "classe" && tipo === "ESCOLAR_PARA") continue;
+      if (campo === "segmento" && cab.mapa.categoria != null) continue;
+      if (cab.mapa[campo] == null) faltando.add(campo);
+    }
+    const achado = (grade[cab.linha] || []).filter((c) => textoDe(c)).map(String).slice(0, 8);
+    if (faltando.size) {
+      return { ruim: { aba: nomeAba, achado,
+        motivo: "falta " + [...faltando].map((c) => ROTULO_CAMPO[c]).join(" e ") } };
+    }
+    const lida = lerPlanilhaLinhas({ SheetNames: [nomeAba], Sheets: { [nomeAba]: ws } });
+    if (lida.recusadas.length) {
+      const exemplos = lida.recusadas.slice(0, 3)
+        .map((x) => `linha ${x.linha}: ${x.motivo}`).join("; ");
+      return { ruim: { aba: nomeAba, achado,
+        motivo: `${lida.recusadas.length} linha(s) não foram entendidas. ${exemplos}` } };
+    }
+    return { boa: { aba: nomeAba, categoria: "", naipe: "",
+                    provas: lida.abas.length ? lida.abas[0].provas.length : 0,
+                    formato: "linhas" } };
   }
 
   /* ---------------- categoria e naipe vindos do nome da aba -------- */
@@ -500,6 +690,15 @@
       const temConteudo = grade.slice(1).some((l) =>
         (l || []).some((c) => c != null && String(c).trim()));
       if (!cab.some((c) => c) && !temConteudo) continue;   // aba vazia: ignora
+
+      // o canônico vem antes: com a PROVA na coluna A, cada linha dele
+      // pareceria um cabeçalho da lista vertical
+      const canonico = cabecalhoCanonico(grade);
+      if (canonico) {
+        const r = conferirAbaLinhas(nomeAba, ws, grade, canonico, tipo);
+        if (r.boa) abasBoas.push(r.boa); else abasRuins.push(r.ruim);
+        continue;
+      }
 
       if (ehAbaLista(nomeAba, grade)) {
         const r = conferirAbaLista(nomeAba, grade, perfil, tipo);
@@ -1530,6 +1729,8 @@
     normalizarDistancia, normalizarEstilo, normalizarNaipe,
     montarBalizamento, inscricoesPlanas, tituloProva, eventoRegras, COLUNAS_MODELO,
     partesDaCategoria, casaCategoria, propostasDePrograma, gruposDePropostas,
+    inscricaoCanonica, lerProvaPorExtenso, cabecalhoCanonico, gradeDaAba,
+    ROTULOS_LISTA, CABECALHOS_PROGRAMA,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else raiz.BalizadorDados = api;

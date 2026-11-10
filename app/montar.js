@@ -1,6 +1,14 @@
-/* Monta o BALIZADOR.html: um arquivo único, com tudo embutido, que funciona
-   offline com duplo clique.
+/* Monta o Balizador em arquivo único, com tudo embutido.
        node montar.js
+
+   Sai em três lugares:
+   - site/index.html, o site do GitHub Pages
+   - BALIZADOR.html, a cópia offline da pasta do projeto, que abre com duplo
+     clique e funciona sem internet
+   - BALIZADOR-CLAUDE.html, a versão que é publicada como Artifact no
+     claude.ai. É lá, e só lá, que a etapa de IA e a conversa funcionam, com
+     a conta Claude de quem abre. Ela vai sem <html>, <head> e <body>,
+     porque o claude.ai põe os dele em volta.
 */
 const fs = require("fs");
 const path = require("path");
@@ -15,10 +23,22 @@ const partes = {
   dados: ler("balizador.dados.js"),
   saida: ler("balizador.saida.js"),
   exemplos: ler("balizador.exemplos.js"),
+  ia: ler("balizador.ia.js"),
   app: ler("balizador.app.js"),
   css: ler("estilo.css"),
   corpo: ler("corpo.html"),
 };
+
+// um "</script" no meio do código fecharia a tag antes da hora; "<\/script"
+// é o mesmo texto para o JavaScript e não fecha nada para o HTML
+for (const k of Object.keys(partes)) {
+  if (k !== "css" && k !== "corpo") partes[k] = partes[k].replace(/<\/script/gi, "<\\/script");
+}
+
+/* As tabelas de página de código do SheetJS trazem o caractere U+FFFD dentro
+   de textos. O claude.ai recusa publicar um arquivo com ele cru, então ele vai
+   escrito como �, que para o JavaScript é exatamente o mesmo caractere. */
+partes.xlsx = partes.xlsx.replace(/�/g, "\\uFFFD");
 
 // as fontes são carregadas da internet quando houver; sem rede, cai no
 // system-ui e o app continua funcionando igual
@@ -46,6 +66,15 @@ const LINK_ICONE =
   encodeURIComponent(ICONE) + '">' +
   '<meta name="theme-color" content="#0B7285">';
 
+const SCRIPTS = `<script>${partes.xlsx}</script>
+<script>${partes.jspdf}</script>
+<script>${partes.core}</script>
+<script>${partes.dados}</script>
+<script>${partes.saida}</script>
+<script>${partes.exemplos}</script>
+<script>${partes.ia}</script>
+<script>${partes.app}</script>`;
+
 const html = `<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -53,7 +82,7 @@ const html = `<!doctype html>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Balizador, natação</title>
 ${LINK_ICONE}
-<meta name="description" content="Monta balizamento, papeletas de raia e confere erros de inscrição em competições de natação. Roda inteiramente no seu computador.">
+<meta name="description" content="Monta balizamento, papeletas de raia e confere erros de inscrição em competições de natação. Roda no navegador. No claude.ai, a etapa opcional de IA e a conversa usam a conta Claude de quem abre.">
 ${FONTES}
 <style>
 ${partes.css}
@@ -61,23 +90,31 @@ ${partes.css}
 </head>
 <body>
 ${partes.corpo}
-<script>${partes.xlsx}</script>
-<script>${partes.jspdf}</script>
-<script>${partes.core}</script>
-<script>${partes.dados}</script>
-<script>${partes.saida}</script>
-<script>${partes.exemplos}</script>
-<script>${partes.app}</script>
+${SCRIPTS}
 </body>
 </html>`;
 
-// o site publicado usa index.html; a cópia offline fica na pasta do projeto
-const destinos = [path.join(AQUI, "..", "index.html")];
-const offline = path.join(AQUI, "..", "..", "BALIZADOR.html");
-if (fs.existsSync(path.dirname(offline))) destinos.push(offline);
+// o claude.ai procura o título nos primeiros 8 KB: ele vem antes de tudo
+const artifact = `<title>Balizador</title>
+${FONTES}
+<style>
+${partes.css}
+</style>
+${partes.corpo}
+${SCRIPTS}
+`;
 
-for (const d of destinos) {
-  fs.writeFileSync(d, html, "utf8");
+// o site publicado usa index.html; a cópia offline e a do claude.ai ficam na
+// pasta do projeto, fora do repositório
+const destinos = [[path.join(AQUI, "..", "index.html"), html]];
+const pasta = path.join(AQUI, "..", "..");
+if (fs.existsSync(pasta)) {
+  destinos.push([path.join(pasta, "BALIZADOR.html"), html]);
+  destinos.push([path.join(pasta, "BALIZADOR-CLAUDE.html"), artifact]);
+}
+
+for (const [d, conteudo] of destinos) {
+  fs.writeFileSync(d, conteudo, "utf8");
   console.log(`${path.basename(d)}: ${(fs.statSync(d).size / 1024).toFixed(0)} KB`);
   console.log("   " + d);
 }

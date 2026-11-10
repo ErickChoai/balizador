@@ -4,6 +4,8 @@
 (function () {
   "use strict";
   const B = window.Balizador, D = window.BalizadorDados, S = window.BalizadorSaida;
+  // a etapa opcional de IA; fora do claude.ai, só ela fica de fora
+  const IA = window.BalizadorIA;
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const CX = (t) => String(t == null ? "" : t).toUpperCase();
@@ -132,6 +134,9 @@
     renderEspecificacao();
     $("#painelFormato").hidden = qual !== "formato";
     $("#painelEnvio").hidden = qual !== "envio";
+    const ia = $("#painelIA"), rev = $("#painelRevisao");
+    if (ia) ia.hidden = qual !== "ia";
+    if (rev) rev.hidden = qual !== "revisao";
     window.scrollTo(0, 0);
   }
 
@@ -233,6 +238,22 @@
         aviso(programa
           ? "Programa baixado. Arraste-o na área acima para ver o app lendo."
           : "Inscritos baixados. Eles são para o programa desta mesma competição.");
+      };
+    });
+    // as planilhas fora do formato, para ver a etapa de IA trabalhando
+    if (!E.listaDeBaguncadas) return;
+    html("listaBaguncadas", E.listaDeBaguncadas().map((x) => `
+      <div class="linha-exemplo">
+        <div><b>${x.nome}</b></div>
+        <div class="acoes-exemplo">
+          <button type="button" class="mini claro" data-baguncada="${x.chave}">baixar</button>
+        </div>
+      </div>`).join(""));
+    $$("[data-baguncada]").forEach((b) => {
+      b.onclick = () => {
+        baixarPlanilha(E.planilhaBaguncada(b.dataset.baguncada).wb,
+                       E.nomeDaBaguncada(b.dataset.baguncada));
+        aviso("Baixada. Use com o programa do JEPB de exemplo, logo acima.");
       };
     });
   }
@@ -1290,6 +1311,10 @@
     const wb = XLSX.read(buf, { type: "array", cellDates: false });
     const ignorar = estado.perfil.ignorarAbas;
 
+    // planilha nova, etapa de IA nova: a tabela de troca dos nomes da
+    // anterior não serve para esta e não fica guardada em lugar nenhum
+    estado.ia = null;
+
     // antes de qualquer coisa: a planilha está no formato esperado?
     const conf = D.conferirPlanilha(wb, estado.perfil);
     if (!conf.ok && !conf.parcial) {
@@ -1298,6 +1323,9 @@
       liberar("conferencia", false);
       liberar("gerar", false);
       $("#irConferencia").disabled = true;
+      const abasRuins = conf.abasRuins.map((a) => a.aba);
+      // o chat explica a recusa a partir daqui
+      estado.recusa = { arquivo: file.name, abas: conf.abasRuins };
       $("#resumoArquivo").innerHTML = `
         <div class="recusa">
           <h3>Não posso usar esta planilha</h3>
@@ -1312,23 +1340,31 @@
             <button type="button" class="mini claro" id="btnModeloRecusa">Baixar planilha modelo</button>
             <button type="button" class="mini claro" id="btnVoltarFormato">Rever o formato completo</button>
           </div>
-        </div>`;
+        </div>
+        ${abasRuins.length ? ofertaIA(false) : ""}`;
       $("#btnModeloRecusa").onclick = () => baixarModelo();
       $("#btnVoltarFormato").onclick = () => mostrarPainel("formato");
+      seHouver("btnOrganizarIA", "click", () => abrirIA(wb, file.name, abasRuins, null));
+      mostrarResultado("resumoArquivo");
       return;
     }
 
-    // a lista vertical é o formato que o app pede; os outros dois continuam
-    // valendo para quem já tem a planilha pronta de anos anteriores
+    // a lista vertical é o formato que o app pede; os outros continuam
+    // valendo para quem já tem a planilha pronta de anos anteriores, e o
+    // canônico, uma linha por inscrição, entra junto de qualquer um deles
     let r = D.lerPlanilhaLista(wb, { ignorar });
     let formato = "lista";
     if (!r.inscricoes.length) {
       r = D.lerPlanilhaBlocos(wb, { ignorar });
       formato = "blocos";
     }
-    if (!r.inscricoes.length) {
-      r = D.lerPlanilhaLinhas(wb, {});
-      formato = "linhas";
+    const canonicas = D.lerPlanilhaLinhas(wb, { ignorar });
+    if (canonicas.inscricoes.length) {
+      if (!r.inscricoes.length) { r = canonicas; formato = "linhas"; }
+      else {
+        r.inscricoes = r.inscricoes.concat(canonicas.inscricoes);
+        r.abas = r.abas.concat(canonicas.abas);
+      }
     }
     if (!r.inscricoes.length) {
       $("#resumoArquivo").innerHTML = `
@@ -1337,7 +1373,23 @@
            abaixo deles.</p></div>`;
       return;
     }
+    // as abas recusadas não entram: se a IA for chamada, é ela que as lê
+    if (conf.parcial) {
+      const ruins = new Set(conf.abasRuins.map((a) => a.aba));
+      r.inscricoes = r.inscricoes.filter((i) => !ruins.has(i.aba));
+      r.abas = r.abas.filter((a) => !ruins.has(a.aba));
+      r.descartadas = (r.descartadas || []).filter((d) => !ruins.has(d.aba));
+      r.repetidas = (r.repetidas || []).filter((d) => !ruins.has(d.aba));
+    }
+    estado.recusa = conf.parcial ? { arquivo: file.name, abas: conf.abasRuins } : null;
+    aceitarLeitura(r, formato, file.name, conf, wb);
+  }
 
+  /* O que vem depois de uma planilha lida: vale para a leitura de sempre e
+     para o que a etapa de IA organizou e a pessoa revisou. As duas entram
+     por aqui, e por isso passam pelas mesmas conferências. */
+  function aceitarLeitura(r, formato, nomeArquivo, conf, wb, opts) {
+    opts = opts || {};
     let inscricoes = r.inscricoes;
     if (estado.perfil.dedupMisto) {
       const vistos = new Set();
@@ -1356,7 +1408,7 @@
 
     estado.inscricoes = inscricoes;
     estado.abas = r.abas;
-    estado.arquivo = file.name;
+    estado.arquivo = nomeArquivo;
     estado.descartadas = r.descartadas || [];
     estado.provasRepetidas = r.repetidas || [];
     estado.ajustes = novosAjustes();
@@ -1367,12 +1419,14 @@
       (s, i) => s + (i.atletas ? i.atletas.length : 1), 0);
     const comTempo = inscricoes.filter((i) => i.tempo != null).length;
 
-    const alertaParcial = conf.parcial ? `
+    const parcial = !!(conf && conf.parcial);
+    const alertaParcial = parcial ? `
       <div class="recusa leve">
         <h3>${conf.abasRuins.length} aba(s) foram ignoradas</h3>
         <p>O resto foi lido normalmente, mas confira se estas deveriam entrar:</p>
         ${listaAbasRuins(conf.abasRuins, [])}
-      </div>` : "";
+      </div>
+      ${ofertaIA(true)}` : "";
 
     $("#resumoArquivo").innerHTML = alertaParcial + `
       <div class="fichas">
@@ -1386,25 +1440,1054 @@
         lista: "uma prova embaixo da outra",
         blocos: "blocos de coluna (uma aba por categoria)",
         linhas: "uma linha por inscrição",
-      }[formato]}</b> · arquivo <b>${file.name}</b></p>
+        ia: "organizado pela IA e revisado por você",
+      }[formato]}</b> · arquivo <b>${AT(nomeArquivo)}</b></p>
       <table class="tabela"><thead><tr><th>ABA</th><th>PROVAS ENCONTRADAS</th>
       <th>INSCRIÇÕES</th></tr></thead><tbody>${
         r.abas.map((a) => `<tr><td>${a.aba}</td><td>${
           (a.provas || []).map((p) => p.distancia + " " + p.estilo).join(" · ") || ""
         }</td><td class="num">${a.linhas}</td></tr>`).join("")
       }</tbody></table>`;
+    if (parcial) {
+      // o que já foi lido fica guardado: a IA organiza só as abas recusadas
+      // e as duas partes se juntam depois da revisão
+      seHouver("btnOrganizarIA", "click", () => abrirIA(wb, nomeArquivo,
+        conf.abasRuins.map((a) => a.aba), { r, formato }));
+    }
 
     montar();
     liberar("conferencia", true);
     $("#irConferencia").disabled = false;
     // a conferência é quem destranca o passo de gerar
     renderConferencia();
-    mostrarResultado("resumoArquivo");
+    if (!opts.silencioso) mostrarResultado("resumoArquivo");
   }
 
-  // uma inscrição é identificada pela linha da planilha de onde veio
+  /* ---------------- o Claude da conta de quem usa ----------------
+     Aberto no claude.ai, o app recebe da plataforma duas coisas: a função
+     sample, que chama o Claude pela conta de quem está vendo (o uso sai da
+     conta dessa pessoa, e o Claude pede licença na primeira vez), e a de
+     downloads, que é o único jeito de salvar arquivo lá dentro. Fora do
+     claude.ai (o GitHub Pages, o arquivo aberto com duplo clique) as duas não
+     existem: a etapa de IA e a conversa somem, e o resto funciona igual.
+  ------------------------------------------------------------------ */
+  const claudeApp = { sample: null, downloads: null, pronto: false };
+  // onde o Balizador está publicado no claude.ai, com a IA e a conversa
+  const LINK_CLAUDE = "https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6";
+
+  async function iniciarClaude() {
+    const c = window.claude;
+    if (c && typeof c.use === "function") {
+      const usar = (nome) => c.use(nome).catch(() => null);
+      const [sample, downloads] = await Promise.all([usar("sample"), usar("downloads")]);
+      claudeApp.sample = sample;
+      claudeApp.downloads = downloads;
+    }
+    claudeApp.pronto = true;
+    prepararChat();
+  }
+
+  /* ---------------- tela 3c: organizar com IA ----------------
+     Opcional e desligada por padrão: o botão só aparece quando a planilha
+     foi recusada, e nada é enviado sem a pessoa ver o texto exato que vai
+     sair e clicar em enviar. Fora do claude.ai, ou sem internet, o resto do
+     app funciona igual; só esta etapa fica de fora.
+
+     A tabela que troca os nomes por código fica em estado.ia, na memória
+     desta página. Não é guardada em lugar nenhum: fechou a página, sumiu.
+  ------------------------------------------------------------- */
+
+  // o texto da célula com os códigos destacados, para a pessoa ver o que trocou
+  const comCodigos = (t) => AT(t)
+    .replace(/\b(PESSOA|DATA|NUMERO) \d+\b/g, (c) => `<mark class="codigo">${c}</mark>`)
+    .replace(/ ¶ |\r?\n/g, "<br>");
+
+  function ofertaIA(parcial) {
+    if (!IA) return "";
+    if (claudeApp.pronto && !claudeApp.sample) {
+      return `
+      <div class="recusa pergunta oferta-ia">
+        <h3>Quer que a IA organize ${parcial ? "as abas ignoradas" : "esta planilha"}?</h3>
+        <p>Isso funciona quando o Balizador é aberto pelo link do claude.ai: a IA
+           usa a conta Claude de quem está usando o app, sem chave nenhuma.
+           Aqui, corrija a planilha ou baixe a planilha modelo.</p>
+        <p><a href="${LINK_CLAUDE}" target="_blank" rel="noopener">Abrir o
+           Balizador no claude.ai</a></p>
+      </div>`;
+    }
+    return `
+      <div class="recusa pergunta oferta-ia">
+        <h3>${parcial ? "Quer que a IA organize as abas ignoradas?"
+                      : "Quer que a IA organize esta planilha?"}</h3>
+        <p>Ela lê a planilha e põe cada inscrição no formato do app. Séries e
+           raias continuam sendo montadas aqui, pelas regras de sempre, e você
+           revisa linha por linha antes de seguir.</p>
+        <p class="nota">Nada é enviado sem você ver antes, e os nomes e as datas
+           vão trocados por código. A IA usa a sua conta Claude.</p>
+        <div class="acoes">
+          <button type="button" class="botao" id="btnOrganizarIA">Organizar com IA</button>
+        </div>
+      </div>`;
+  }
+
+  function abrirIA(wb, arquivo, abas, base) {
+    const perfil = lerConfig();
+    const grades = IA.lerGrades(wb, { abas });
+    if (!grades.length) { aviso("As abas recusadas estão vazias: não há o que organizar."); return; }
+    const voc = IA.vocabulario(perfil);
+    const mascara = IA.novaMascara();
+    const amostra = IA.montarAmostra(grades, mascara, voc);
+    estado.ia = {
+      arquivo, base, grades, voc, mascara, amostra,
+      pedido: IA.pedidoDoMapa(amostra, perfil),
+      mapaFeito: false, provasFeitas: false,
+      linhas: [], ignoradas: [], resumoAbas: [],
+      pendentes: [], pedidoProvas: null, planoB: {}, pedidosAba: {},
+      ocupado: null, erro: null, controle: null,
+      filtro: "todas", editando: null, conferiAmarelas: false,
+    };
+    mostrarPainel("ia");
+    renderIA();
+  }
+
+  function textoExato(pedido) {
+    return "MODELO: " + IA.MODELO + "\n\nINSTRUÇÕES\n" + pedido.sistema +
+           "\n\nPEDIDO\n" + pedido.texto;
+  }
+
+  function tabelaDaAmostra(a) {
+    const cols = [];
+    for (let c = 0; c < a.colunas; c++) cols.push(XLSX.utils.encode_col(c));
+    const corpo = [];
+    let anterior = null;
+    for (const l of a.linhas) {
+      if (anterior != null && l.i > anterior + 1) {
+        corpo.push(`<tr class="pulo"><td class="lin">…</td><td colspan="${cols.length}">
+          ${l.i - anterior - 1} linha(s) não vão</td></tr>`);
+      }
+      corpo.push(`<tr><td class="lin">${l.n}</td>${
+        cols.map((_, c) => `<td>${comCodigos(l.cel[c])}</td>`).join("")}</tr>`);
+      anterior = l.i;
+    }
+    return `
+      <div class="amostra-ia">
+        <p class="nota"><b>Aba ${AT(a.aba)}</b>: ${a.inteira
+          ? "aba pequena, vai inteira" : `${a.linhas.length} de ${a.total} linhas`}</p>
+        <div class="scroll-x"><table class="grade">
+          <thead><tr><th class="lin"></th>${cols.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
+          <tbody>${corpo.join("")}</tbody></table></div>
+      </div>`;
+  }
+
+  function cartaoContaIA() {
+    return `
+      <div class="cartao">
+        <h3>Com que conta a IA trabalha?</h3>
+        ${!claudeApp.sample ? `<p class="alerta">A IA só funciona com o Balizador
+          aberto pelo link do claude.ai. O resto do app funciona igual.</p>` : ""}
+        <p class="nota">Com a sua conta Claude, a mesma em que você entrou no
+          claude.ai. Na primeira vez que o app chamar a IA, o próprio Claude pede
+          a sua licença. O uso conta no limite da sua conta, e ninguém precisa de
+          chave.</p>
+      </div>`;
+  }
+
+  function cartaoAmostraIA() {
+    const ia = estado.ia;
+    const total = ia.amostra.reduce((s, a) => s + a.total, 0);
+    const vao = ia.amostra.reduce((s, a) => s + a.linhas.length, 0);
+    return `
+      <div class="cartao">
+        <h3>O que vai ser enviado?</h3>
+        <div class="fichas">
+          <div class="ficha"><b>${vao}</b><span>linhas de ${total}, de
+            ${ia.amostra.length} aba(s)</span></div>
+          <div class="ficha bom"><b>${ia.mascara.conta.PESSOA}</b><span>nomes trocados
+            por código</span></div>
+          <div class="ficha bom"><b>${ia.mascara.conta.DATA}</b><span>datas trocadas
+            por código</span></div>
+        </div>
+        <p class="nota">Vai só esta amostra, do começo, do meio e do fim de cada aba.
+          Com ela a IA devolve um mapa, dizendo onde está cada coisa, e o app aplica
+          esse mapa aqui mesmo em todas as linhas. Os códigos voltam a ser os nomes
+          só na sua tela.</p>
+        ${ia.amostra.map(tabelaDaAmostra).join("")}
+        <details class="texto-exato"><summary>ver o texto exato que vai para a IA</summary>
+          <pre>${AT(textoExato(ia.pedido))}</pre></details>
+        <div class="acoes">
+          <button type="button" class="botao" id="enviarMapaIA"
+            ${ia.ocupado ? "disabled" : ""}>Enviar a amostra para a IA</button>
+        </div>
+      </div>`;
+  }
+
+  function cartaoOcupadoIA() {
+    const o = estado.ia.ocupado;
+    const oque = { mapa: "lendo a estrutura da planilha",
+                   provas: "casando as provas com o programa",
+                   aba: "transcrevendo a aba " + o.aba }[o.qual];
+    return `
+      <div class="cartao ocupado-ia">
+        <h3><span class="girando" aria-hidden="true"></span> A IA está ${AT(oque)}</h3>
+        <p class="nota" id="progressoIA">esperando a resposta</p>
+        <div class="acoes"><button type="button" class="mini claro" id="cancelarIA">
+          Cancelar</button></div>
+      </div>`;
+  }
+
+  function cartaoErroIA() {
+    const e = estado.ia.erro;
+    return `
+      <div class="recusa">
+        <h3>${AT(e.titulo)}</h3>
+        ${e.detalhes.length ? `<ul class="lista-motivos">${
+          e.detalhes.map((d) => `<li>${AT(d)}</li>`).join("")}</ul>` : ""}
+        <p class="nota">Nada do que veio foi usado. Dá para tentar de novo no botão
+          de enviar, ou corrigir a planilha e mandar outra vez.</p>
+      </div>`;
+  }
+
+  function cartaoMapaIA() {
+    const ia = estado.ia;
+    const jeito = {
+      uma_inscricao_por_linha: "uma inscrição por linha",
+      prova_como_titulo: "título da prova em cima dos atletas",
+      provas_em_colunas: "uma coluna para cada prova",
+      outro: "um formato que a IA não reconheceu",
+    };
+    const linhas = ia.resumoAbas.map((a) => `<tr>
+      <td><b>${AT(a.aba)}</b></td>
+      <td>${!a.usada ? "não traz inscrições"
+        : a.via === "transcricao" ? "transcrita linha a linha" : jeito[a.layout]}</td>
+      <td class="num">${a.inscricoes}</td>
+      <td>${a.problemas.length ? `<span class="exigida">${AT(a.problemas.join("; "))}</span>`
+        : a.usada ? "certo" : ""}</td></tr>`).join("");
+    const notas = [];
+    for (const a of ia.resumoAbas) {
+      for (const n of a.notas) notas.push(`<li><b>${AT(a.aba)}</b>: ${AT(n)}</li>`);
+    }
+    return `
+      <div class="cartao">
+        <h3>O que a IA entendeu?</h3>
+        <table class="tabela"><thead><tr><th>ABA</th><th>COMO ELA ESTÁ</th>
+          <th>INSCRIÇÕES</th><th></th></tr></thead><tbody>${linhas}</tbody></table>
+        ${notas.length ? `<p class="nota"><b>Do que a IA não teve certeza:</b></p>
+          <ul class="lista-motivos">${notas.join("")}</ul>` : ""}
+      </div>`;
+  }
+
+  function cartaoPlanoB(aba) {
+    const ia = estado.ia;
+    const g = ia.grades.find((x) => x.aba === aba);
+    if (!ia.pedidosAba[aba]) {
+      ia.pedidosAba[aba] = IA.pedidoDaAbaInteira(g, ia.mascara, ia.voc, lerConfig());
+    }
+    const p = ia.pedidosAba[aba];
+    return `
+      <div class="recusa leve">
+        <h3>Mando a aba ${AT(aba)} inteira?</h3>
+        <p>O mapa não deu conta desta aba. Posso mandar a aba inteira,
+          ${g.linhas.length} linhas, com os nomes e as datas trocados por código,
+          para a IA transcrever linha a linha. Tudo volta para a mesma revisão.</p>
+        <details class="texto-exato"><summary>ver exatamente o que vai</summary>
+          ${tabelaDaAmostra(p.amostra[0])}<pre>${AT(textoExato(p))}</pre></details>
+        <div class="acoes">
+          <button type="button" class="botao" data-planob="${AT(aba)}"
+            ${ia.ocupado ? "disabled" : ""}>Mandar a aba inteira</button>
+          <button type="button" class="mini claro" data-semplanob="${AT(aba)}">
+            Deixar esta aba de fora</button>
+        </div>
+      </div>`;
+  }
+
+  function cartaoProvasIA() {
+    const ia = estado.ia;
+    const n = ia.pendentes.reduce((s, p) => s + p.linhas.length, 0);
+    const troca = (v) => IA.mascararCelula(v, ia.mascara, ia.voc);
+    return `
+      <div class="cartao">
+        <h3>E as provas que o app não reconheceu?</h3>
+        <p class="nota">Em ${n} inscrição(ões) a prova está escrita de um jeito que o
+          app não casou sozinho com o programa. Para casar, vão só estes nomes de
+          prova e o programa, sem nenhum dado de atleta.</p>
+        <div class="scroll-x"><table class="tabela"><thead><tr><th>COMO ESTÁ ESCRITO</th>
+          <th>INSCRIÇÕES</th></tr></thead><tbody>${ia.pendentes.map((p) => `<tr>
+          <td>${comCodigos(IA.descricaoDaProva(p.campos, troca))}</td>
+          <td class="num">${p.linhas.length}</td></tr>`).join("")}</tbody></table></div>
+        <details class="texto-exato"><summary>ver o texto exato que vai para a IA</summary>
+          <pre>${AT(textoExato(ia.pedidoProvas))}</pre></details>
+        <div class="acoes">
+          <button type="button" class="botao" id="enviarProvasIA"
+            ${ia.ocupado ? "disabled" : ""}>Enviar os nomes das provas</button>
+          <button type="button" class="link" id="pularProvasIA">pular: resolvo na revisão</button>
+        </div>
+      </div>`;
+  }
+
+  function renderIA() {
+    const ia = estado.ia;
+    if (!ia) return;
+    const partes = [cartaoContaIA()];
+    partes.push(ia.mapaFeito
+      ? `<p class="ok-vazio">A amostra foi enviada e a IA devolveu o mapa.</p>`
+      : cartaoAmostraIA());
+    if (ia.ocupado) partes.push(cartaoOcupadoIA());
+    if (ia.erro) partes.push(cartaoErroIA());
+    if (ia.mapaFeito) {
+      partes.push(cartaoMapaIA());
+      for (const a of ia.resumoAbas) {
+        if (a.usada && !a.deuConta && !ia.planoB[a.aba]) partes.push(cartaoPlanoB(a.aba));
+      }
+      if (ia.pendentes.length && !ia.provasFeitas) partes.push(cartaoProvasIA());
+      else if (ia.provasFeitas && ia.pedidoProvas) {
+        partes.push(`<p class="ok-vazio">Os nomes das provas foram casados com o programa.</p>`);
+      }
+      partes.push(`<div class="acoes">
+        <button type="button" class="botao" id="revisarIA" ${ia.ocupado ? "disabled" : ""}>
+          Revisar as inscrições</button></div>`);
+    }
+    html("telaIA", partes.join(""));
+    ligarIA();
+  }
+
+  // liga só se o elemento estiver na tela: os cartões da IA vão e vêm
+  function seHouver(id, evento, fn) {
+    if ($("#" + id)) ao(id, evento, fn);
+  }
+
+  function ligarIA() {
+    const ia = estado.ia;
+    seHouver("enviarMapaIA", "click", () => enviarIA("mapa"));
+    seHouver("cancelarIA", "click", () => ia.controle && ia.controle.abort());
+    seHouver("enviarProvasIA", "click", () => enviarIA("provas"));
+    seHouver("pularProvasIA", "click", () => {
+      ia.provasFeitas = true; ia.pedidoProvas = null; renderIA();
+    });
+    seHouver("revisarIA", "click", abrirRevisao);
+    $$("[data-planob]").forEach((b) => (b.onclick = () => enviarIA("aba", b.dataset.planob)));
+    $$("[data-semplanob]").forEach((b) => (b.onclick = () => {
+      ia.planoB[b.dataset.semplanob] = "fora";
+      renderIA();
+    }));
+  }
+
+  /* Uma conversa com a IA. Qualquer erro, de licença, de limite da conta ou
+     de resposta fora do formato, para aqui: aparece na tela e nada do que
+     veio é usado. */
+  async function enviarIA(qual, aba) {
+    const ia = estado.ia;
+    const cliente = claudeApp.sample;
+    if (!cliente) {
+      aviso("A IA só funciona com o Balizador aberto pelo link do claude.ai.");
+      return;
+    }
+    const perfil = lerConfig();
+    const prog = perfil.programa || [];
+    ia.controle = new AbortController();
+    ia.ocupado = { qual, aba, inicio: Date.now() };
+    ia.erro = null;
+    renderIA();
+    const relogio = setInterval(() => {
+      const el = $("#progressoIA");
+      const s = Math.round((Date.now() - ia.ocupado.inicio) / 1000);
+      if (el && !el.dataset.chars) el.textContent = `esperando a resposta, ${s} s`;
+    }, 1000);
+    const extra = { sinal: ia.controle.signal, aoAvancar: (chars) => {
+      const el = $("#progressoIA");
+      if (el) { el.dataset.chars = chars; el.textContent = `recebendo a resposta: ${chars} caracteres`; }
+    } };
+    try {
+      if (qual === "mapa") {
+        const r = await IA.chamar(cliente, Object.assign({}, ia.pedido, extra));
+        const conf = IA.conferirMapa(r.dados, ia.grades);
+        if (conf.erros.length) {
+          throw new IA.ErroIA("O mapa que a IA devolveu não serve para esta planilha. Nada foi usado.",
+                              conf.erros);
+        }
+        const ap = IA.aplicarMapa(r.dados, ia.grades, ia.mascara, perfil);
+        Object.assign(ia, { mapaFeito: true, linhas: ap.linhas, ignoradas: ap.ignoradas,
+                            resumoAbas: ap.abas });
+      } else if (qual === "provas") {
+        const r = await IA.chamar(cliente, Object.assign({}, ia.pedidoProvas, extra));
+        const ap = IA.aplicarProvas(r.dados, ia.pendentes, ia.mascara);
+        if (ap.semResposta.length) {
+          aviso(`A IA não respondeu sobre ${ap.semResposta.length} prova(s); elas ficam para a revisão.`);
+        }
+        ia.provasFeitas = true;
+      } else if (qual === "aba") {
+        const grade = ia.grades.find((g) => g.aba === aba);
+        const r = await IA.chamar(cliente, Object.assign({}, ia.pedidosAba[aba], extra));
+        const t = IA.aplicarTranscricao(r.dados, grade, ia.mascara);
+        // a transcrição toma o lugar do que o mapa tinha tirado desta aba
+        ia.linhas = ia.linhas.filter((l) => l.origem.aba !== aba).concat(t.linhas);
+        ia.ignoradas = ia.ignoradas.filter((x) => x.aba !== aba).concat(t.ignoradas);
+        const resumo = ia.resumoAbas.find((a) => a.aba === aba);
+        Object.assign(resumo, { via: "transcricao", deuConta: true, usada: true,
+                                inscricoes: t.linhas.length, problemas: t.problemas });
+        ia.planoB[aba] = "feito";
+      }
+      // as provas que sobraram, depois do mapa ou da aba inteira
+      const novas = IA.provasPendentes(ia.linhas, prog);
+      if (qual !== "provas" && novas.length) {
+        ia.pendentes = novas;
+        ia.pedidoProvas = IA.pedidoDasProvas(novas, prog, ia.mascara, ia.voc);
+        ia.provasFeitas = false;
+      }
+    } catch (err) {
+      ia.erro = IA.explicarErro(err);
+    } finally {
+      clearInterval(relogio);
+      ia.ocupado = null;
+      ia.controle = null;
+      renderIA();
+    }
+  }
+
+  /* ---------------- tela 3d: a revisão humana ----------------
+     Linha original ao lado da linha interpretada. Amarelo é o que a IA marcou
+     como incerto ou o que o app estranhou; vermelho é o que não pode entrar
+     do jeito que está. Com vermelho na tela, o botão de seguir fica trancado. */
+  function abrirRevisao() {
+    const ia = estado.ia;
+    const prog = lerConfig().programa || [];
+    const marcadas = ia.linhas.filter((l) => !l.excluida &&
+      IA.interpretar(l, prog).estado !== "ok").length;
+    ia.filtro = marcadas ? "marcadas" : "todas";
+    ia.editando = null;
+    mostrarPainel("revisao");
+    renderRevisao();
+  }
+
+  function acharLinhaIA(id) {
+    return estado.ia.linhas.find((l) => l.id === id);
+  }
+
+  function formularioRevisao(l, r, prog, perfil) {
+    const c = l.campos;
+    const i = r.inscricao;
+    const campo = (k, rotulo, valor) => `<label class="campo">${rotulo}
+      <input data-campo="${k}" value="${AT(valor)}"></label>`;
+    const prova = prog.length
+      ? `<label class="campo largo">Prova<select data-campo="prova">
+          <option value="">${r.numero ? "a mesma de agora" : "escolha a prova"}</option>
+          ${prog.map((p, k) => `<option value="${k}" ${r.numero === k + 1 ? "selected" : ""}>${
+            k + 1}. ${AT(D.tituloProva(p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe))}</option>`).join("")}
+        </select></label>`
+      : campo("provaTexto", "Prova, por extenso",
+              i ? D.tituloProva(i.distancia, i.estilo, i.categoria, i.naipe) : c.prova);
+    const revez = i ? i.revezamento : /^\d+\s*X/i.test(c.prova || c.distancia || "");
+    return `<tr class="rev-edicao"><td colspan="4">
+      <div class="campos">
+        ${campo("nome", revez ? "Nadadores, se já souber" : "Nome", c.nome)}
+        ${campo("equipe", "Equipe", c.equipe)}
+        ${prova}
+      </div>
+      <div class="campos">
+        ${campo("tempo", "Tempo", c.tempo)}
+        ${campo("nascimento", "Nascimento", c.nascimento)}
+        ${perfil.temPara ? campo("classe", "Classe", c.classe) : ""}
+        ${perfil.tipo === "PARA" ? campo("segmento", "Segmento", c.segmento) : ""}
+      </div>
+      <div class="acoes">
+        <button type="button" class="botao" data-aplicar="${AT(l.id)}">Aplicar</button>
+        <button type="button" class="link" data-cancelar="1">cancelar</button>
+      </div></td></tr>`;
+  }
+
+  function linhaRevisao(x, prog, perfil) {
+    const { l, r } = x;
+    const cls = l.excluida ? "rev-fora" : "rev-" + r.estado;
+    const original = (l.original || []).filter(Boolean).map(AT)
+      .join('<span class="sep"> · </span>');
+    let vai;
+    if (l.excluida) vai = `<span class="apagado">fora do balizamento</span>`;
+    else if (!r.inscricao) vai = `<span class="exigida">não pode entrar assim</span>`;
+    else {
+      const i = r.inscricao;
+      const p = r.numero ? prog[r.numero - 1] : null;
+      const titulo = p ? D.tituloProva(p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe)
+                       : D.tituloProva(i.distancia, i.estilo, i.categoria, i.naipe);
+      const quem = i.revezamento ? `equipe <b>${AT(i.equipe)}</b>`
+        : `<b>${AT(i.nome)}</b>${i.equipe ? " · " + AT(i.equipe) : ""}`;
+      const extras = [i.tempo != null ? "tempo " + B.formatarTempo(i.tempo) : "sem tempo",
+        i.nascimento ? "nasc. " + AT(i.nascimento) : "",
+        i.classe ? "classe " + AT(i.classe) : ""].filter(Boolean).join(" · ");
+      vai = `${quem}<br>${r.numero ? `<span class="num-prova">prova ${r.numero}</span> ` : ""}${
+        AT(titulo)}<br><span class="apagado">${extras}</span>`;
+    }
+    const motivos = !l.excluida && r.motivos.length
+      ? `<ul class="motivos">${r.motivos.map((m) => `<li>${AT(m)}</li>`).join("")}</ul>` : "";
+    const botoes = l.excluida
+      ? `<button type="button" class="mini claro" data-volta="${AT(l.id)}">voltar</button>`
+      : `${r.estado === "incerto" ? `<button type="button" class="mini claro"
+            data-certo="${AT(l.id)}">está certo</button>` : ""}
+         <button type="button" class="mini claro" data-corrigir="${AT(l.id)}">corrigir</button>
+         <button type="button" class="link" data-tirar="${AT(l.id)}">tirar</button>`;
+    const tr = `<tr class="${cls}">
+      <td class="origem">${AT(l.origem.aba)}<br><b>linha ${l.origem.linha}</b></td>
+      <td class="original">${original}</td>
+      <td>${vai}${motivos}</td>
+      <td class="acoes-linha">${botoes}</td></tr>`;
+    return estado.ia.editando === l.id ? tr + formularioRevisao(l, r, prog, perfil) : tr;
+  }
+
+  function ignoradasHtml() {
+    const lista = estado.ia.ignoradas;
+    if (!lista.length) return "";
+    const esquecidas = lista.filter((x) => x.tipo === "esquecida").length;
+    return `
+      <details class="ignoradas" ${esquecidas ? "open" : ""}>
+        <summary>Linhas da planilha que não viraram inscrição (${lista.length})${
+          esquecidas ? `, ${esquecidas} de que a IA não falou nada` : ""}</summary>
+        <div class="scroll-x"><table class="tabela revisao"><thead><tr>
+          <th>DE ONDE VEIO</th><th>NA PLANILHA</th><th>POR QUÊ</th><th></th></tr></thead>
+        <tbody>${lista.map((x, k) => `<tr class="${x.tipo === "esquecida" ? "rev-incerto" : ""}">
+          <td class="origem">${AT(x.aba)}<br><b>linha ${x.linha}</b></td>
+          <td class="original">${(x.original || []).filter(Boolean).map(AT).join(" · ")}</td>
+          <td>${AT(x.motivo)}</td>
+          <td class="acoes-linha"><button type="button" class="link" data-virar="${k}">
+            virar inscrição</button></td></tr>`).join("")}</tbody></table></div>
+      </details>`;
+  }
+
+  function renderRevisao() {
+    const ia = estado.ia;
+    if (!ia) return;
+    const perfil = lerConfig();
+    const prog = perfil.programa || [];
+    const ordemAba = new Map(ia.grades.map((g, k) => [g.aba, k]));
+    const itens = ia.linhas.map((l) => ({ l, r: IA.interpretar(l, prog) }))
+      .sort((a, b) => (ordemAba.get(a.l.origem.aba) - ordemAba.get(b.l.origem.aba)) ||
+        a.l.origem.linha - b.l.origem.linha ||
+        String(a.l.origem.sub == null ? "" : a.l.origem.sub)
+          .localeCompare(String(b.l.origem.sub == null ? "" : b.l.origem.sub), "pt", { numeric: true }));
+    const conta = { ok: 0, incerto: 0, erro: 0, fora: 0 };
+    for (const x of itens) conta[x.l.excluida ? "fora" : x.r.estado]++;
+    const visiveis = ia.filtro === "marcadas"
+      ? itens.filter((x) => !x.l.excluida && x.r.estado !== "ok") : itens;
+    const trancado = conta.erro > 0 || (conta.incerto > 0 && !ia.conferiAmarelas) ||
+                     !(conta.ok + conta.incerto);
+    html("telaRevisao", `
+      <div class="fichas">
+        <div class="ficha bom"><b>${conta.ok}</b><span>prontas</span></div>
+        <div class="ficha"><b>${conta.incerto}</b><span>em amarelo, para conferir</span></div>
+        <div class="ficha ruim"><b>${conta.erro}</b><span>em vermelho, não entram assim</span></div>
+        <div class="ficha"><b>${conta.fora}</b><span>tiradas por você</span></div>
+      </div>
+      <div class="acoes acoes-topo filtro-revisao">
+        <button type="button" class="mini claro ${ia.filtro === "marcadas" ? "ativo" : ""}"
+          data-filtro="marcadas">só as marcadas (${conta.incerto + conta.erro})</button>
+        <button type="button" class="mini claro ${ia.filtro === "todas" ? "ativo" : ""}"
+          data-filtro="todas">todas (${itens.length})</button>
+      </div>
+      ${visiveis.length ? `<div class="scroll-x"><table class="tabela revisao">
+        <thead><tr><th>DE ONDE VEIO</th><th>NA PLANILHA</th><th>VAI ENTRAR COMO</th>
+          <th></th></tr></thead>
+        <tbody>${visiveis.map((x) => linhaRevisao(x, prog, perfil)).join("")}</tbody>
+      </table></div>` : `<p class="ok-vazio">Nenhuma linha marcada: tudo pronto.</p>`}
+      ${ignoradasHtml()}
+      <div class="cartao confirmar-revisao">
+        ${conta.incerto ? `<div><label class="marcavel"><input type="checkbox" id="revConferi"
+          ${ia.conferiAmarelas ? "checked" : ""}><span>Conferi as linhas em amarelo</span>
+          </label></div>` : ""}
+        ${conta.erro ? `<p class="nota exigida">Faltam ${conta.erro} linha(s) em vermelho:
+          corrija ou tire do balizamento.</p>` : ""}
+        <div class="acoes">
+          <button type="button" class="botao" id="revConfirmar" ${trancado ? "disabled" : ""}>
+            Confirmar e seguir para a conferência</button>
+          <button type="button" class="mini claro" id="revBaixar">Baixar a planilha organizada</button>
+          <button type="button" class="link" id="revVoltar">voltar para a IA</button>
+        </div>
+      </div>`);
+    ligarRevisao();
+  }
+
+  function ligarRevisao() {
+    const ia = estado.ia;
+    const prog = () => lerConfig().programa || [];
+    $$("[data-filtro]").forEach((b) => (b.onclick = () => { ia.filtro = b.dataset.filtro; renderRevisao(); }));
+    $$("[data-certo]").forEach((b) => (b.onclick = () => {
+      acharLinhaIA(b.dataset.certo).conferida = true; renderRevisao();
+    }));
+    $$("[data-corrigir]").forEach((b) => (b.onclick = () => {
+      ia.editando = b.dataset.corrigir; renderRevisao();
+    }));
+    $$("[data-tirar]").forEach((b) => (b.onclick = () => {
+      acharLinhaIA(b.dataset.tirar).excluida = true; renderRevisao();
+    }));
+    $$("[data-volta]").forEach((b) => (b.onclick = () => {
+      acharLinhaIA(b.dataset.volta).excluida = false; renderRevisao();
+    }));
+    $$("[data-cancelar]").forEach((b) => (b.onclick = () => { ia.editando = null; renderRevisao(); }));
+    $$("[data-aplicar]").forEach((b) => (b.onclick = () => {
+      const l = acharLinhaIA(b.dataset.aplicar);
+      const tr = b.closest("tr");
+      const val = (k) => { const el = $(`[data-campo="${k}"]`, tr); return el ? el.value.trim() : null; };
+      for (const k of ["nome", "equipe", "tempo", "nascimento", "classe", "segmento"]) {
+        const v = val(k);
+        if (v !== null) l.campos[k] = v;
+      }
+      const p = val("prova");
+      if (p) l.escolhida = parseInt(p, 10);
+      const t = val("provaTexto");
+      if (t !== null) {
+        Object.assign(l.campos, { prova: t, distancia: "", estilo: "", categoria: "", naipe: "" });
+        l.resolvida = null; l.escolhida = undefined;
+      }
+      // corrigido à mão é conferido: a dúvida da IA sai da linha
+      l.conferida = true;
+      ia.editando = null;
+      renderRevisao();
+    }));
+    $$("[data-virar]").forEach((b) => (b.onclick = () => {
+      const k = parseInt(b.dataset.virar, 10);
+      const x = ia.ignoradas[k];
+      const id = x.aba + "|" + x.linha + "|mao" + k;
+      ia.linhas.push({
+        id, origem: { aba: x.aba, linha: x.linha, sub: "mao" + k }, original: x.original,
+        campos: { nome: (x.original || []).find(Boolean) || "", equipe: "", prova: "",
+                  distancia: "", estilo: "", categoria: "", naipe: "", tempo: "",
+                  nascimento: "", classe: "", segmento: "" },
+        incertezas: [], via: "manual", excluida: false,
+      });
+      ia.ignoradas.splice(k, 1);
+      ia.filtro = "todas";
+      ia.editando = id;
+      renderRevisao();
+    }));
+    seHouver("revConferi", "change", (e) => { ia.conferiAmarelas = e.target.checked; renderRevisao(); });
+    ao("revVoltar", "click", () => { mostrarPainel("ia"); renderIA(); });
+    ao("revBaixar", "click", () => {
+      const nome = String(ia.arquivo || "INSCRITOS").replace(/\.(xlsx|xlsm|xls|csv)$/i, "");
+      baixarPlanilha(IA.planilhaOrganizada(ia.linhas, prog()), "ORGANIZADA - " + nome + ".xlsx");
+      aviso("Guarde esta planilha: da próxima vez ela entra direto, sem IA.");
+    });
+    ao("revConfirmar", "click", confirmarRevisao);
+  }
+
+  /* Só daqui a planilha organizada segue, e segue pela mesma porta de
+     sempre: aceitarLeitura, montar, conferência. */
+  function confirmarRevisao() {
+    const ia = estado.ia;
+    const prog = lerConfig().programa || [];
+    const { inscricoes, pendentes } = IA.inscricoesDaRevisao(ia.linhas, prog);
+    if (pendentes.length) { aviso("Ainda há linhas em vermelho."); return; }
+    if (!inscricoes.length) { aviso("Nenhuma inscrição para seguir."); return; }
+    const abas = ia.grades.map((g) => {
+      const daAba = inscricoes.filter((i) => i.aba === g.aba);
+      const provas = [], vistas = new Set();
+      for (const i of daAba) {
+        const k = i.distancia + " " + i.estilo;
+        if (!vistas.has(k)) { vistas.add(k); provas.push({ distancia: i.distancia, estilo: i.estilo }); }
+      }
+      return { aba: g.aba, provas, linhas: daAba.length };
+    }).filter((a) => a.linhas);
+    const b = ia.base ? ia.base.r : null;
+    const r = {
+      inscricoes: (b ? b.inscricoes : []).concat(inscricoes),
+      abas: (b ? b.abas : []).concat(abas),
+      descartadas: b ? b.descartadas || [] : [],
+      repetidas: b ? b.repetidas || [] : [],
+    };
+    aceitarLeitura(r, "ia", ia.arquivo, null, null, { silencioso: true });
+    ia.confirmada = true;
+    estado.recusa = null;
+    mostrarPainel("envio");
+    irPara("conferencia");
+    aviso(`${inscricoes.length} inscrições organizadas entraram na conferência.`);
+  }
+
+  /* ---------------- a conversa com o Claude ----------------
+     Um chat por cima dos cinco passos. Ele explica, aponta o que falta e,
+     quando a pessoa pede, preenche a tela da competição ou leva a um passo,
+     chamando funções desta página. Séries e raias continuam sendo montadas
+     pelo app. Os passos funcionam sem o chat, e o chat só existe com o app
+     aberto no claude.ai, na conta de quem usa.
+
+     Cada mensagem leva um resumo da tela. Nome de atleta vai trocado por
+     código, como na etapa de IA, e volta a ser nome só aqui na tela.
+  ----------------------------------------------------------- */
+  const chat = { turnos: [], controle: null, mascara: null, voc: null,
+                 ferramentas: false, preparado: false };
+  const CHAVE_CHAT = "balizador.chatFechado";
+
+  const INSTRUCOES_CHAT = `Você é o assistente do Balizador, um aplicativo que monta o balizamento de competições de natação: distribui os atletas em séries e raias, gera o PDF, a planilha e as papeletas de raia, e confere erros de inscrição. Quem fala com você é quase sempre um árbitro ou organizador de natação, não um programador.
+
+O app tem cinco passos, nesta ordem:
+1. Programa: a planilha do programa de provas, que dá a ordem e a numeração das provas.
+2. Competição: nome, local, datas, número de raias, limite de provas por atleta, se tem tempo de inscrição, revezamento e paradesporto, etapas e categorias que nadam juntas.
+3. Inscritos: a planilha dos inscritos. Se ela vier fora do formato, o app recusa e oferece Organizar com IA, numa tela em que a pessoa vê o que vai ser enviado e revisa tudo antes de seguir.
+4. Conferência: os problemas encontrados, em blocos. Bloco vermelho tranca a geração. Cada bloco tem "o que acontece" e, quando há conserto na tela, "resolver".
+5. Gerar: prévia e download do PDF do balizamento, da planilha e das papeletas.
+
+Regras:
+- Séries e raias são montadas pelo app, sempre pelas regras dele: ordem do centro para fora, últimas séries cheias, melhor tempo na raia central da última série. Nunca diga que você montou ou mudou o balizamento.
+- Você só sabe o que está no resumo da tela que vem junto de cada mensagem. Não invente atleta, prova, número nem regra de regulamento.
+- Nomes de atletas e algumas equipes chegam trocados por códigos como PESSOA 3. Escreva o código exatamente como veio: o app troca de volta pelo nome na tela da pessoa. Nunca tente adivinhar o nome.
+- Para agir na tela, use as ferramentas. Só diga que preencheu ou abriu algo depois de a ferramenta confirmar. Se a ferramenta devolver erro, explique o que falta.
+- Nunca envie planilha para a IA por conta própria: quem decide é a pessoa, na tela de organizar com IA.
+- Responda em português do Brasil, curto e direto, em frases simples. Não use travessão. Use lista curta quando ajudar. Quando indicar um botão, escreva o nome dele como aparece na tela.`;
+
+  const SUGESTOES_CHAT = ["Por onde eu começo?", "O que falta para gerar os arquivos?",
+    "Explique os problemas da conferência", "Configure 8 raias e limite de 2 provas"];
+
+  // HTML do detalhe da conferência virando texto simples
+  const textoSimples = (h) => String(h == null ? "" : h).replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, "").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"')
+    .replace(/\s+/g, " ").trim();
+
+  /* Todo nome de inscrito que aparecer no resumo vira código, inclusive no
+     meio de uma frase, como "parecido com JOÃO DA SILVA JUNIOR". */
+  function trocarNomesConhecidos(t) {
+    let s = String(t == null ? "" : t);
+    const nomes = new Set();
+    for (const i of estado.inscricoes) {
+      if (!i.revezamento && i.nome) nomes.add(String(i.nome).trim());
+      for (const a of (i.atletas || [])) nomes.add(String(a).trim());
+    }
+    [...nomes].filter((n) => n.length > 3).sort((a, b) => b.length - a.length)
+      .forEach((n) => { if (s.includes(n)) s = s.split(n).join(IA.mascararCelula(n, chat.mascara, chat.voc)); });
+    return s;
+  }
+
+  function situacaoParaChat() {
+    if (!chat.mascara) chat.mascara = IA.novaMascara();
+    chat.voc = IA.vocabulario(estado.perfil || {});
+    const troca = (t) => IA.mascararCelula(t, chat.mascara, chat.voc);
+    const sim = (b) => (b ? "sim" : "não");
+    const L = [];
+    const ativo = $(".passo.ativo");
+    const travados = $$(".passo.bloqueado").map((b) => b.dataset.passo);
+    L.push(`Passo na tela: ${ativo ? ativo.dataset.passo : "programa"}. ` +
+           `Passos trancados: ${travados.join(", ") || "nenhum"}.`);
+
+    const prog = (estado.programa && estado.programa.provas) || [];
+    if (prog.length) {
+      L.push(`Programa: ${prog.length} provas.`);
+      L.push(prog.slice(0, 60).map((x, k) => `${k + 1}. ` +
+        D.tituloProva(x.distancia, x.estilo, x.rotulo || x.categoria, x.naipe) +
+        (x.etapa ? ` (${x.etapa})` : "")).join("\n"));
+      if (prog.length > 60) L.push(`E mais ${prog.length - 60} provas.`);
+    } else if (estado.programa && estado.programa.sem) {
+      L.push("Programa: a pessoa escolheu seguir sem programa de provas.");
+    } else L.push("Programa: ainda não enviado.");
+
+    const c = lerConfig();
+    L.push(`Competição: nome "${c.nome}", local "${c.local}", datas ${c.data || "não informadas"}, ` +
+      `raias ${$("#raias").value || "não informadas"}, limite de provas individuais ` +
+      `${$("#limiteInd").value || "não informado"}` +
+      (c.temPara ? `, limite no paradesporto ${c.limiteIndPara}` : "") +
+      (c.limiteEquipe ? `, até ${c.limiteEquipe} atletas por equipe na prova` : "") +
+      `. Tem tempo de inscrição: ${sim(c.temTempo)}. Tem revezamento: ${sim(c.temRevezamento)}. ` +
+      `Tem paradesporto: ${sim(c.temPara)}` +
+      (c.temPara ? ` (classe ${c.tipoClasse === "FUNCIONAL" ? "funcional" : "por condição"})` : "") +
+      `. Etapas: ${(c.etapas || []).length}. Agrupamentos de categorias: ${(c.grupos || []).length}.`);
+    const falta = $("#faltando");
+    if (falta && !falta.hidden && falta.textContent.trim()) {
+      L.push("Na tela da competição: " + falta.textContent.replace(/\s+/g, " ").trim());
+    }
+
+    if (estado.inscricoes.length) {
+      const rev = estado.inscricoes.filter((i) => i.revezamento).length;
+      L.push(`Inscritos: ${estado.inscricoes.length} inscrições ` +
+        `(${estado.inscricoes.length - rev} individuais, ${rev} equipes de revezamento).`);
+    } else if (estado.recusa) {
+      L.push("Inscritos: a planilha enviada foi recusada. " +
+        estado.recusa.abas.map((a) => `Aba ${troca(a.aba)}: ${a.motivo}`).join(". ") + ".");
+    } else L.push("Inscritos: nenhuma planilha enviada ainda.");
+    if (estado.ia && !estado.ia.confirmada) {
+      L.push("Organizar com IA: aberto, " + (estado.ia.mapaFeito
+        ? "o mapa já voltou; falta a pessoa revisar e confirmar."
+        : "a amostra ainda não foi enviada."));
+    }
+
+    if (estado.inscricoes.length) {
+      if (!estado.provas.length) montar();
+      const secoes = montarSecoes().filter((s) => s.itens.length);
+      if (!secoes.length) L.push("Conferência: nenhum problema.");
+      for (const s of secoes) {
+        const aceito = estado.ajustes.aceitos.has(s.id);
+        const nivel = { critico: "vermelho", aviso: "aviso" }[s.nivel] || "informativo";
+        L.push(`Bloco da conferência "${s.titulo}" (${nivel}${aceito ? ", a pessoa aceitou seguir assim" : ""}` +
+               `${s.resolver ? ", tem o botão resolver" : ""}): ${s.itens.length} caso(s).`);
+        for (const e of s.itens.slice(0, 6)) {
+          L.push("  " + [e.prova ? e.prova + "ª " + (e.titulo || "") : (e.titulo || ""),
+            e.nome ? troca(e.nome) : "", e.equipe ? troca(e.equipe) : "",
+            trocarNomesConhecidos(textoSimples(e.detalhe))].filter(Boolean).join(" | "));
+        }
+        if (s.itens.length > 6) L.push(`  e mais ${s.itens.length - 6}.`);
+        if (s.explica) L.push("  O que acontece: " + trocarNomesConhecidos(textoSimples(s.explica)).slice(0, 600));
+      }
+    }
+    const gerar = $('.passo[data-passo="gerar"]');
+    L.push(`Gerar: ${gerar && !gerar.classList.contains("bloqueado") ? "liberado" : "trancado"}.`);
+    return L.join("\n");
+  }
+
+  /* As funções desta página que o Claude pode chamar. Nenhuma envia dado
+     nenhum para fora nem gera arquivo: elas só preenchem campos e mudam de
+     tela, coisas que a pessoa vê na hora e pode desfazer. */
+  function preencherCompeticao(x) {
+    const feito = [];
+    const texto = (id, v, rot) => {
+      if (v == null || v === "") return;
+      const el = $("#" + id);
+      el.value = String(v);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      feito.push(`${rot}: ${v}`);
+    };
+    const marca = (id, v, rot) => {
+      if (typeof v !== "boolean") return;
+      const el = $("#" + id);
+      if (el.checked !== v) { el.checked = v; el.dispatchEvent(new Event("change", { bubbles: true })); }
+      feito.push(`${rot}: ${v ? "sim" : "não"}`);
+    };
+    const data = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? v : null);
+    if (x.data_inicio && !data(x.data_inicio)) throw new Error("data_inicio precisa ser AAAA-MM-DD");
+    if (x.data_fim && !data(x.data_fim)) throw new Error("data_fim precisa ser AAAA-MM-DD");
+    const inteiro = (v, min, max) => {
+      if (v == null || v === "") return null;
+      const n = Number(v);
+      if (!Number.isInteger(n) || n < min || n > max) throw new Error(`valor fora do aceito: ${v}`);
+      return n;
+    };
+    texto("nomeComp", x.nome, "nome");
+    texto("local", x.local, "local");
+    texto("dataInicio", data(x.data_inicio), "começa em");
+    texto("dataFim", data(x.data_fim), "termina em");
+    texto("raias", inteiro(x.raias, 2, 12), "raias");
+    texto("limiteInd", inteiro(x.limite_individual, 1, 20), "limite individual");
+    texto("limiteIndPara", inteiro(x.limite_paradesporto, 1, 20), "limite no paradesporto");
+    texto("limiteEquipe", inteiro(x.limite_por_equipe, 1, 50), "atletas por equipe na prova");
+    marca("temTempo", x.tem_tempo, "tempo de inscrição");
+    marca("temRevezamento", x.tem_revezamento, "revezamento");
+    marca("temPara", x.tem_paradesporto, "paradesporto");
+    if (x.tipo_classe === "FUNCIONAL" || x.tipo_classe === "CONDICAO") {
+      const el = $("#tipoClasse");
+      el.value = x.tipo_classe;
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+      feito.push("classe: " + (x.tipo_classe === "FUNCIONAL" ? "funcional" : "por condição"));
+    }
+    if (x.data_inicio || x.data_fim) estado.perfil.datasDoPrograma = false;
+    atualizarPreviaData();
+    validarConfig();
+    const falta = $("#faltando");
+    return {
+      preenchido: feito,
+      ainda_falta: falta && !falta.hidden ? falta.textContent.replace(/\s+/g, " ").trim() : "nada",
+    };
+  }
+
+  function ferramentasChat() {
+    return [
+      {
+        name: "preencher_competicao",
+        description: "Preenche campos da tela da competição (passo 2) e devolve o que foi preenchido e o que ainda falta. Mande só os campos que a pessoa pediu.",
+        inputSchema: { type: "object", properties: {
+          nome: { type: "string" }, local: { type: "string" },
+          data_inicio: { type: "string", description: "AAAA-MM-DD" },
+          data_fim: { type: "string", description: "AAAA-MM-DD" },
+          raias: { type: "integer", description: "de 2 a 12" },
+          limite_individual: { type: "integer", description: "provas individuais por atleta" },
+          limite_paradesporto: { type: "integer", description: "provas individuais por atleta no paradesporto" },
+          limite_por_equipe: { type: "integer", description: "atletas de cada instituição na mesma prova" },
+          tem_tempo: { type: "boolean" }, tem_revezamento: { type: "boolean" },
+          tem_paradesporto: { type: "boolean" },
+          tipo_classe: { type: "string", enum: ["FUNCIONAL", "CONDICAO"],
+            description: "FUNCIONAL para S6, SB5, SM6; CONDICAO para TEA, DI, DA, DOWN" },
+        } },
+        execute: (x) => preencherCompeticao(x || {}),
+      },
+      {
+        name: "ir_para_passo",
+        description: "Mostra na tela um dos cinco passos do app. Passo trancado devolve erro dizendo que ainda falta o anterior.",
+        inputSchema: { type: "object", properties: { passo: { type: "string",
+          enum: ["programa", "competicao", "inscritos", "conferencia", "gerar"] } },
+          required: ["passo"] },
+        execute: (x) => {
+          const passo = String((x || {}).passo || "");
+          const el = $(`.passo[data-passo="${passo}"]`);
+          if (!el) throw new Error("não existe o passo " + passo);
+          if (el.classList.contains("bloqueado")) throw new Error(`o passo ${passo} ainda está trancado`);
+          irPara(passo);
+          return "a tela agora mostra o passo " + passo;
+        },
+      },
+      {
+        name: "abrir_organizar_com_ia",
+        description: "Abre a tela de organizar com IA a planilha de inscritos que o app recusou. Não envia nada: a pessoa vê o que vai e decide.",
+        execute: () => {
+          const b = $("#btnOrganizarIA");
+          if (!b) throw new Error("não há planilha recusada esperando a IA");
+          irPara("inscritos");
+          mostrarPainel("envio");
+          $("#btnOrganizarIA").click();
+          return "a tela de organizar com IA está aberta";
+        },
+      },
+    ];
+  }
+
+  // a resposta do Claude em HTML simples: listas, negrito, código, parágrafos
+  function formatarResposta(t) {
+    const limpo = IA.desmascarar(String(t || ""), chat.mascara || IA.novaMascara())
+      .replace(/\s*—\s*/g, ", ");
+    const linhas = AT(limpo).split(/\r?\n/);
+    const enfeita = (s) => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
+      .replace(/`([^`]+)`/g, "<code>$1</code>").replace(/^#{1,4}\s+(.*)$/, "<b>$1</b>");
+    let saida = "", lista = "";
+    const fecha = () => { if (lista) { saida += `</${lista}>`; lista = ""; } };
+    for (const l of linhas) {
+      const ul = l.match(/^\s*[-*•]\s+(.*)$/), ol = l.match(/^\s*\d+[.)]\s+(.*)$/);
+      const tipo = ul ? "ul" : ol ? "ol" : "";
+      if (tipo) {
+        if (lista !== tipo) { fecha(); saida += `<${tipo}>`; lista = tipo; }
+        saida += `<li>${enfeita((ul || ol)[1])}</li>`;
+        continue;
+      }
+      fecha();
+      if (l.trim()) saida += `<p>${enfeita(l)}</p>`;
+    }
+    fecha();
+    return saida;
+  }
+
+  function novaBolha(classe, conteudo) {
+    const div = document.createElement("div");
+    div.className = "msg " + classe;
+    div.innerHTML = conteudo;
+    $("#chatMensagens").appendChild(div);
+    rolarChat();
+    return div;
+  }
+
+  function rolarChat() {
+    const box = $("#chatMensagens");
+    if (box) box.scrollTop = box.scrollHeight;
+  }
+
+  function renderSugestoes() {
+    const alvo = $("#chatSugestoes");
+    if (!alvo) return;
+    alvo.hidden = chat.turnos.length > 0;
+    alvo.innerHTML = SUGESTOES_CHAT.map((s, k) =>
+      `<button type="button" class="mini claro" data-sugestao="${k}">${AT(s)}</button>`).join("");
+    $$("[data-sugestao]", alvo).forEach((b) => (b.onclick = () =>
+      enviarChat(SUGESTOES_CHAT[Number(b.dataset.sugestao)])));
+  }
+
+  function abrirChat() {
+    if (!claudeApp.sample) return;
+    $("#chat").hidden = false;
+    document.body.classList.add("com-chat");
+    $("#abrirChat").hidden = true;
+    if ($("#conviteChat")) $("#conviteChat").hidden = true;
+    try { localStorage.removeItem(CHAVE_CHAT); } catch (e) { /* sem memória: tudo bem */ }
+    setTimeout(() => { const t = $("#chatTexto"); if (t) t.focus(); });
+  }
+
+  function fecharChat() {
+    $("#chat").hidden = true;
+    document.body.classList.remove("com-chat");
+    $("#abrirChat").hidden = !claudeApp.sample;
+    if ($("#conviteChat")) $("#conviteChat").hidden = !claudeApp.sample;
+    try { localStorage.setItem(CHAVE_CHAT, "1"); } catch (e) { /* idem */ }
+  }
+
+  // chamada quando o claude.ai responde se este app pode usar o Claude
+  async function prepararChat() {
+    const tem = !!claudeApp.sample;
+    $("#abrirChat").hidden = !tem;
+    if ($("#conviteChat")) $("#conviteChat").hidden = !tem;
+    if (!tem || chat.preparado) return;
+    chat.preparado = true;
+    const lim = await claudeApp.sample.limits().catch(() => null);
+    chat.ferramentas = !!(lim && lim.tools);
+    novaBolha("claude", formatarResposta(
+      "Olá! Eu sou o Claude, trabalhando na sua conta. Posso explicar cada passo, " +
+      "dizer o que falta para gerar o balizamento, explicar os problemas da conferência" +
+      (chat.ferramentas ? " e preencher a tela da competição para você." : ".") +
+      "\nQuem monta as séries e as raias é o app, pelas regras de sempre."));
+    renderSugestoes();
+    let fechado = false;
+    try { fechado = localStorage.getItem(CHAVE_CHAT) === "1"; } catch (e) { /* idem */ }
+    if (!fechado && window.innerWidth >= 1100) abrirChat();
+  }
+
+  async function enviarChat(texto) {
+    const sample = claudeApp.sample;
+    texto = String(texto || "").trim();
+    if (!sample || !texto || chat.controle) return;
+    abrirChat();
+    $("#chatTexto").value = "";
+    novaBolha("eu", formatarResposta(texto));
+    chat.turnos.push({ role: "user", content: texto });
+    renderSugestoes();
+    // as últimas trocas, com o resumo da tela só na mensagem de agora
+    const recentes = chat.turnos.slice(-12);
+    const envio = [{ role: "user", content: INSTRUCOES_CHAT }].concat(recentes.map((t, k) =>
+      k === recentes.length - 1
+        ? { role: "user", content: t.content + "\n\n---\nResumo da tela agora, feito pelo app:\n" + situacaoParaChat() }
+        : t));
+    const bolha = novaBolha("claude pensando", "Pensando...");
+    chat.controle = new AbortController();
+    $("#chatEnviar").disabled = true;
+    $("#chatParar").hidden = false;
+    let parcial = "";
+    try {
+      const opcoes = {
+        cache: false, signal: chat.controle.signal,
+        onText: ({ text }) => {
+          parcial = text;
+          bolha.classList.remove("pensando");
+          bolha.innerHTML = formatarResposta(text);
+          rolarChat();
+        },
+      };
+      if (chat.ferramentas) opcoes.tools = ferramentasChat();
+      const r = await sample(envio, opcoes);
+      bolha.classList.remove("pensando");
+      bolha.innerHTML = formatarResposta(r.text) +
+        (r.truncated ? "<p class=\"apagado\">A resposta foi cortada. Peça uma parte de cada vez.</p>" : "");
+      chat.turnos.push({ role: "assistant", content: r.text });
+    } catch (e) {
+      const x = IA.explicarErro(e);
+      bolha.classList.remove("pensando");
+      if (e && e.code === "cancelled") {
+        bolha.innerHTML = parcial ? formatarResposta(parcial) : "<p class=\"apagado\">Parado.</p>";
+        if (parcial) chat.turnos.push({ role: "assistant", content: parcial });
+      } else {
+        bolha.classList.add("erro");
+        bolha.innerHTML = `<p>${AT(x.titulo.replace(" Nada foi usado.", ""))}</p>`;
+      }
+    } finally {
+      chat.controle = null;
+      $("#chatEnviar").disabled = false;
+      $("#chatParar").hidden = true;
+      rolarChat();
+    }
+  }
+
+  function ligarChat() {
+    ao("abrirChat", "click", abrirChat);
+    ao("abrirChat2", "click", abrirChat);
+    ao("fecharChat", "click", fecharChat);
+    ao("chatParar", "click", () => chat.controle && chat.controle.abort());
+    ao("chatForm", "submit", (e) => { e.preventDefault(); enviarChat($("#chatTexto").value); });
+    ao("chatTexto", "keydown", (e) => {
+      // Enter envia, Shift+Enter quebra a linha
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviarChat(e.target.value); }
+    });
+  }
+
+  /* Uma inscrição é identificada pela linha da planilha de onde veio. Quando
+     a mesma linha vira mais de uma inscrição (provas lado a lado, ou o atleta
+     marcado em várias colunas de prova), o sub diz qual delas é. */
   function chaveDaLinha(x) {
-    return String(x.aba) + "|" + String(x.linha);
+    return String(x.aba) + "|" + String(x.linha) +
+           (x.sub != null ? "|" + String(x.sub) : "");
   }
 
   /* As inscrições que vão para o balizamento: as lidas da planilha, menos as
@@ -2887,7 +3970,22 @@
     });
   }
 
-  function baixar(blob, nome) {
+  /* No claude.ai a página não baixa nada sozinha: quem salva é a plataforma,
+     que mostra o nome e o tamanho do arquivo e pergunta antes. Fora de lá,
+     o download é o de sempre. */
+  async function baixar(blob, nome) {
+    if (claudeApp.downloads) {
+      try {
+        await claudeApp.downloads.save({ filename: nome, data: blob });
+        aviso("Arquivo salvo: " + nome);
+      } catch (e) {
+        if (e && e.code === "declined") return;
+        aviso(e && e.code === "rate_limited"
+          ? "Já tem um arquivo esperando a sua confirmação. Responda aquele primeiro."
+          : "Não consegui salvar o arquivo aqui. Tente de novo.");
+      }
+      return;
+    }
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -3007,6 +4105,7 @@
       if (!alvo.hidden) alvo.scrollIntoView({ block: "nearest" });
     });
     $("#verFormato").onclick = () => mostrarPainel("formato");
+    ao("iaVoltar", "click", () => mostrarPainel("envio"));
     $("#irConferencia").onclick = () => irPara("conferencia");
     $("#irGerar").onclick = () => irPara("gerar");
 
@@ -3037,17 +4136,17 @@
       montar();
       const doc = S.gerarPdfBalizamento(estado.provas, estado.perfil,
                                         logosParaSaida());
-      doc.save(baseNome() + " - BALIZAMENTO.pdf");
+      baixar(doc.output("blob"), baseNome() + " - BALIZAMENTO.pdf");
     };
     $("#btnPapeletas").onclick = () => {
       montar();
       const { doc } = S.gerarPapeletas(estado.provas, estado.perfil,
                                        logosParaSaida());
-      doc.save(baseNome() + " - PAPELETAS.pdf");
+      baixar(doc.output("blob"), baseNome() + " - PAPELETAS.pdf");
     };
     $("#btnPerfilSalvar").onclick = () => {
       const p = lerConfig();
-      if (!p.nome) { alert("Dê um nome à competição antes de salvar."); return; }
+      if (!p.nome) { aviso("Dê um nome à competição antes de salvar."); return; }
       const lista = lerPerfis().filter((x) => x.nome !== p.nome);
       lista.push(JSON.parse(JSON.stringify(p)));
       salvarPerfis(lista);
@@ -3068,10 +4167,13 @@
         carregarProgramaDoPerfil(p);
         preencherConfig();
         aviso("Perfil carregado.");
-      } catch (err) { alert("Não consegui ler este arquivo de perfil."); }
+      } catch (err) { aviso("Não consegui ler este arquivo de perfil."); }
     };
     renderPerfisSalvos();
     renderEspecificacao();
+    ligarChat();
+    // pergunta ao claude.ai, sem pressa, se este app pode usar o Claude
+    iniciarClaude();
   }
 
   function renderPerfisSalvos() {

@@ -329,6 +329,301 @@
     return wb;
   }
 
+  /* ---------------- planilhas fora do formato, para a etapa de IA ----------
+     Três jeitos de mandar inscrição que aparecem na vida real e que o app
+     não lê sozinho: a ficha de cada escola com as provas marcadas com X, a
+     lista corrida com os cabeçalhos de cada um, e a ficha única com o título
+     de cada prova mesclado em cima dos atletas. As três são do programa do
+     JEPB de exemplo: carregue aquele programa, envie uma destas e veja a
+     etapa de IA organizando. Cada uma volta com o gabarito, o que tem de
+     sair dela, para os testes conferirem. */
+
+  const CATEGORIAS_IA = {
+    PMB: { programa: 'PRÉ-MIRIM "B"', escritas: ["Pré-mirim B", "PRE MIRIM B", "PMB", "Pré-Mirim B"],
+           provas: [["25m", "LIVRE"], ["25m", "COSTAS"]], anos: [2016, 2017] },
+    MIRIM: { programa: "MIRIM", escritas: ["Mirim", "MIRIM", "mirim"],
+             provas: [["50m", "LIVRE"], ["50m", "COSTAS"]], anos: [2014, 2015] },
+    INF: { programa: "INFANTIL", escritas: ["Infantil", "INFANTIL", "Inf."],
+           provas: [["50m", "LIVRE"], ["50m", "PEITO"]], anos: [2012, 2013] },
+  };
+  const LONGO = { FEM: "FEMININO", MASC: "MASCULINO", MISTO: "MISTO" };
+
+  function numeroNoJEPB(dist, estilo, categoria, naipe) {
+    return COMPETICOES.ESCOLAR.programa.findIndex((p) => p[0] === dist &&
+      p[1] === estilo && p[2] === categoria && p[3] === LONGO[naipe]) + 1;
+  }
+
+  const emTitulo = (s) => s.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+  const doisDigitos = (n) => String(n).padStart(2, "0");
+
+  // a mesma marca escrita do jeito de cada um: 35,20  00:41,30  41.3
+  function tempoBaguncado(rnd, t) {
+    const sorte = rnd();
+    if (sorte < 0.35) return t.replace(".", ",");
+    if (sorte < 0.55 && t.indexOf(":") < 0) return "00:" + t.replace(".", ",");
+    if (sorte < 0.7 && /0$/.test(t)) return t.replace(/0$/, "");
+    return t;
+  }
+
+  function atletasDaEscola(rnd, novoNome, equipe, quantos) {
+    const lista = [];
+    for (let i = 0; i < quantos; i++) {
+      const naipe = rnd() < 0.5 ? "FEM" : "MASC";
+      const cat = ["PMB", "MIRIM", "INF"][Math.floor(rnd() * 3)];
+      const c = CATEGORIAS_IA[cat];
+      const provas = c.provas.filter(() => rnd() < 0.65);
+      if (!provas.length) provas.push(c.provas[Math.floor(rnd() * 2)]);
+      lista.push({
+        nome: novoNome(naipe), naipe, cat, equipe,
+        nasc: { d: 1 + Math.floor(rnd() * 28), m: 1 + Math.floor(rnd() * 12),
+                a: c.anos[Math.floor(rnd() * 2)] },
+        provas: provas.map(([d, e]) => ({
+          d, e, tempo: rnd() < 0.6 ? tempoPlausivel(rnd, d, e) : "" })),
+      });
+    }
+    return lista;
+  }
+
+  function gabaritoDe(aba, linha, a, p, tempoEscrito) {
+    const B = raiz.Balizador || require("./balizador.core.js");
+    return { aba, linha, nome: a.nome, equipe: a.equipe,
+             numero: numeroNoJEPB(p.d, p.e, CATEGORIAS_IA[a.cat].programa, a.naipe),
+             tempo: tempoEscrito ? B.lerTempo(tempoEscrito) : null };
+  }
+
+  function planilhaComMesclas(wb, nome, linhas, mesclas, larguras) {
+    const ws = XLSX.utils.aoa_to_sheet(linhas);
+    ws["!merges"] = mesclas.map((m) => XLSX.utils.decode_range(m));
+    ws["!cols"] = larguras.map((wch) => ({ wch }));
+    XLSX.utils.book_append_sheet(wb, ws, nome);
+  }
+
+  /* 1. Uma ficha por escola, cada uma numa aba. O nome da escola está num
+     título, as provas são colunas com X ou com o tempo, o cabeçalho ocupa
+     duas linhas mescladas e embaixo vêm o total e a assinatura. */
+  function baguncadaMatriz() {
+    const rnd = sorteio(51001);
+    const novoNome = fabricaDeNomes(rnd);
+    const wb = XLSX.utils.book_new();
+    const gabarito = [];
+    const colunas = [["25m", "LIVRE"], ["50m", "LIVRE"], ["25m", "COSTAS"],
+                     ["50m", "COSTAS"], ["50m", "PEITO"]];
+    const escolas = [["COL AURORA", "COLÉGIO AURORA", "MARTA REGINA KOEHLER"],
+                     ["ESC MODELO", "ESCOLA MODELO", "PAULO CESAR DUTRA"],
+                     ["INST COREE", "INSTITUTO COREE", "SANDRA LUZ HOFFMANN"]];
+    for (const [aba, escola, professor] of escolas) {
+      const atletas = atletasDaEscola(rnd, novoNome, escola, 8 + Math.floor(rnd() * 3));
+      const linhas = [
+        ["JOGOS ESCOLARES 2026 - FICHA DE INSCRIÇÃO - NATAÇÃO"],
+        ["ESCOLA: " + escola],
+        ["Professor responsável: " + emTitulo(professor)],
+        ["Nº", "NOME DO ALUNO", "SEXO", "DATA NASC.", "CATEGORIA",
+         "PROVAS (marque X ou escreva o melhor tempo)"],
+        ["", "", "", "", ""].concat(colunas.map(([d, e]) => d + " " + e)),
+      ];
+      atletas.forEach((a, k) => {
+        const n = linhas.length + 1;
+        const sexo = (a.naipe === "FEM" ? ["F", "f", "Fem", "FEMININO"]
+                                        : ["M", "m", "Masc", "MASCULINO"])[Math.floor(rnd() * 4)];
+        const nasc = [`${doisDigitos(a.nasc.d)}/${doisDigitos(a.nasc.m)}/${a.nasc.a}`,
+                      String(a.nasc.a), `${a.nasc.d}/${a.nasc.m}/${a.nasc.a}`][Math.floor(rnd() * 3)];
+        const escrita = CATEGORIAS_IA[a.cat].escritas;
+        const linha = [k + 1, rnd() < 0.3 ? emTitulo(a.nome) : a.nome, sexo, nasc,
+                       escrita[Math.floor(rnd() * escrita.length)]];
+        colunas.forEach(([d, e]) => {
+          const p = a.provas.find((x) => x.d === d && x.e === e);
+          if (!p) { linha.push(""); return; }
+          const t = p.tempo ? tempoBaguncado(rnd, p.tempo) : (rnd() < 0.5 ? "X" : "x");
+          linha.push(t);
+          gabarito.push(gabaritoDe(aba, n, a, p, p.tempo ? t : ""));
+        });
+        linhas.push(linha);
+      });
+      linhas.push([]);
+      linhas.push([`TOTAL DE ATLETAS: ${atletas.length}`]);
+      linhas.push(["Assinatura do responsável: ______________________________"]);
+      const fim = linhas.length;
+      planilhaComMesclas(wb, aba, linhas,
+        ["A1:J1", "A2:J2", "A3:J3", "A4:A5", "B4:B5", "C4:C5", "D4:D5", "E4:E5",
+         "F4:J4", `A${fim - 1}:E${fim - 1}`, `A${fim}:J${fim}`],
+        [5, 34, 8, 12, 13, 11, 11, 11, 11, 11]);
+    }
+    return { wb, gabarito };
+  }
+
+  /* 2. A lista corrida: uma linha por inscrição, com os cabeçalhos que cada
+     coordenação inventa, a prova escrita de cinco jeitos, às vezes duas
+     provas na mesma célula, e o revezamento só com a escola. */
+  function baguncadaLista() {
+    const rnd = sorteio(52002);
+    const novoNome = fabricaDeNomes(rnd);
+    const gabarito = [];
+    const equipes = ["COLÉGIO AURORA", "ESCOLA MODELO", "GRÊMIO PONTAL", "COLÉGIO SÃO JORGE"];
+    let atletas = [];
+    equipes.forEach((eq) => { atletas = atletas.concat(atletasDaEscola(rnd, novoNome, eq, 6)); });
+    const escritaProva = (d, e) => {
+      const n = d.replace("m", "");
+      const jeitos = {
+        LIVRE: [`${n} livre`, `${n} m nado livre`, `Crawl ${n}m`, `${n}M LIVRE`],
+        COSTAS: [`${n} costas`, `${n}m Costas`, `Costas ${n}`],
+        PEITO: [`${n} peito`, `${n}m nado peito`, `Peito ${n}`],
+      }[e];
+      return jeitos[Math.floor(rnd() * jeitos.length)];
+    };
+    const linhas = [
+      ["INSCRIÇÕES - NATAÇÃO - JEPB 2026"],
+      ["Enviar para a coordenação até 30/10/2026"],
+      [],
+      ["Atleta (nome completo)", "Nasc.", "M/F", "Unidade escolar",
+       "Modalidade / prova", "Cat.", "Melhor marca"],
+    ];
+    for (const a of atletas) {
+      const nasc = rnd() < 0.5
+        ? `${doisDigitos(a.nasc.d)}/${doisDigitos(a.nasc.m)}/${a.nasc.a}`
+        : `${a.nasc.a}-${doisDigitos(a.nasc.m)}-${doisDigitos(a.nasc.d)}`;
+      const escrita = CATEGORIAS_IA[a.cat].escritas;
+      const cat = escrita[Math.floor(rnd() * escrita.length)];
+      const base = [a.nome, nasc, a.naipe === "FEM" ? "F" : "M", a.equipe];
+      // quem nada duas provas sem tempo às vezes vem numa linha só
+      if (a.provas.length === 2 && !a.provas[0].tempo && !a.provas[1].tempo && rnd() < 0.6) {
+        const n = linhas.length + 1;
+        linhas.push(base.concat([a.provas.map((p) => escritaProva(p.d, p.e)).join(" / "), cat, ""]));
+        a.provas.forEach((p) => gabarito.push(gabaritoDe("Planilha1", n, a, p, "")));
+        continue;
+      }
+      for (const p of a.provas) {
+        const n = linhas.length + 1;
+        const t = p.tempo ? tempoBaguncado(rnd, p.tempo) : ["", "-", "sem tempo"][Math.floor(rnd() * 3)];
+        linhas.push(base.concat([escritaProva(p.d, p.e), cat, t]));
+        gabarito.push(gabaritoDe("Planilha1", n, a, p, p.tempo ? t : ""));
+      }
+    }
+    // os revezamentos: só a escola, quem nada é escolhido no dia
+    const revez = [["COLÉGIO AURORA", "Revezamento 4x50 livre misto", "Mirim", 14],
+                   ["ESCOLA MODELO", "4x50 Livre Misto", "MIRIM", 14],
+                   ["GRÊMIO PONTAL", "Revezamento 4x25 livre misto", "PMB", 13],
+                   ["COLÉGIO SÃO JORGE", "4x50m livre misto", "Infantil", 15]];
+    for (const [eq, prova, cat, numero] of revez) {
+      const n = linhas.length + 1;
+      linhas.push(["", "", "", eq, prova, cat, ""]);
+      gabarito.push({ aba: "Planilha1", linha: n, nome: eq, equipe: eq, numero, tempo: null });
+    }
+    linhas.push([]);
+    linhas.push([`Total de inscrições: ${gabarito.length}`]);
+    linhas.push(["Professor responsável: Carla Beatriz Fontana"]);
+    const wb = XLSX.utils.book_new();
+    planilhaComMesclas(wb, "Planilha1", linhas, [], [34, 12, 6, 24, 28, 14, 13]);
+    return { wb, gabarito };
+  }
+
+  /* 3. A ficha única por prova: o título de cada prova mesclado sobre a
+     linha toda, umas com o nome completo, outras em dois andares (a
+     categoria em cima, a prova embaixo), o total depois de cada bloco e a
+     assinatura no fim. */
+  function baguncadaBlocos() {
+    const rnd = sorteio(53003);
+    const novoNome = fabricaDeNomes(rnd);
+    const gabarito = [];
+    const aba = "Inscritos por prova";
+    let atletas = [];
+    COMPETICOES.ESCOLAR.equipes.slice(0, 5).forEach((eq) => {
+      atletas = atletas.concat(atletasDaEscola(rnd, novoNome, eq, 5));
+    });
+    const linhas = [
+      ["FESTIVAL ESCOLAR DE NATAÇÃO 2026 - JEPB"],
+      ["Ficha única, todas as escolas"],
+      [],
+    ];
+    const mesclas = ["A1:D1", "A2:D2"];
+    const mesclada = (t) => {
+      linhas.push([t]);
+      mesclas.push(`A${linhas.length}:D${linhas.length}`);
+    };
+    const daProva = (d, e, cat, naipe) => {
+      const lista = [];
+      for (const a of atletas) {
+        if (a.cat !== cat || a.naipe !== naipe) continue;
+        const p = a.provas.find((x) => x.d === d && x.e === e);
+        if (p) lista.push([a, p]);
+      }
+      return lista;
+    };
+    const atletasDoBloco = (lista) => {
+      for (const [a, p] of lista) {
+        const n = linhas.length + 1;
+        const t = p.tempo ? tempoBaguncado(rnd, p.tempo) : (rnd() < 0.5 ? "SEM TEMPO" : "");
+        linhas.push([rnd() < 0.25 ? emTitulo(a.nome) : a.nome, a.equipe,
+                     `${doisDigitos(a.nasc.d)}/${doisDigitos(a.nasc.m)}/${a.nasc.a}`, t]);
+        gabarito.push(gabaritoDe(aba, n, a, p, p.tempo ? t : ""));
+      }
+    };
+    let numero = 0;
+    const numerada = (k) => "PROVA " + doisDigitos(k);
+    // pré-mirim e infantil: o título completo, com cabeçalho embaixo
+    const completas = [["25m", "LIVRE", "PMB"], ["25m", "COSTAS", "PMB"],
+                       ["50m", "LIVRE", "INF"], ["50m", "PEITO", "INF"]];
+    for (const [d, e, cat] of completas) {
+      for (const naipe of ["FEM", "MASC"]) {
+        numero = numeroNoJEPB(d, e, CATEGORIAS_IA[cat].programa, naipe);
+        const lista = daProva(d, e, cat, naipe);
+        mesclada(cat === "PMB"
+          ? `${numerada(numero)} - ${d.replace("m", "")} METROS ${e} - PRÉ-MIRIM B ${LONGO[naipe]}`
+          : `${d.replace("m", "")} ${e} INFANTIL ${naipe === "FEM" ? "FEM" : "MASC"}`);
+        linhas.push(["Nome", "Escola", "Nascimento", "Tempo"]);
+        atletasDoBloco(lista);
+        linhas.push([`Total: ${lista.length} atletas`]);
+        linhas.push([]);
+      }
+    }
+    // mirim: a categoria e o naipe num título, as provas em outro, sem cabeçalho
+    for (const naipe of ["FEM", "MASC"]) {
+      mesclada(`MIRIM - ${LONGO[naipe]}`);
+      for (const [d, e] of CATEGORIAS_IA.MIRIM.provas) {
+        mesclada(`${d} ${emTitulo(e)}`);
+        atletasDoBloco(daProva(d, e, "MIRIM", naipe));
+        linhas.push([]);
+      }
+    }
+    // revezamentos: a escola na coluna da escola, a do nome em branco
+    const revez = [[13, "PRÉ-MIRIM B", "4X25"], [14, "MIRIM", "4X50"], [15, "INFANTIL", "4X50"]];
+    for (const [k, cat, dist] of revez) {
+      mesclada(`${numerada(k)} - REVEZAMENTO ${dist} LIVRE MISTO - ${cat}`);
+      linhas.push(["Equipe", "Escola", "", "Tempo"]);
+      COMPETICOES.ESCOLAR.equipes.slice(0, 3 + (k % 2)).forEach((eq) => {
+        const n = linhas.length + 1;
+        linhas.push(["", eq, "", ""]);
+        gabarito.push({ aba, linha: n, nome: eq, equipe: eq, numero: k, tempo: null });
+      });
+      linhas.push([]);
+    }
+    linhas.push(["Observações: as inscrições podem ser trocadas até o congresso técnico."]);
+    linhas.push(["Assinatura do responsável: ______________________________"]);
+    const wb = XLSX.utils.book_new();
+    planilhaComMesclas(wb, aba, linhas, mesclas, [36, 28, 13, 12]);
+    return { wb, gabarito };
+  }
+
+  const BAGUNCADAS = {
+    MATRIZ: { nome: "Ficha por escola, provas marcadas com X",
+              arquivo: "FICHA POR ESCOLA", gerar: baguncadaMatriz },
+    LISTA: { nome: "Lista corrida, cada um com os seus cabeçalhos",
+             arquivo: "LISTA CORRIDA", gerar: baguncadaLista },
+    BLOCOS: { nome: "Ficha única, título da prova em cima dos atletas",
+              arquivo: "FICHA UNICA POR PROVA", gerar: baguncadaBlocos },
+  };
+
+  function listaDeBaguncadas() {
+    return Object.keys(BAGUNCADAS).map((chave) => ({ chave, nome: BAGUNCADAS[chave].nome }));
+  }
+
+  function planilhaBaguncada(chave) {
+    return BAGUNCADAS[chave].gerar();
+  }
+
+  function nomeDaBaguncada(chave) {
+    return "FORA DO FORMATO - " + BAGUNCADAS[chave].arquivo + ".xlsx";
+  }
+
   function listaDeExemplos() {
     return Object.keys(COMPETICOES).map((chave) => ({
       chave,
@@ -357,6 +652,7 @@
   const api = {
     COMPETICOES, listaDeExemplos, nomeDoArquivo, perfilSugerido,
     planilhaDoPrograma, planilhaDeInscritos,
+    listaDeBaguncadas, planilhaBaguncada, nomeDaBaguncada,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;
   else raiz.BalizadorExemplos = api;
