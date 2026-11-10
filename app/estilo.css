@@ -1410,3 +1410,195 @@ html.noite{font-size:15px}
 @media (max-height:600px){
   .caminho > span:last-child{display:none}
 }
+
+/* =====================================================================
+   Passo a passo e do tamanho da tela (segundo teste no claude.ai).
+   A letra da conversa acompanha a altura da janela. O topo vira uma linha
+   só. Cada cartão traz três linhas curtas (o que é, por que importa, o que
+   fazer), e planilha, tabela e piscina rolam por dentro, dentro da altura
+   útil medida pelo app (--util): o cartão inteiro, com os botões, cabe.
+   A abertura se mede sozinha: tudo nela está em em.
+   ===================================================================== */
+html.noite{font-size:clamp(14px,calc(8.4px + 1.2vh),17px)}
+.noite body{font-size:1.02rem}
+
+/* o topo numa linha: marca, as cinco etapas no meio, Início à direita */
+body.modo-conversa .topo{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem 1.1rem;
+  padding-block:.5rem calc(.5rem + 5px)}
+body.modo-conversa .marca{display:contents}
+body.modo-conversa .marca h1{font-size:1.3rem}
+body.modo-conversa .sigla{width:2.2rem;height:2.2rem;font-size:.92rem;border-radius:7px}
+body.modo-conversa .trilha{order:2;flex:1 1 auto;justify-content:center;padding:0}
+body.modo-conversa .modos{order:3;margin-left:auto}
+.noite .degrau{font-size:.9rem;padding:.28rem .7rem .28rem .32rem}
+.noite .degrau .bolinha{width:1.4rem;height:1.4rem}
+body.modo-conversa main{padding-top:1rem}
+
+/* a caixa de mensagem mais baixa; na demonstração, sem a nota embaixo */
+.noite .compositor{padding:.32rem .4rem .32rem .5rem;border-radius:14px}
+.noite .compositor textarea{font-size:1rem;padding:.38rem .3rem}
+.noite .anexar{padding:.4rem .65rem;font-size:.85rem}
+.noite .compositor .botao{padding:.45rem 1rem}
+body.na-demo .compositor-nota{display:none}
+body.na-demo .compositor{margin-bottom:max(.7rem,env(safe-area-inset-bottom,0px))}
+.noite .fio{gap:.95rem}
+
+/* as três linhas de cada passo */
+.orienta{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.4rem}
+.orienta li{display:grid;grid-template-columns:8.4rem minmax(0,1fr);gap:.8rem;align-items:baseline}
+.orienta li > span{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--suave);white-space:nowrap}
+.orienta li p{margin:0;font-size:1rem;line-height:1.45;color:var(--tinta)}
+.orienta li.que p,.orienta li.porque p{color:var(--suave)}
+.orienta li.fazer > span{color:var(--agua)}
+.orienta li.fazer p{font-weight:500}
+.orienta li.fazer p::before{content:"→ ";color:var(--agua);font-weight:700}
+.orienta li.fazer b{color:var(--agua)}
+@media (max-width:640px){
+  .orienta li{grid-template-columns:minmax(0,1fr);gap:.05rem}
+}
+
+/* o cartão um pouco mais justo, para caber com folga */
+.noite .cartao-conversa{padding:.9rem 1.1rem 1rem;gap:.65rem}
+.noite .cartao-conversa .corpo{gap:.65rem}
+.noite .cartao-conversa h3{font-size:1.18rem}
+.noite .cartao-conversa .etapa{font-size:.66rem}
+.noite .numeros b{font-size:1.4rem}
+.noite .numeros div{padding:.45rem .7rem}
+.noite .numeros span{font-size:.84rem}
+
+/* o que é grande rola por dentro, sem passar da altura útil */
+.rola-folha{max-height:max(7.5em,calc(var(--util,60vh) - 13rem));overflow:auto}
+.rola-folha thead th{position:sticky;top:0;z-index:1}
+.folha-conv .rola-folha td.lin{position:sticky;left:0}
+.rola-piscina{max-height:max(9rem,calc(var(--util,60vh) - 12rem));overflow:auto;border-radius:14px}
+.rola-tabela{max-height:max(8rem,calc(var(--util,60vh) - 20rem));overflow:auto}
+.rola-lista{max-height:max(8rem,calc(var(--util,60vh) - 21rem));overflow:auto}
+.cartao-conversa details.mais[open] > summary{margin-bottom:.45rem}
+
+/* a piscina mais baixa: cabe mais série na tela */
+.noite .raia{min-height:3.3rem;padding:.35rem .5rem}
+.noite .piscina{gap:.35rem;padding:.5rem}
+
+/* um problema por vez: o contador e a correção numa folha branca */
+.conta-problema{display:inline-block;vertical-align:.15em;margin-right:.45rem;font-family:"JetBrains Mono",monospace;
+  font-size:.62em;letter-spacing:.06em;color:var(--papel);background:var(--grave);border-radius:999px;padding:.15rem .55rem}
+.correcao-unica{display:flex;flex-direction:column;gap:.45rem;padding:.8rem 1rem;border-radius:12px;
+  background:#F4F7F8;color:#1A2B31;border-top:4px solid #0B7285;
+  box-shadow:0 18px 36px -22px rgba(0,0,0,.8);animation:chegaFolha .6s both}
+.correcao-unica .rot{font-family:"JetBrains Mono",monospace;font-size:.68rem;letter-spacing:.08em;color:#0B7285}
+.correcao-unica .pergunta{margin:0;font-size:1.04rem;line-height:1.4;color:#1A2B31}
+.correcao-unica .botao{background:#0B7285;color:#FFFFFF}
+.correcao-unica .mini.claro{background:#FFFFFF;color:#56707A;border-color:#C9D6DA}
+.correcao-unica.feita{border-top-color:#116149}
+
+/* os três arquivos lado a lado, e o fim da demonstração */
+.saidas-conv{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr))}
+.saidas-conv .saida-conv{flex-direction:column;align-items:flex-start;gap:.5rem;padding:.7rem .85rem}
+.saidas-conv .saida-conv b{font-size:1.02rem}
+.saidas-conv .saida-conv span{font-size:.88rem}
+.fim-demo{display:flex;flex-direction:column;gap:.45rem;padding:.8rem 1rem;border-radius:12px;
+  border:1px dashed var(--agua);background:linear-gradient(120deg,var(--agua-fraca),transparent 80%)}
+.fim-demo > b{font-family:"Bricolage Grotesque",system-ui,sans-serif;font-size:1.12rem}
+.fim-demo ul{margin:0;padding-left:1.15rem;display:flex;flex-direction:column;gap:.15rem;color:var(--suave)}
+
+@media (prefers-reduced-motion:reduce){ .correcao-unica{animation:none} }
+
+/* ---------- a abertura, toda em em: o app acha o tamanho que cabe ---------- */
+body.na-abertura main{max-width:none}
+.abertura-conv{font-size:16px;width:100%;max-width:66em;margin-inline:auto;box-sizing:border-box;
+  grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);column-gap:2.4em;row-gap:.85em;padding:1.1em 0 1em}
+.abertura-conv .olho{font-size:.78em}
+.abertura-conv h2{font-size:2.55em;line-height:1.05}
+.abertura-conv .linha-fina{font-size:1.06em;line-height:1.5;max-width:none}
+.abertura-conv .garantia{font-size:.86em}
+.abertura-conv > .link{font-size:1em}
+.abertura-conv .botao,.abertura-conv .mini{font-size:.95em}
+.abertura-conv .piscina-abertura{border-radius:1.1em}
+.abertura-conv .faixa{--rot:9.8em;height:2.75em;font-size:.94em}
+.abertura-conv .faixa .rotulo{width:var(--rot);gap:.6em;padding-left:.85em;font-size:1em}
+.abertura-conv .faixa .rotulo b{font-size:.82em;width:1.55em;height:1.55em}
+.abertura-conv .faixa .nada{left:var(--rot);width:3.6em;animation-name:travessiaAb}
+.abertura-conv .faixa .chegada{right:.75em;width:1.6em;height:1.6em;margin-top:-.8em;font-size:.9em}
+@keyframes travessiaAb{
+  0%{left:var(--rot);opacity:0}
+  6%{opacity:1}
+  60%,88%{left:calc(100% - 5.9em);opacity:1}
+  100%{left:calc(100% - 5.9em);opacity:0}}
+.abertura-conv .caminhos{gap:.9em;grid-template-columns:repeat(auto-fit,minmax(16em,1fr))}
+.abertura-conv .caminho{padding:1.05em 1.2em;gap:.3em;border-radius:1.1em}
+.abertura-conv .caminho b{font-size:1.3em}
+.abertura-conv .caminho > span:last-child{font-size:.95em;display:block}
+.abertura-conv .selo-caminho{font-size:.7em;padding:.2em .7em}
+.abertura-conv .recomecar{padding:.9em 1em;gap:.6em;border-radius:.9em}
+@media (max-width:759px){
+  .abertura-conv{font-size:15px}
+  .abertura-conv .faixa{--rot:8.2em}
+  .abertura-conv h2{font-size:2.2em}
+}
+@media (prefers-reduced-motion:reduce){
+  .abertura-conv .faixa .nada{animation:none;left:calc(100% - 5.9em)}
+}
+/* na abertura não há para onde voltar: o seletor de modo some */
+body.na-abertura.modo-conversa .modos{visibility:hidden}
+/* a folha que rola por dentro: o cabeçalho das colunas fica parado, sem
+   deixar a linha de baixo aparecer por trás dele */
+.rola-folha table{border-collapse:separate;border-spacing:0}
+.rola-folha th,.rola-folha td{border:0;border-right:1px solid #D2DDE0;border-bottom:1px solid #D2DDE0}
+.rola-folha thead th{top:0;box-shadow:0 1px 0 #C9D6DA}
+.rola-folha td.lin{z-index:0}
+/* célula de título comprido não alarga a coluna inteira */
+.folha-conv td{max-width:17em;overflow:hidden;text-overflow:ellipsis}
+/* em tela baixa, o passo da planilha guarda a altura para a planilha */
+@media (max-height:620px){
+  .cartao-conversa:has(.rola-folha) .orienta li.que{display:none}
+}
+/* a competição numa linha: raias, limite e as três caixas */
+.comp-linha{display:flex;flex-wrap:wrap;gap:.7rem 1.6rem;align-items:flex-end}
+.comp-linha .campos{flex:none}
+.comp-linha .marcas{flex:1 1 18rem;padding-bottom:.35rem}
+.cartao-conversa .campo input[type=number]{width:7.5em}
+.noite .cartao-conversa .marcavel{font-size:.98rem}
+.comp-linha .campos{display:flex;flex-wrap:nowrap;gap:.8rem}
+.comp-linha .campo{flex:none;min-width:0;width:auto}
+/* a linha reescrita em duas linhas de texto, não em cinco */
+.org-vai{line-height:1.4}
+.org-vai .num-prova{vertical-align:.08em}
+.noite .linha-org{padding-block:.45rem}
+.noite .org-de{font-size:.76rem}
+/* em tela baixa, raias também guardam a altura para a piscina */
+@media (max-height:620px){
+  .cartao-conversa:has(.rola-piscina) .orienta li.que{display:none}
+}
+/* os arquivos e o fim da demonstração, mais baixos */
+.saidas-conv .saida-conv{gap:.35rem;padding:.6rem .8rem}
+.saidas-conv .saida-conv > div:first-child{display:flex;flex-direction:column;gap:.05rem}
+.saidas-conv .botao{padding:.38rem .85rem;font-size:.92rem}
+.fim-demo{padding:.7rem .9rem;gap:.4rem}
+.fim-demo ul{list-style:none;padding:0;display:grid;gap:.25rem .9rem;
+  grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));font-size:.92rem}
+.fim-demo li::before{content:"✓ ";color:var(--bom);font-weight:700}
+/* a tabela reescrita rola por dentro, com o cabeçalho parado */
+.rola-org{overflow:auto;border-radius:12px}
+.rola-org .linha-org.cabeca{position:sticky;top:0;z-index:1;background:var(--papel2)}
+.mais-linha{display:flex;flex-wrap:wrap;gap:.3rem 1.4rem}
+.mais-linha:empty{display:none}
+.mais-linha details[open]{flex-basis:100%}
+@media (max-height:620px){
+  .cartao-conversa:has(.rola-org) .orienta li.que{display:none}
+}
+/* a piscina cabe na largura do cartão, sem barra de lado com 6 raias */
+.cartao-conversa .piscina{min-width:calc(4.2rem + var(--raias) * 6.6rem)}
+.cartao-conversa .piscina .serie{grid-template-columns:4rem repeat(var(--raias),minmax(6.2rem,1fr));gap:.3rem}
+.noite .raia b{font-size:.82rem}
+.falta-conv{margin:0;padding:.5rem .8rem;border-radius:10px;background:var(--grave-fraca);
+  border:1px solid var(--grave);font-size:.95rem}
+.comp-linha .campo:has(input[data-espelho="nomeComp"]) input{width:16rem;max-width:100%}
+/* em janela estreita (o painel ao lado do chat), o topo continua numa linha:
+   só a etapa atual mostra o nome, as outras ficam no número */
+@media (max-width:980px){
+  body.modo-conversa .degrau:not(.atual) span:last-child{display:none}
+  body.modo-conversa .degrau:not(.atual){padding:.28rem}
+  body.modo-conversa .topo{gap:.4rem .7rem}
+  .noite .modos button{padding:.4rem .8rem;font-size:.88rem}
+}

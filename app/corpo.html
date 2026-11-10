@@ -27,20 +27,20 @@
     <div class="abertura-conv" id="aberturaConv">
       <span class="olho">natação · balizamento · inteligência artificial</span>
       <h2>A madrugada antes da competição agora cabe <em>numa conversa</em>.</h2>
-      <p class="linha-fina">O Claude conduz o balizamento com você: lê as planilhas, reescreve
-        as que chegam bagunçadas e propõe cada correção, que só acontece com o seu Sim.
-        Séries e raias saem sempre pelas regras do app.</p>
+      <p class="linha-fina">Antes de uma competição de natação, alguém passa a noite decidindo quem
+        nada com quem e em qual faixa da piscina. Isso é o balizamento. O Claude faz com você:
+        lê as planilhas, arruma as bagunçadas e só muda algo com o seu Sim.</p>
       <div class="piscina-abertura" id="piscinaAbertura" aria-hidden="true"></div>
       <div class="caminhos">
         <button type="button" class="caminho principal" data-caminho="demo">
           <span class="selo-caminho">uns 3 minutos</span>
           <b>Ver a demonstração</b>
-          <span>Um campeonato inventado, com erros plantados de propósito. Você vê a IA achar e
+          <span>Um campeonato inventado, com erros escondidos de propósito. Você vê a IA achar e
             corrigir cada um.</span>
         </button>
         <button type="button" class="caminho" data-caminho="minhas">
           <b>Começar com as minhas planilhas</b>
-          <span>Envie o programa de provas e os inscritos. O Claude conduz o resto.</span>
+          <span>Envie a lista de provas e a lista de inscritos. O Claude guia o resto.</span>
         </button>
       </div>
       <div class="recomecar" id="recomecar" hidden>
@@ -57,7 +57,7 @@
       <label class="anexar" title="Anexar uma planilha">
         <input type="file" id="anexo" accept=".xlsx,.xlsm,.csv" hidden>
         <span>Anexar planilha</span></label>
-      <textarea id="mensagem" rows="1" placeholder="Escreva para o Claude, ou arraste uma planilha para cá"></textarea>
+      <textarea id="mensagem" rows="1" placeholder="Tem dúvida? Pergunte ao Claude. Por exemplo: o que é uma série?"></textarea>
       <button type="submit" class="botao" id="enviarMensagem">Enviar</button>
       <button type="button" class="mini claro" id="pararMensagem" hidden>Parar</button>
     </form>
