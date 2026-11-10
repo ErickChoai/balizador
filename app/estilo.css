@@ -1532,7 +1532,8 @@ body.na-abertura main{max-width:none}
 .abertura-conv .selo-caminho{font-size:.7em;padding:.2em .7em}
 .abertura-conv .recomecar{padding:.9em 1em;gap:.6em;border-radius:.9em}
 @media (max-width:759px){
-  .abertura-conv{font-size:15px}
+  /* no celular, uma coluna só, da largura toda (a regra de duas colunas acima vale só para tela larga) */
+  .abertura-conv{font-size:15px;grid-template-columns:minmax(0,1fr);column-gap:0}
   .abertura-conv .faixa{--rot:8.2em}
   .abertura-conv h2{font-size:2.2em}
 }
@@ -1601,4 +1602,90 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
   body.modo-conversa .degrau:not(.atual){padding:.28rem}
   body.modo-conversa .topo{gap:.4rem .7rem}
   .noite .modos button{padding:.4rem .8rem;font-size:.88rem}
+}
+/* =====================================================================
+   Celular (até 640px de largura): o mesmo passo a passo, sem espaço
+   desperdiçado. O topo numa linha, o rótulo de cada linha do passo na
+   frente do texto, as conferências em etiquetas e a piscina em lista.
+   ===================================================================== */
+.so-estreito{display:none}
+@media (max-width:640px){
+  .so-largo{display:none}
+  .so-estreito{display:inline}
+  /* o topo numa linha só: BZ, as cinco etapas em número e Início */
+  body.modo-conversa:not(.na-abertura) .topo{flex-wrap:nowrap;gap:.5rem}
+  body.modo-conversa:not(.na-abertura) .marca h1{position:absolute;width:1px;height:1px;overflow:hidden;
+    clip:rect(0 0 0 0);white-space:nowrap}
+  body.modo-conversa .trilha{flex:1 1 0;min-width:0;justify-content:flex-start;gap:.25rem}
+  body.modo-conversa .degrau span:last-child{display:none}
+  body.modo-conversa .degrau{padding:.26rem}
+  .noite .modos button{padding:.38rem .7rem;font-size:.85rem}
+  /* o rótulo na frente do texto: uma linha a menos em cada um */
+  .orienta li{display:block}
+  .orienta li > span{display:inline;margin-right:.45em;font-size:.62rem}
+  .orienta li p{display:inline}
+  .noite .cartao-conversa{padding:.8rem .85rem .9rem}
+  /* as conferências em duas colunas estreitas, letra menor */
+  .checagens-conv{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.3rem}
+  .checagens-conv li{font-size:.8rem;line-height:1.2;padding:.3rem .45rem .3rem .3rem;border-radius:8px;gap:.35rem}
+  .checagens-conv li::before{width:1.1rem;height:1.1rem;font-size:.66rem}
+  /* trocar de prova numa linha */
+  .navega-prova{flex-wrap:nowrap;gap:.35rem}
+  .navega-prova select{flex:1 1 0;min-width:0;font-size:.9rem}
+  .navega-prova .mini{flex:none;padding:.4rem .6rem;font-size:.85rem}
+  /* a piscina em lista: cada série um bloco, cada raia uma linha com o número na frente */
+  .cartao-conversa .piscina{min-width:0;gap:.6rem}
+  .cartao-conversa .piscina .serie{display:flex;flex-direction:column;gap:.25rem}
+  .cartao-conversa .piscina .serie.cabeca{display:none}
+  .cartao-conversa .piscina .nserie{padding:.1rem .1rem 0}
+  .cartao-conversa .piscina .raia{display:grid;grid-template-columns:1.7rem minmax(0,1fr) auto;
+    grid-template-areas:"n nome tempo" "n escola tempo";column-gap:.55rem;row-gap:0;align-items:center;
+    min-height:0;padding:.35rem .6rem .35rem .45rem}
+  .cartao-conversa .piscina .raia::before{content:attr(data-raia);grid-area:n;width:1.5rem;height:1.5rem;
+    border-radius:50%;display:grid;place-items:center;background:var(--agua-fraca);color:var(--agua);
+    font-family:"JetBrains Mono",monospace;font-size:.74rem;font-weight:700}
+  .cartao-conversa .piscina .raia b{grid-area:nome;-webkit-line-clamp:1}
+  .cartao-conversa .piscina .raia span{grid-area:escola}
+  .cartao-conversa .piscina .raia em{grid-area:tempo;margin:0}
+  .cartao-conversa .piscina .raia.vazia{min-height:2.2rem}
+  .cartao-conversa .piscina .raia.vazia::after{content:"raia vazia";grid-area:nome;font-size:.78rem;color:var(--suave)}
+  /* os arquivos numa linha cada: o nome à esquerda, o botão à direita */
+  .saidas-conv{grid-template-columns:minmax(0,1fr);gap:.4rem}
+  .saidas-conv .saida-conv{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:.6rem;padding:.5rem .7rem}
+  .saidas-conv .saida-conv > div:first-child{flex:1 1 auto;min-width:0}
+  .saidas-conv .saida-conv .acoes-cartao{flex:none;flex-direction:column;align-items:flex-end;gap:.15rem}
+  .fim-demo .acoes-cartao{flex-direction:column;align-items:stretch}
+}
+/* o cartão em duas partes (só no celular, quando não cabe na tela) */
+.cartao-conversa.parte-1 .so-parte-2,.cartao-conversa.parte-2 .so-parte-1{display:none!important}
+.volta-parte{font-size:.88rem}
+@media (max-width:640px){
+  /* a coluna com texto comprido não come a largura da planilha */
+  .folha-conv td{max-width:8.5em}
+}
+.orienta li.fazer p .volta-parte{margin-left:.45em;font-size:.82rem;font-weight:400;color:var(--suave)}
+@media (max-width:640px){
+  /* a competição mais justa: as três caixas mais perto uma da outra */
+  .comp-linha{gap:.5rem 1rem}
+  .comp-linha .marcas{padding-bottom:0}
+  .cartao-conversa .marcas{gap:.3rem 1rem}
+  .noite .cartao-conversa .marcavel{font-size:.92rem;line-height:1.3}
+}
+@media (max-width:640px){
+  /* a linha reescrita mais baixa: de onde veio numa linha, o texto ao lado do Sim e Não */
+  .linha-org{gap:.2rem}
+  .org-origem{flex-direction:row;flex-wrap:wrap;gap:.1rem .45em;align-items:baseline;font-size:.8rem}
+  .org-para{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.3rem .6rem}
+  .org-para .org-vai{flex:1 1 9rem;min-width:0}
+  .org-para .motivos{flex-basis:100%}
+  .org-para .acoes-cartao{flex:none}
+  .org-para .acoes-cartao .botao,.org-para .acoes-cartao .mini{padding:.32rem .75rem;font-size:.88rem}
+}
+@media (max-width:640px){
+  /* dois botões cabem numa linha */
+  .noite .cartao-conversa .acoes-cartao .botao,.noite .cartao-conversa .acoes-cartao .mini{padding-inline:.7rem;font-size:.92rem}
+  .noite .cartao-conversa .acoes-cartao{gap:.4rem}
+}
+@media (max-width:640px){
+  .noite .cartao-conversa .org-para .acoes-cartao .botao,.noite .cartao-conversa .org-para .acoes-cartao .mini{padding-inline:.75rem;font-size:.88rem}
 }

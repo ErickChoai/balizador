@@ -1542,7 +1542,8 @@ body.na-abertura main{max-width:none}
 .abertura-conv .selo-caminho{font-size:.7em;padding:.2em .7em}
 .abertura-conv .recomecar{padding:.9em 1em;gap:.6em;border-radius:.9em}
 @media (max-width:759px){
-  .abertura-conv{font-size:15px}
+  /* no celular, uma coluna só, da largura toda (a regra de duas colunas acima vale só para tela larga) */
+  .abertura-conv{font-size:15px;grid-template-columns:minmax(0,1fr);column-gap:0}
   .abertura-conv .faixa{--rot:8.2em}
   .abertura-conv h2{font-size:2.2em}
 }
@@ -1611,6 +1612,92 @@ body.na-abertura.modo-conversa .modos{visibility:hidden}
   body.modo-conversa .degrau:not(.atual){padding:.28rem}
   body.modo-conversa .topo{gap:.4rem .7rem}
   .noite .modos button{padding:.4rem .8rem;font-size:.88rem}
+}
+/* =====================================================================
+   Celular (até 640px de largura): o mesmo passo a passo, sem espaço
+   desperdiçado. O topo numa linha, o rótulo de cada linha do passo na
+   frente do texto, as conferências em etiquetas e a piscina em lista.
+   ===================================================================== */
+.so-estreito{display:none}
+@media (max-width:640px){
+  .so-largo{display:none}
+  .so-estreito{display:inline}
+  /* o topo numa linha só: BZ, as cinco etapas em número e Início */
+  body.modo-conversa:not(.na-abertura) .topo{flex-wrap:nowrap;gap:.5rem}
+  body.modo-conversa:not(.na-abertura) .marca h1{position:absolute;width:1px;height:1px;overflow:hidden;
+    clip:rect(0 0 0 0);white-space:nowrap}
+  body.modo-conversa .trilha{flex:1 1 0;min-width:0;justify-content:flex-start;gap:.25rem}
+  body.modo-conversa .degrau span:last-child{display:none}
+  body.modo-conversa .degrau{padding:.26rem}
+  .noite .modos button{padding:.38rem .7rem;font-size:.85rem}
+  /* o rótulo na frente do texto: uma linha a menos em cada um */
+  .orienta li{display:block}
+  .orienta li > span{display:inline;margin-right:.45em;font-size:.62rem}
+  .orienta li p{display:inline}
+  .noite .cartao-conversa{padding:.8rem .85rem .9rem}
+  /* as conferências em duas colunas estreitas, letra menor */
+  .checagens-conv{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.3rem}
+  .checagens-conv li{font-size:.8rem;line-height:1.2;padding:.3rem .45rem .3rem .3rem;border-radius:8px;gap:.35rem}
+  .checagens-conv li::before{width:1.1rem;height:1.1rem;font-size:.66rem}
+  /* trocar de prova numa linha */
+  .navega-prova{flex-wrap:nowrap;gap:.35rem}
+  .navega-prova select{flex:1 1 0;min-width:0;font-size:.9rem}
+  .navega-prova .mini{flex:none;padding:.4rem .6rem;font-size:.85rem}
+  /* a piscina em lista: cada série um bloco, cada raia uma linha com o número na frente */
+  .cartao-conversa .piscina{min-width:0;gap:.6rem}
+  .cartao-conversa .piscina .serie{display:flex;flex-direction:column;gap:.25rem}
+  .cartao-conversa .piscina .serie.cabeca{display:none}
+  .cartao-conversa .piscina .nserie{padding:.1rem .1rem 0}
+  .cartao-conversa .piscina .raia{display:grid;grid-template-columns:1.7rem minmax(0,1fr) auto;
+    grid-template-areas:"n nome tempo" "n escola tempo";column-gap:.55rem;row-gap:0;align-items:center;
+    min-height:0;padding:.35rem .6rem .35rem .45rem}
+  .cartao-conversa .piscina .raia::before{content:attr(data-raia);grid-area:n;width:1.5rem;height:1.5rem;
+    border-radius:50%;display:grid;place-items:center;background:var(--agua-fraca);color:var(--agua);
+    font-family:"JetBrains Mono",monospace;font-size:.74rem;font-weight:700}
+  .cartao-conversa .piscina .raia b{grid-area:nome;-webkit-line-clamp:1}
+  .cartao-conversa .piscina .raia span{grid-area:escola}
+  .cartao-conversa .piscina .raia em{grid-area:tempo;margin:0}
+  .cartao-conversa .piscina .raia.vazia{min-height:2.2rem}
+  .cartao-conversa .piscina .raia.vazia::after{content:"raia vazia";grid-area:nome;font-size:.78rem;color:var(--suave)}
+  /* os arquivos numa linha cada: o nome à esquerda, o botão à direita */
+  .saidas-conv{grid-template-columns:minmax(0,1fr);gap:.4rem}
+  .saidas-conv .saida-conv{flex-direction:row;flex-wrap:nowrap;align-items:center;gap:.6rem;padding:.5rem .7rem}
+  .saidas-conv .saida-conv > div:first-child{flex:1 1 auto;min-width:0}
+  .saidas-conv .saida-conv .acoes-cartao{flex:none;flex-direction:column;align-items:flex-end;gap:.15rem}
+  .fim-demo .acoes-cartao{flex-direction:column;align-items:stretch}
+}
+/* o cartão em duas partes (só no celular, quando não cabe na tela) */
+.cartao-conversa.parte-1 .so-parte-2,.cartao-conversa.parte-2 .so-parte-1{display:none!important}
+.volta-parte{font-size:.88rem}
+@media (max-width:640px){
+  /* a coluna com texto comprido não come a largura da planilha */
+  .folha-conv td{max-width:8.5em}
+}
+.orienta li.fazer p .volta-parte{margin-left:.45em;font-size:.82rem;font-weight:400;color:var(--suave)}
+@media (max-width:640px){
+  /* a competição mais justa: as três caixas mais perto uma da outra */
+  .comp-linha{gap:.5rem 1rem}
+  .comp-linha .marcas{padding-bottom:0}
+  .cartao-conversa .marcas{gap:.3rem 1rem}
+  .noite .cartao-conversa .marcavel{font-size:.92rem;line-height:1.3}
+}
+@media (max-width:640px){
+  /* a linha reescrita mais baixa: de onde veio numa linha, o texto ao lado do Sim e Não */
+  .linha-org{gap:.2rem}
+  .org-origem{flex-direction:row;flex-wrap:wrap;gap:.1rem .45em;align-items:baseline;font-size:.8rem}
+  .org-para{flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.3rem .6rem}
+  .org-para .org-vai{flex:1 1 9rem;min-width:0}
+  .org-para .motivos{flex-basis:100%}
+  .org-para .acoes-cartao{flex:none}
+  .org-para .acoes-cartao .botao,.org-para .acoes-cartao .mini{padding:.32rem .75rem;font-size:.88rem}
+}
+@media (max-width:640px){
+  /* dois botões cabem numa linha */
+  .noite .cartao-conversa .acoes-cartao .botao,.noite .cartao-conversa .acoes-cartao .mini{padding-inline:.7rem;font-size:.92rem}
+  .noite .cartao-conversa .acoes-cartao{gap:.4rem}
+}
+@media (max-width:640px){
+  .noite .cartao-conversa .org-para .acoes-cartao .botao,.noite .cartao-conversa .org-para .acoes-cartao .mini{padding-inline:.75rem;font-size:.88rem}
 }
 
 </style>
@@ -12231,16 +12318,103 @@ Para cada linha recebida, devolva:
     const caixas = $$(".rola-folha, .rola-piscina, .rola-org", el).filter((c) => c.offsetParent);
     if (!caixas.length) return;
     for (const c of caixas) c.style.maxHeight = "";
-    let util = parseFloat(document.documentElement.style.getPropertyValue("--util")) || window.innerHeight * 0.6;
-    // a fala da IA logo antes também fica à vista, se der
-    const antes = el.previousElementSibling;
-    if (antes && antes.matches(".fala.claude")) util -= antes.getBoundingClientRect().height + 14;
-    const sobra = el.getBoundingClientRect().height - util;
+    const sobra = el.getBoundingClientRect().height - alturaUtil(el);
     if (sobra <= 0) return;
     const c = caixas[0];
     // o mínimo que ainda mostra alguma coisa: umas linhas da folha, duas da tabela
     const minimo = c.classList.contains("rola-org") ? 200 : 150;
     c.style.maxHeight = Math.max(minimo, c.getBoundingClientRect().height - sobra) + "px";
+  }
+
+  // a altura que o cartão pode ter; na primeira parte (ou sem partes), a fala
+  // da IA logo antes também fica à vista
+  function alturaUtil(el) {
+    let util = parseFloat(document.documentElement.style.getPropertyValue("--util")) || window.innerHeight * 0.6;
+    const antes = el.previousElementSibling;
+    if (!el.classList.contains("parte-2") && antes && antes.matches(".fala.claude"))
+      util -= antes.getBoundingClientRect().height + 14;
+    return util;
+  }
+
+  /* No celular, o cartão que não cabe na tela vira dois passos. Primeiro vêm
+     o que é e por que importa, com Continuar. Depois vêm o que fazer, a
+     planilha (ou a piscina, a tabela) e os botões. Nada some: vem em duas
+     vezes, e dá para voltar à explicação. No cartão dos arquivos, a divisão
+     é antes do fim da demonstração. */
+  const CELULAR = 640;
+  function paginar(el, direto) {
+    if (!el || !el.isConnected || el.classList.contains("antigo") || el.dataset.partes) return;
+    if (window.innerWidth > CELULAR) return;
+    // a altura útil já guarda uma margem; com folga de 24px, cartão que cabe não divide
+    if (el.getBoundingClientRect().height <= alturaUtil(el) + 24) return;
+    const corpo = $(".corpo", el);
+    if (!corpo) return;
+    const filhos = [...corpo.children];
+    const fim = $(":scope > .fim-demo", corpo);
+    let p1, p2, depoisDe;
+    if (fim) {
+      const i = filhos.indexOf(fim);
+      p1 = filhos.slice(0, i); p2 = filhos.slice(i); depoisDe = filhos[i - 1];
+    } else {
+      const ori = $(":scope > .orienta", corpo);
+      if (!ori) return;
+      p1 = $$(":scope > li.que, :scope > li.porque", ori);
+      p2 = [$(":scope > li.fazer", ori), ...filhos.filter((f) => f !== ori)].filter(Boolean);
+      depoisDe = ori;
+    }
+    if (!p1.length || !p2.length || !depoisDe) return;
+    p1.forEach((x) => x.classList.add("so-parte-1"));
+    p2.forEach((x) => x.classList.add("so-parte-2"));
+    const seguir = document.createElement("div");
+    seguir.className = "acoes-cartao parte-extra so-parte-1";
+    seguir.innerHTML = `<button type="button" class="botao">Continuar</button>`;
+    depoisDe.after(seguir);
+    const volta = document.createElement("button");
+    volta.type = "button";
+    volta.className = "link volta-parte parte-extra so-parte-2";
+    volta.textContent = fim ? "voltar aos arquivos" : "rever a explicação";
+    // o link de voltar vai no fim da linha "o que fazer", para não gastar uma linha
+    const fazer = fim ? null : $(":scope > .orienta > li.fazer p", corpo);
+    (fazer || corpo).appendChild(volta);
+    el.dataset.partes = "2";
+    const mostrar = (n) => {
+      el.classList.toggle("parte-1", n === 1);
+      el.classList.toggle("parte-2", n === 2);
+      encaixar(el);
+      if (n === 2) rolarCaixas(el);
+    };
+    const trocar = (n) => {
+      novaVez();
+      mostrar(n);
+      ancora = el;
+      // o começo do cartão à vista, e o resto até onde couber
+      const topo = ($(".topo") ? $(".topo").getBoundingClientRect().bottom : 0) + 12;
+      const r = el.getBoundingClientRect();
+      if (r.top < topo) window.scrollBy({ top: r.top - topo, behavior: "auto" });
+      rolar(el);
+    };
+    $("button", seguir).onclick = () => trocar(2);
+    volta.onclick = () => trocar(1);
+    mostrar(direto ? 2 : 1);
+  }
+
+  // tela larga de novo (o celular deitado): o cartão volta a ser um só
+  function desfazerPartes(el) {
+    if (!el.dataset.partes) return;
+    $$(".parte-extra", el).forEach((x) => x.remove());
+    $$(".so-parte-1, .so-parte-2", el).forEach((x) => x.classList.remove("so-parte-1", "so-parte-2"));
+    el.classList.remove("parte-1", "parte-2");
+    delete el.dataset.partes;
+  }
+
+  // a planilha abre na linha com erro, a piscina no começo da última série
+  function rolarCaixas(el) {
+    rolarAteErro(el);
+    const box = $(".rola-piscina", el);
+    if (!box) return;
+    const ult = $$(".serie:not(.cabeca)", box).pop();
+    box.scrollTop = ult ? ult.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 6
+                        : box.scrollHeight;
   }
 
   // o passo que a pessoa deixou para trás fecha numa linha
@@ -12287,6 +12461,8 @@ Para cada linha recebida, devolva:
   }
 
   function cartao(tipo, etapa, titulo, corpo, resumo, ligar) {
+    // o mesmo cartão montado de novo (outra prova, outra linha) não volta à explicação
+    const jaNaParte2 = $$(`.cartao-conversa[data-tipo="${tipo}"]:not(.antigo)`).some((v) => v.classList.contains("parte-2"));
     for (const velho of $$(`.cartao-conversa[data-tipo="${tipo}"]:not(.antigo)`)) fecharCartao(velho);
     // a IA terminou de trabalhar: o cartão de progresso vira uma linha
     if (!tipo.startsWith("progresso")) {
@@ -12306,6 +12482,7 @@ Para cada linha recebida, devolva:
     adicionar(el);
     if (ligar) ligar(el);
     encaixar(el);
+    paginar(el, jaNaParte2);
     return el;
   }
 
@@ -13012,10 +13189,10 @@ Para cada linha recebida, devolva:
       const porRaia = new Map(s.linhas.map((l) => [l.raia, l.item]));
       const celulas = Array.from({ length: raias }, (_, k) => {
         const it = porRaia.get(k + 1);
-        if (!it) return `<div class="raia vazia"></div>`;
+        if (!it) return `<div class="raia vazia" data-raia="${k + 1}"></div>`;
         const nome = p.revezamento ? it.equipe : it.nome;
         const d = (si * raias + ordem.indexOf(k + 1)) * 0.09;
-        return `<div class="raia ${it.marcado ? "marcada" : ""}" title="${AT(nome)}" style="--d:${Math.min(d, 4).toFixed(2)}s">
+        return `<div class="raia ${it.marcado ? "marcada" : ""}" data-raia="${k + 1}" title="${AT(nome)}" style="--d:${Math.min(d, 4).toFixed(2)}s">
           <b>${AT(nome)}</b>
           ${p.revezamento ? "" : `<span>${AT(it.equipe || "")}</span>`}
           <em>${it.tempo != null ? B.formatarTempo(it.tempo) : "sem tempo"}</em></div>`;
@@ -13025,7 +13202,9 @@ Para cada linha recebida, devolva:
     const meio = Math.ceil(raias / 2);
     return cartao("raias", "Balizamento", AT(`${p.numero}ª ${p.titulo}`), `
       ${orienta({
-        que: `Cada linha é uma série: um grupo que nada junto. Cada coluna é uma raia, a faixa da piscina.`,
+        // no celular a piscina vira lista: cada bloco é uma série, cada linha uma raia
+        que: `<span class="so-largo">Cada linha é uma série: um grupo que nada junto. Cada coluna é uma raia, a faixa da piscina.</span>` +
+             `<span class="so-estreito">Cada bloco é uma série: um grupo que nada junto. Cada linha é uma raia, a faixa da piscina.</span>`,
         porque: `Os mais rápidos nadam juntos na última série, e o mais rápido fica no meio, raia ${meio} ou ${meio + 1}.`,
         fazer: conv.demo ? "Veja a última série e clique em <b>Ver os arquivos</b>."
                          : "Troque a prova no seletor, ou clique em <b>Gerar os arquivos</b>.",
@@ -13044,9 +13223,9 @@ Para cada linha recebida, devolva:
         <button type="button" class="botao" data-acao="ver_arquivos">${conv.demo ? "Ver os arquivos" : "Gerar os arquivos"}</button>
       </div>`, `Raias da ${p.numero}ª prova`, (el) => {
       ligarAcoes(el);
-      // a piscina rola por dentro até a última série, onde está o melhor tempo
-      const box = $(".rola-piscina", el);
-      requestAnimationFrame(() => { if (box) box.scrollTop = box.scrollHeight; });
+      // a piscina rola por dentro até a última série, onde está o melhor tempo;
+      // no celular, a lista para no começo dela, com o nome da série à vista
+      requestAnimationFrame(() => rolarCaixas(el));
       $("select", el).onchange = (ev) => cartaoRaias(ev.target.value);
       el.dataset.prova = p.numero;
       el.dataset.anterior = pos ? comGente[pos - 1].numero : "";
@@ -14329,7 +14508,11 @@ Regras:
     $("#pararMensagem").onclick = () => conv.controle && conv.controle.abort();
     // a tela mudou de tamanho: a abertura se mede de novo, e a altura útil também
     window.addEventListener("resize", () => requestAnimationFrame(() => {
-      ajustarAbertura(); medirUtil(); $$(".cartao-conversa:not(.antigo)").forEach(encaixar);
+      ajustarAbertura(); medirUtil();
+      $$(".cartao-conversa:not(.antigo)").forEach((c) => {
+        if (window.innerWidth > CELULAR) desfazerPartes(c);
+        encaixar(c);
+      });
     }));
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { ajustarAbertura(); medirUtil(); });
     // planilha arrastada para qualquer lugar da conversa

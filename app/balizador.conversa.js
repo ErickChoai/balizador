@@ -122,16 +122,103 @@
     const caixas = $$(".rola-folha, .rola-piscina, .rola-org", el).filter((c) => c.offsetParent);
     if (!caixas.length) return;
     for (const c of caixas) c.style.maxHeight = "";
-    let util = parseFloat(document.documentElement.style.getPropertyValue("--util")) || window.innerHeight * 0.6;
-    // a fala da IA logo antes também fica à vista, se der
-    const antes = el.previousElementSibling;
-    if (antes && antes.matches(".fala.claude")) util -= antes.getBoundingClientRect().height + 14;
-    const sobra = el.getBoundingClientRect().height - util;
+    const sobra = el.getBoundingClientRect().height - alturaUtil(el);
     if (sobra <= 0) return;
     const c = caixas[0];
     // o mínimo que ainda mostra alguma coisa: umas linhas da folha, duas da tabela
     const minimo = c.classList.contains("rola-org") ? 200 : 150;
     c.style.maxHeight = Math.max(minimo, c.getBoundingClientRect().height - sobra) + "px";
+  }
+
+  // a altura que o cartão pode ter; na primeira parte (ou sem partes), a fala
+  // da IA logo antes também fica à vista
+  function alturaUtil(el) {
+    let util = parseFloat(document.documentElement.style.getPropertyValue("--util")) || window.innerHeight * 0.6;
+    const antes = el.previousElementSibling;
+    if (!el.classList.contains("parte-2") && antes && antes.matches(".fala.claude"))
+      util -= antes.getBoundingClientRect().height + 14;
+    return util;
+  }
+
+  /* No celular, o cartão que não cabe na tela vira dois passos. Primeiro vêm
+     o que é e por que importa, com Continuar. Depois vêm o que fazer, a
+     planilha (ou a piscina, a tabela) e os botões. Nada some: vem em duas
+     vezes, e dá para voltar à explicação. No cartão dos arquivos, a divisão
+     é antes do fim da demonstração. */
+  const CELULAR = 640;
+  function paginar(el, direto) {
+    if (!el || !el.isConnected || el.classList.contains("antigo") || el.dataset.partes) return;
+    if (window.innerWidth > CELULAR) return;
+    // a altura útil já guarda uma margem; com folga de 24px, cartão que cabe não divide
+    if (el.getBoundingClientRect().height <= alturaUtil(el) + 24) return;
+    const corpo = $(".corpo", el);
+    if (!corpo) return;
+    const filhos = [...corpo.children];
+    const fim = $(":scope > .fim-demo", corpo);
+    let p1, p2, depoisDe;
+    if (fim) {
+      const i = filhos.indexOf(fim);
+      p1 = filhos.slice(0, i); p2 = filhos.slice(i); depoisDe = filhos[i - 1];
+    } else {
+      const ori = $(":scope > .orienta", corpo);
+      if (!ori) return;
+      p1 = $$(":scope > li.que, :scope > li.porque", ori);
+      p2 = [$(":scope > li.fazer", ori), ...filhos.filter((f) => f !== ori)].filter(Boolean);
+      depoisDe = ori;
+    }
+    if (!p1.length || !p2.length || !depoisDe) return;
+    p1.forEach((x) => x.classList.add("so-parte-1"));
+    p2.forEach((x) => x.classList.add("so-parte-2"));
+    const seguir = document.createElement("div");
+    seguir.className = "acoes-cartao parte-extra so-parte-1";
+    seguir.innerHTML = `<button type="button" class="botao">Continuar</button>`;
+    depoisDe.after(seguir);
+    const volta = document.createElement("button");
+    volta.type = "button";
+    volta.className = "link volta-parte parte-extra so-parte-2";
+    volta.textContent = fim ? "voltar aos arquivos" : "rever a explicação";
+    // o link de voltar vai no fim da linha "o que fazer", para não gastar uma linha
+    const fazer = fim ? null : $(":scope > .orienta > li.fazer p", corpo);
+    (fazer || corpo).appendChild(volta);
+    el.dataset.partes = "2";
+    const mostrar = (n) => {
+      el.classList.toggle("parte-1", n === 1);
+      el.classList.toggle("parte-2", n === 2);
+      encaixar(el);
+      if (n === 2) rolarCaixas(el);
+    };
+    const trocar = (n) => {
+      novaVez();
+      mostrar(n);
+      ancora = el;
+      // o começo do cartão à vista, e o resto até onde couber
+      const topo = ($(".topo") ? $(".topo").getBoundingClientRect().bottom : 0) + 12;
+      const r = el.getBoundingClientRect();
+      if (r.top < topo) window.scrollBy({ top: r.top - topo, behavior: "auto" });
+      rolar(el);
+    };
+    $("button", seguir).onclick = () => trocar(2);
+    volta.onclick = () => trocar(1);
+    mostrar(direto ? 2 : 1);
+  }
+
+  // tela larga de novo (o celular deitado): o cartão volta a ser um só
+  function desfazerPartes(el) {
+    if (!el.dataset.partes) return;
+    $$(".parte-extra", el).forEach((x) => x.remove());
+    $$(".so-parte-1, .so-parte-2", el).forEach((x) => x.classList.remove("so-parte-1", "so-parte-2"));
+    el.classList.remove("parte-1", "parte-2");
+    delete el.dataset.partes;
+  }
+
+  // a planilha abre na linha com erro, a piscina no começo da última série
+  function rolarCaixas(el) {
+    rolarAteErro(el);
+    const box = $(".rola-piscina", el);
+    if (!box) return;
+    const ult = $$(".serie:not(.cabeca)", box).pop();
+    box.scrollTop = ult ? ult.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop - 6
+                        : box.scrollHeight;
   }
 
   // o passo que a pessoa deixou para trás fecha numa linha
@@ -178,6 +265,8 @@
   }
 
   function cartao(tipo, etapa, titulo, corpo, resumo, ligar) {
+    // o mesmo cartão montado de novo (outra prova, outra linha) não volta à explicação
+    const jaNaParte2 = $$(`.cartao-conversa[data-tipo="${tipo}"]:not(.antigo)`).some((v) => v.classList.contains("parte-2"));
     for (const velho of $$(`.cartao-conversa[data-tipo="${tipo}"]:not(.antigo)`)) fecharCartao(velho);
     // a IA terminou de trabalhar: o cartão de progresso vira uma linha
     if (!tipo.startsWith("progresso")) {
@@ -197,6 +286,7 @@
     adicionar(el);
     if (ligar) ligar(el);
     encaixar(el);
+    paginar(el, jaNaParte2);
     return el;
   }
 
@@ -903,10 +993,10 @@
       const porRaia = new Map(s.linhas.map((l) => [l.raia, l.item]));
       const celulas = Array.from({ length: raias }, (_, k) => {
         const it = porRaia.get(k + 1);
-        if (!it) return `<div class="raia vazia"></div>`;
+        if (!it) return `<div class="raia vazia" data-raia="${k + 1}"></div>`;
         const nome = p.revezamento ? it.equipe : it.nome;
         const d = (si * raias + ordem.indexOf(k + 1)) * 0.09;
-        return `<div class="raia ${it.marcado ? "marcada" : ""}" title="${AT(nome)}" style="--d:${Math.min(d, 4).toFixed(2)}s">
+        return `<div class="raia ${it.marcado ? "marcada" : ""}" data-raia="${k + 1}" title="${AT(nome)}" style="--d:${Math.min(d, 4).toFixed(2)}s">
           <b>${AT(nome)}</b>
           ${p.revezamento ? "" : `<span>${AT(it.equipe || "")}</span>`}
           <em>${it.tempo != null ? B.formatarTempo(it.tempo) : "sem tempo"}</em></div>`;
@@ -916,7 +1006,9 @@
     const meio = Math.ceil(raias / 2);
     return cartao("raias", "Balizamento", AT(`${p.numero}ª ${p.titulo}`), `
       ${orienta({
-        que: `Cada linha é uma série: um grupo que nada junto. Cada coluna é uma raia, a faixa da piscina.`,
+        // no celular a piscina vira lista: cada bloco é uma série, cada linha uma raia
+        que: `<span class="so-largo">Cada linha é uma série: um grupo que nada junto. Cada coluna é uma raia, a faixa da piscina.</span>` +
+             `<span class="so-estreito">Cada bloco é uma série: um grupo que nada junto. Cada linha é uma raia, a faixa da piscina.</span>`,
         porque: `Os mais rápidos nadam juntos na última série, e o mais rápido fica no meio, raia ${meio} ou ${meio + 1}.`,
         fazer: conv.demo ? "Veja a última série e clique em <b>Ver os arquivos</b>."
                          : "Troque a prova no seletor, ou clique em <b>Gerar os arquivos</b>.",
@@ -935,9 +1027,9 @@
         <button type="button" class="botao" data-acao="ver_arquivos">${conv.demo ? "Ver os arquivos" : "Gerar os arquivos"}</button>
       </div>`, `Raias da ${p.numero}ª prova`, (el) => {
       ligarAcoes(el);
-      // a piscina rola por dentro até a última série, onde está o melhor tempo
-      const box = $(".rola-piscina", el);
-      requestAnimationFrame(() => { if (box) box.scrollTop = box.scrollHeight; });
+      // a piscina rola por dentro até a última série, onde está o melhor tempo;
+      // no celular, a lista para no começo dela, com o nome da série à vista
+      requestAnimationFrame(() => rolarCaixas(el));
       $("select", el).onchange = (ev) => cartaoRaias(ev.target.value);
       el.dataset.prova = p.numero;
       el.dataset.anterior = pos ? comGente[pos - 1].numero : "";
@@ -2220,7 +2312,11 @@ Regras:
     $("#pararMensagem").onclick = () => conv.controle && conv.controle.abort();
     // a tela mudou de tamanho: a abertura se mede de novo, e a altura útil também
     window.addEventListener("resize", () => requestAnimationFrame(() => {
-      ajustarAbertura(); medirUtil(); $$(".cartao-conversa:not(.antigo)").forEach(encaixar);
+      ajustarAbertura(); medirUtil();
+      $$(".cartao-conversa:not(.antigo)").forEach((c) => {
+        if (window.innerWidth > CELULAR) desfazerPartes(c);
+        encaixar(c);
+      });
     }));
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { ajustarAbertura(); medirUtil(); });
     // planilha arrastada para qualquer lugar da conversa
