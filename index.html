@@ -22,11 +22,12 @@
   --display:"Bricolage Grotesque",system-ui,sans-serif;
   --texto:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,monospace;
+  --topo:3.7rem;
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;scroll-padding-top:var(--topo)}
 body{margin:0;background:var(--agua);color:var(--espuma);font-family:var(--texto);
-  font-size:18px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
 [hidden]{display:none!important}
 a{color:inherit}
 h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.02em}
@@ -43,52 +44,65 @@ p{margin:0}
 /* ---------- topo ---------- */
 .topo{position:sticky;top:0;z-index:20;background:rgba(6,34,43,.82);backdrop-filter:blur(8px);
   border-bottom:1px solid var(--linha)}
-.topo .dentro{display:flex;align-items:center;gap:1rem;padding-block:.8rem}
-.sigla{width:2.4rem;height:2.4rem;border-radius:9px;background:#0B7285;display:grid;place-items:center;
+.topo .dentro{display:flex;align-items:center;gap:1rem;padding-block:.65rem}
+.sigla{width:2.3rem;height:2.3rem;border-radius:9px;background:#0B7285;display:grid;place-items:center;
   font-family:var(--display);font-weight:800;color:var(--branco)}
-.topo b{font-family:var(--display);font-size:1.25rem}
-.topo nav{margin-left:auto;display:flex;gap:1.2rem;align-items:center;font-size:.95rem}
+.topo b{font-family:var(--display);font-size:1.2rem}
+.topo nav{margin-left:auto;display:flex;gap:1.2rem;align-items:center;font-size:.92rem}
 .topo nav a{text-decoration:none;color:var(--suave)}
 .topo nav a:hover{color:var(--espuma)}
 .botao{display:inline-flex;align-items:center;gap:.5rem;text-decoration:none;font-weight:600;
-  border-radius:12px;padding:.85rem 1.4rem;font-size:1.05rem;border:1.5px solid transparent;
+  border-radius:12px;padding:.75rem 1.25rem;font-size:1rem;border:1.5px solid transparent;
   transition:transform .15s,background .15s,border-color .15s;cursor:pointer;font-family:var(--texto)}
 .botao.cheio{background:var(--amarelo);color:#1B1A10}
 .botao.cheio:hover{transform:translateY(-2px);background:#F6CF6E}
 .botao.vazio{border-color:var(--linha);color:var(--espuma)}
 .botao.vazio:hover{border-color:var(--amarelo)}
-.topo .botao{padding:.55rem 1rem;font-size:.95rem}
+.topo .botao{padding:.5rem .95rem;font-size:.92rem}
 
 /* ---------- abertura ---------- */
-.abertura{padding-block:4.5rem 2.5rem}
-.olho{font-family:var(--mono);font-size:.8rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amarelo)}
-.abertura h1{font-size:clamp(2.4rem,5.6vw,4.6rem);line-height:1.02;font-weight:800;margin:.8rem 0 1.2rem;max-width:18ch}
+.abertura{padding-block:3.5rem 2rem}
+.olho{font-family:var(--mono);font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amarelo)}
+.abertura h1{font-size:clamp(2.2rem,4.8vw,4rem);line-height:1.03;font-weight:800;margin:.7rem 0 1.1rem;max-width:18ch}
 .abertura h1 em{font-style:normal;color:var(--amarelo)}
-.abertura .linha-fina{font-size:1.25rem;color:var(--suave);max-width:46rem}
-.chamadas{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:2rem}
+.abertura .linha-fina{font-size:1.15rem;color:var(--suave);max-width:44rem}
+.chamadas{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1.8rem}
 
-/* ---------- o filme: quadros que se sucedem ---------- */
-.filme{padding-block:1.5rem 4rem}
-.palco{position:relative;border-radius:22px;overflow:hidden;aspect-ratio:16/9.4;
+/* ---------- o filme: quadros que se sucedem ----------
+   O palco funciona como um vídeo: tudo dentro dele é medido em em, a partir
+   de uma letra que acompanha a largura do palco (cqi). O quadro inteiro
+   cresce e encolhe junto, então nada sai cortado em tela nenhuma. E o palco
+   nunca passa da altura da janela: o quadro, o texto dele e os marcos cabem
+   na tela de uma vez. */
+.filme{padding-block:2rem 4rem}
+.filme .dentro{max-width:82rem;display:grid;grid-template-columns:minmax(0,1.85fr) minmax(15rem,1fr);
+  grid-template-areas:"palco legenda" "controles controles";gap:1.2rem clamp(1.5rem,3vw,3rem);align-items:center}
+.palco{grid-area:palco;justify-self:end;position:relative;container-type:inline-size;
+  width:min(100%,calc((100vh - var(--topo) - 7rem) * 1.6));
+  width:min(100%,calc((100svh - var(--topo) - 7rem) * 1.6));
+  aspect-ratio:16/10;border-radius:20px;overflow:hidden;
   background:radial-gradient(120% 90% at 50% 0%,#0E4C5E 0%,var(--agua2) 55%,#072631 100%);
   border:1px solid var(--linha);box-shadow:0 30px 80px -40px rgba(0,0,0,.8)}
 /* as raias do fundo */
 .palco::before{content:"";position:absolute;inset:0;opacity:.18;pointer-events:none;
   background:repeating-linear-gradient(180deg,transparent 0 11.5%,rgba(255,255,255,.35) 11.5% 12%)}
-.quadro{position:absolute;inset:0;display:grid;grid-template-rows:1fr auto;opacity:0;visibility:hidden;
+.quadro{position:absolute;inset:0;font-size:1.7cqi;opacity:0;visibility:hidden;
   transition:opacity .6s ease,visibility 0s .6s}
 .quadro.ativo{opacity:1;visibility:visible;transition:opacity .6s ease}
-.cena{position:relative;display:grid;place-items:center;padding:4% 5% 0}
-.legenda{padding:1rem 5% 1.4rem;display:flex;gap:1rem;align-items:baseline;
-  background:linear-gradient(0deg,rgba(4,24,31,.92),rgba(4,24,31,0))}
-.legenda .num{font-family:var(--mono);color:var(--amarelo);font-size:.9rem;flex:none}
-.legenda h3{font-size:clamp(1.15rem,2.2vw,1.65rem);line-height:1.2}
-.legenda p{color:var(--suave);font-size:clamp(.92rem,1.4vw,1.06rem);margin-top:.25rem;max-width:56rem}
+.cena{position:absolute;inset:0;display:grid;place-items:center;padding:2.4em 2.6em}
 
-.controles{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-top:1rem}
-.marcos{display:flex;gap:.4rem;flex:1;flex-wrap:wrap}
-.marco{flex:1;min-width:7rem;background:none;border:0;cursor:pointer;color:var(--suave);
-  font:inherit;font-size:.88rem;text-align:left;padding:.4rem 0;display:flex;flex-direction:column;gap:.35rem}
+.legendas{grid-area:legenda;display:grid;align-self:center}
+.legenda{grid-area:1/1;display:flex;flex-direction:column;gap:.6rem;opacity:0;visibility:hidden;
+  transition:opacity .5s ease,visibility 0s .5s}
+.legenda.ativo{opacity:1;visibility:visible;transition:opacity .5s ease}
+.legenda .num{font-family:var(--mono);color:var(--amarelo);font-size:.82rem;letter-spacing:.12em}
+.legenda h3{font-size:clamp(1.3rem,2.1vw,1.75rem);line-height:1.15}
+.legenda p{color:var(--suave);font-size:1rem;line-height:1.55}
+
+.controles{grid-area:controles;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.marcos{display:flex;gap:.5rem;flex:1}
+.marco{flex:1;min-width:0;background:none;border:0;cursor:pointer;color:var(--suave);
+  font:inherit;font-size:.86rem;line-height:1.25;text-align:left;padding:.4rem 0;display:flex;flex-direction:column;gap:.4rem}
 .marco .barra{height:4px;border-radius:4px;background:var(--linha);overflow:hidden}
 .marco .barra i{display:block;height:100%;width:0;background:var(--amarelo)}
 .marco.ativo{color:var(--espuma)}
@@ -97,62 +111,58 @@ p{margin:0}
 .pausado .marco.ativo .barra i{animation-play-state:paused}
 @keyframes encher{to{width:100%}}
 .pausa{background:none;border:1px solid var(--linha);color:var(--espuma);border-radius:10px;
-  padding:.45rem .8rem;font:inherit;font-size:.88rem;cursor:pointer}
+  padding:.4rem .8rem;font:inherit;font-size:.86rem;cursor:pointer}
 .pausa:hover{border-color:var(--amarelo)}
 
-/* peças de planilha usadas nos quadros */
-.folha{background:#F4F7F8;color:#1A2B31;border-radius:10px;box-shadow:0 18px 40px -16px rgba(0,0,0,.7);
-  font-family:var(--mono);font-size:clamp(.5rem,.95vw,.72rem);overflow:hidden;width:min(30%,19rem)}
-.folha .aba{background:#DDE7EA;padding:.35em .7em;font-weight:600;font-family:var(--texto)}
-.folha .ln{display:grid;grid-template-columns:2.2em 1fr 1fr .9fr;border-top:1px solid #D2DDE0}
-.folha .ln span{padding:.3em .45em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-left:1px solid #D2DDE0}
-.folha .ln span:first-child{border-left:0;color:#8A9EA5;text-align:center}
-.folha .titulo-mesclado{grid-column:1/-1;background:#C9E6EC;font-weight:700;text-align:center}
+/* peças de planilha usadas nos quadros: a folha é uma grade, e as colunas
+   têm a largura do que está escrito nelas, sem reticências */
+.folha{background:#F4F7F8;color:#1A2B31;border-radius:.8em;box-shadow:0 1.4em 3em -1.2em rgba(0,0,0,.7);
+  font-family:var(--mono);font-size:1em;overflow:hidden;display:grid;grid-template-columns:2.2em repeat(3,max-content)}
+.folha .aba{grid-column:1/-1;background:#DDE7EA;padding:.4em .75em;font-weight:600;font-family:var(--texto)}
+.folha .ln{display:contents}
+.folha .ln span{padding:.32em .6em;white-space:nowrap;border-top:1px solid #D2DDE0;border-left:1px solid #D2DDE0}
+.folha .ln span:first-child{border-left:0;color:#8A9EA5;text-align:center;padding-inline:.2em}
+.folha .ln span.titulo-mesclado{grid-column:1/-1;background:#C9E6EC;font-weight:700;text-align:center;border-left:0;color:#1A2B31}
 .erro{background:rgba(240,119,108,.32)!important;outline:2px solid var(--vermelho);outline-offset:-2px}
 
 /* quadro 1: a dor */
-.q1 .cena{grid-template-columns:repeat(3,auto);gap:3%;justify-content:center;align-items:center}
-.q1 .folha{width:auto;min-width:0}
+.q1 .cena{grid-template-columns:repeat(2,max-content);gap:1.6em 2.4em;align-content:center;justify-content:center}
+.q1 .folha:nth-child(3){grid-column:1/-1;justify-self:center}
 .q1.ativo .folha{animation:chegaTorta .9s cubic-bezier(.2,.8,.2,1) both}
-.q1.ativo .folha:nth-child(1){--rot:-6deg;animation-delay:.1s}
+.q1.ativo .folha:nth-child(1){--rot:-5deg;animation-delay:.1s}
 .q1.ativo .folha:nth-child(2){--rot:3deg;animation-delay:.45s}
 .q1.ativo .folha:nth-child(3){--rot:-2deg;animation-delay:.8s}
-.q1 .folha:nth-child(1){transform:rotate(-6deg)}
-.q1 .folha:nth-child(2){transform:rotate(3deg) translateY(8%)}
+.q1 .folha:nth-child(1){transform:rotate(-5deg)}
+.q1 .folha:nth-child(2){transform:rotate(3deg)}
 .q1 .folha:nth-child(3){transform:rotate(-2deg)}
 @keyframes chegaTorta{from{transform:translateY(40%) rotate(0deg);opacity:0}to{transform:rotate(var(--rot));opacity:1}}
 .q1.ativo .erro{animation:pisca 1.4s 1.6s ease-in-out infinite}
 @keyframes pisca{50%{background:rgba(240,119,108,.6)!important}}
-.relogio{position:absolute;top:7%;right:6%;font-family:var(--mono);font-size:clamp(1rem,2.4vw,1.8rem);
-  color:var(--vermelho);background:rgba(4,24,31,.7);border:1px solid var(--vermelho);border-radius:10px;padding:.2em .6em}
+.relogio{position:absolute;bottom:7%;right:5%;font-family:var(--mono);font-size:2.1em;
+  color:var(--vermelho);background:rgba(4,24,31,.7);border:1px solid var(--vermelho);border-radius:.4em;padding:.15em .55em}
 
 /* quadro 2: a IA reescreve */
-.q2 .cena{grid-template-columns:1fr auto 1fr;gap:4%;align-items:center}
-.q2 .folha{width:100%}
-.ponte{display:flex;flex-direction:column;align-items:center;gap:.6rem;color:var(--amarelo);font-family:var(--mono);font-size:.8rem}
-.claude-chip{background:var(--amarelo);color:#1B1A10;border-radius:999px;padding:.4em 1em;font-family:var(--texto);font-weight:700;font-size:clamp(.75rem,1.2vw,.95rem)}
+.q2 .cena{grid-template-columns:repeat(3,max-content);gap:2em;justify-content:center;align-items:center}
+.q2 .folha{font-size:.94em}
+.limpa{grid-template-columns:2.2em repeat(4,max-content)}
+.ponte{display:flex;flex-direction:column;align-items:center;gap:.6em;color:var(--amarelo);font-family:var(--mono);font-size:.85em;text-align:center}
+.claude-chip{background:var(--amarelo);color:#1B1A10;border-radius:999px;padding:.45em 1.1em;font-family:var(--texto);font-weight:700;font-size:1.35em}
 .q2.ativo .claude-chip{animation:respira 1.6s ease-in-out infinite}
-@keyframes respira{50%{box-shadow:0 0 0 10px rgba(242,193,78,.12)}}
-.codigos{display:flex;flex-direction:column;gap:.3rem}
-.codigos span{background:rgba(79,163,217,.18);color:#BFE1F6;border:1px solid var(--azul);border-radius:6px;padding:.1em .5em}
+@keyframes respira{50%{box-shadow:0 0 0 .7em rgba(242,193,78,.12)}}
+.codigos{display:flex;flex-direction:column;gap:.35em}
+.codigos span{background:rgba(79,163,217,.18);color:#BFE1F6;border:1px solid var(--azul);border-radius:.4em;padding:.1em .55em}
 .q2.ativo .codigos span{animation:viaja 2.4s ease-in-out infinite}
 .q2.ativo .codigos span:nth-child(2){animation-delay:.4s}
 .q2.ativo .codigos span:nth-child(3){animation-delay:.8s}
 @keyframes viaja{0%{transform:translateX(-30%);opacity:0}30%,70%{opacity:1}100%{transform:translateX(30%);opacity:0}}
-.limpa .ln{grid-template-columns:2.2em 1.4fr 1fr .9fr .7fr}
-.q2.ativo .limpa .ln:not(.cab){animation:entraLinha .5s ease both}
-.q2.ativo .limpa .ln:nth-child(2){animation-delay:1s}
-.q2.ativo .limpa .ln:nth-child(3){animation-delay:1.4s}
-.q2.ativo .limpa .ln:nth-child(4){animation-delay:1.8s}
-.q2.ativo .limpa .ln:nth-child(5){animation-delay:2.2s}
-.q2.ativo .limpa .ln:nth-child(6){animation-delay:2.6s}
-@keyframes entraLinha{from{opacity:0;transform:translateX(-12px);background:#FFF3C9}to{opacity:1;transform:none}}
+.q2.ativo .limpa .ln:not(.cab) span{animation:entraLinha .5s var(--d,0s) ease both}
+@keyframes entraLinha{from{opacity:0;transform:translateX(-.8em);background:#FFF3C9}to{opacity:1;transform:none}}
 .limpa .cab span{background:#DDE7EA;font-weight:700}
 
 /* quadro 3: o app confere, e corrige com Sim */
-.q3 .cena{grid-template-columns:1fr 1fr;gap:5%;align-items:center}
-.checagens{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.55rem;font-size:clamp(.8rem,1.4vw,1.05rem)}
-.checagens li{display:flex;gap:.6rem;align-items:center;background:rgba(255,255,255,.05);border:1px solid var(--linha);border-radius:10px;padding:.45em .8em}
+.q3 .cena{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:3em;align-items:center}
+.checagens{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5em;font-size:1.15em;justify-self:stretch}
+.checagens li{display:flex;gap:.6em;align-items:center;background:rgba(255,255,255,.05);border:1px solid var(--linha);border-radius:.6em;padding:.45em .8em}
 .checagens li::before{content:"✓";width:1.5em;height:1.5em;border-radius:50%;display:grid;place-items:center;background:var(--verde);color:#06221A;font-weight:800;flex:none}
 .checagens li.achou::before{content:"!";background:var(--vermelho);color:#2A0D0A}
 .q3.ativo .checagens li{animation:entraLinha .45s ease both}
@@ -161,46 +171,48 @@ p{margin:0}
 .q3.ativo .checagens li:nth-child(3){animation-delay:.8s}
 .q3.ativo .checagens li:nth-child(4){animation-delay:1.1s}
 .q3.ativo .checagens li:nth-child(5){animation-delay:1.4s}
-.proposta{background:#F4F7F8;color:#1A2B31;border-radius:16px;padding:1.1em 1.2em;box-shadow:0 18px 40px -16px rgba(0,0,0,.7);
-  font-size:clamp(.78rem,1.3vw,1rem);display:flex;flex-direction:column;gap:.6em;border-top:4px solid #0B7285}
+.proposta{background:#F4F7F8;color:#1A2B31;border-radius:1em;padding:1.1em 1.2em;box-shadow:0 1.4em 3em -1.2em rgba(0,0,0,.7);
+  font-size:1.15em;display:flex;flex-direction:column;gap:.6em;border-top:.25em solid #0B7285}
 .proposta .rot{font-family:var(--mono);font-size:.75em;color:#0B7285;letter-spacing:.08em}
 .proposta .caso{color:#56707A}
 .proposta .botoes{display:flex;gap:.5em}
-.proposta .sim,.proposta .nao{border-radius:9px;padding:.45em 1.1em;font-weight:700}
+.proposta .sim,.proposta .nao{border-radius:.55em;padding:.45em 1.1em;font-weight:700}
 .proposta .sim{background:#0B7285;color:#fff}
 .proposta .nao{border:1.5px solid #C9D6DA;color:#56707A}
-.proposta .feito{display:none;color:#116149;font-weight:700}
+.proposta .desfecho{display:grid}
+.proposta .desfecho > *{grid-area:1/1;align-self:center}
+.proposta .feito{opacity:0;color:#116149;font-weight:700}
 .q3.ativo .proposta{animation:chegaTorta .7s 1.6s both;--rot:0deg}
 .q3.ativo .proposta .sim{animation:aperta .5s 3.6s both}
-.q3.ativo .proposta .feito{animation:aparece .01s 4.1s both}
-.q3.ativo .proposta .botoes{animation:some .01s 4.1s both}
+.q3.ativo .proposta .feito{animation:aparece .45s 4.1s both}
+.q3.ativo .proposta .botoes{animation:some .3s 4s both}
 @keyframes aperta{50%{transform:scale(.92);background:#095766}}
-@keyframes aparece{to{display:block}}
-@keyframes some{to{display:none}}
+@keyframes aparece{from{opacity:0;transform:translateY(.4em)}to{opacity:1;transform:none}}
+@keyframes some{to{opacity:0;visibility:hidden}}
 
 /* quadro 4: as raias saem pela regra */
-.q4 .cena{padding-inline:6%}
-.piscina{width:100%;display:flex;flex-direction:column;gap:2.2%;height:84%}
+.q4 .cena{padding-inline:3em}
+.piscina{width:100%;display:flex;flex-direction:column;gap:2.2%;height:86%}
 .raia{position:relative;flex:1;display:flex;align-items:center;border-bottom:2px dashed rgba(255,255,255,.22)}
-.raia .n{font-family:var(--mono);color:var(--amarelo);width:2.5em;font-size:clamp(.7rem,1.2vw,.95rem)}
+.raia .n{font-family:var(--mono);color:var(--amarelo);width:2.5em;font-size:1.15em}
 .nadador{position:absolute;left:3.2em;display:flex;align-items:center;gap:.6em;background:var(--espuma);color:#1A2B31;
-  border-radius:999px;padding:.15em .8em .15em .2em;font-size:clamp(.6rem,1.05vw,.85rem);font-weight:600;white-space:nowrap}
+  border-radius:999px;padding:.15em .8em .15em .2em;font-size:1.05em;font-weight:600;white-space:nowrap}
 .nadador b{background:#0B7285;color:#fff;border-radius:999px;padding:.05em .55em;font-family:var(--mono);font-weight:500}
 .q4 .nadador{opacity:0}
 .q4.ativo .nadador{animation:mergulha .7s cubic-bezier(.2,.8,.2,1) both}
-@keyframes mergulha{from{opacity:0;transform:translateX(-40px) scale(.9)}to{opacity:1;transform:none}}
-.ordem{position:absolute;top:6%;right:6%;font-family:var(--mono);font-size:clamp(.7rem,1.2vw,.95rem);
-  background:rgba(4,24,31,.75);border:1px solid var(--amarelo);color:var(--amarelo);border-radius:10px;padding:.35em .8em}
+@keyframes mergulha{from{opacity:0;transform:translateX(-3em) scale(.9)}to{opacity:1;transform:none}}
+.ordem{position:absolute;top:5%;right:4%;font-family:var(--mono);font-size:1.1em;
+  background:rgba(4,24,31,.75);border:1px solid var(--amarelo);color:var(--amarelo);border-radius:.55em;padding:.35em .8em}
 
 /* quadro 5: os arquivos */
-.q5 .cena{grid-template-columns:repeat(3,auto);gap:4%;justify-content:center;align-items:end;padding-bottom:2%}
-.doc{background:#FFFFFF;color:#1A2B31;border-radius:8px;box-shadow:0 22px 50px -18px rgba(0,0,0,.8);
-  width:clamp(7rem,17vw,13rem);aspect-ratio:1/1.41;padding:6%;display:flex;flex-direction:column;gap:5%;font-family:var(--mono)}
-.doc .cab{font-weight:700;font-size:clamp(.45rem,.8vw,.62rem);border-bottom:2px solid #0B7285;padding-bottom:4%}
-.doc i{display:block;height:5%;background:#E3ECEF;border-radius:2px}
+.q5 .cena{grid-template-columns:repeat(3,max-content);gap:2.4em;justify-content:center;align-items:center}
+.doc{background:#FFFFFF;color:#1A2B31;border-radius:.6em;box-shadow:0 1.6em 3.4em -1.3em rgba(0,0,0,.8);
+  width:12.5em;aspect-ratio:1/1.41;padding:.8em;display:flex;flex-direction:column;gap:.65em;font-family:var(--mono)}
+.doc .cab{font-weight:700;font-size:.62em;border-bottom:2px solid #0B7285;padding-bottom:.5em}
+.doc i{display:block;height:.65em;background:#E3ECEF;border-radius:2px}
 .doc i:nth-child(3n){width:70%}
-.doc .etiqueta{margin-top:auto;font-family:var(--texto);font-weight:700;font-size:clamp(.55rem,1vw,.8rem);color:#0B7285}
-.papeletas{display:grid;grid-template-columns:1fr 1fr;gap:5%;flex:1}
+.doc .etiqueta{margin-top:auto;font-family:var(--texto);font-weight:700;font-size:.8em;color:#0B7285}
+.papeletas{display:grid;grid-template-columns:1fr 1fr;gap:.5em;flex:1}
 .papeletas span{border:1.5px solid #9FB4BA;border-radius:4px}
 .q5.ativo .doc{animation:chegaTorta .8s cubic-bezier(.2,.8,.2,1) both}
 .q5.ativo .doc:nth-child(1){--rot:-4deg;animation-delay:.1s;transform:rotate(-4deg)}
@@ -208,63 +220,97 @@ p{margin:0}
 .q5.ativo .doc:nth-child(3){--rot:4deg;animation-delay:.7s;transform:rotate(4deg)}
 
 /* ---------- as partes de baixo ---------- */
-.parte{padding-block:5rem}
-.parte h2{font-size:clamp(1.9rem,3.8vw,3rem);line-height:1.08;max-width:24ch}
-.parte .linha-fina{color:var(--suave);font-size:1.15rem;max-width:44rem;margin-top:.9rem}
-.grade3{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:1.1rem;margin-top:2.4rem}
-.ficha{background:var(--agua2);border:1px solid var(--linha);border-radius:18px;padding:1.5rem;display:flex;flex-direction:column;gap:.6rem}
-.ficha .grande{font-family:var(--display);font-size:2.8rem;font-weight:800;line-height:1;color:var(--amarelo);font-variant-numeric:tabular-nums}
-.ficha h3{font-size:1.25rem}
-.ficha p{color:var(--suave);font-size:1rem}
+.parte{padding-block:4.5rem}
+.parte h2{font-size:clamp(1.75rem,3.3vw,2.6rem);line-height:1.1;max-width:24ch}
+.parte .linha-fina{color:var(--suave);font-size:1.08rem;max-width:44rem;margin-top:.9rem}
+.grade3{display:grid;grid-template-columns:repeat(auto-fit,minmax(15.5rem,1fr));gap:1rem;margin-top:2.2rem}
+.ficha{background:var(--agua2);border:1px solid var(--linha);border-radius:18px;padding:1.4rem;display:flex;flex-direction:column;gap:.55rem}
+.ficha .grande{font-family:var(--display);font-size:2.4rem;font-weight:800;line-height:1;color:var(--amarelo);font-variant-numeric:tabular-nums}
+.ficha h3{font-size:1.18rem}
+.ficha p{color:var(--suave);font-size:.97rem}
 
-.passos{counter-reset:p;display:grid;gap:.9rem;margin-top:2.4rem;grid-template-columns:repeat(auto-fit,minmax(12.5rem,1fr))}
+.passos{counter-reset:p;display:grid;gap:.9rem;margin-top:2.2rem;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr))}
 .passo{border-top:3px solid var(--amarelo);padding-top:1rem;display:flex;flex-direction:column;gap:.45rem}
-.passo::before{counter-increment:p;content:"0" counter(p);font-family:var(--mono);color:var(--amarelo);font-size:.85rem}
-.passo h3{font-size:1.2rem}
-.passo p{color:var(--suave);font-size:.98rem}
+.passo::before{counter-increment:p;content:"0" counter(p);font-family:var(--mono);color:var(--amarelo);font-size:.82rem}
+.passo h3{font-size:1.15rem}
+.passo p{color:var(--suave);font-size:.95rem}
 
-.divisao{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;margin-top:2.4rem}
-.lado{border-radius:18px;padding:1.6rem;border:1px solid var(--linha)}
+.divisao{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:2.2rem}
+.lado{border-radius:18px;padding:1.5rem;border:1px solid var(--linha)}
 .lado.ia{background:linear-gradient(160deg,rgba(242,193,78,.14),var(--agua2))}
 .lado.regra{background:linear-gradient(160deg,rgba(79,163,217,.14),var(--agua2))}
-.lado h3{font-size:1.35rem;margin-bottom:.8rem}
+.lado h3{font-size:1.28rem;margin-bottom:.8rem}
 .lado ul{margin:0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.45rem;color:var(--espuma)}
-.lado li{font-size:1.02rem}
+.lado li{font-size:.98rem}
 
-.prova-real{display:grid;grid-template-columns:1.2fr 1fr;gap:2rem;align-items:center;margin-top:2.4rem}
-.placar{background:#031318;border:1px solid var(--linha);border-radius:18px;padding:1.4rem;font-family:var(--mono)}
-.placar .lin{display:grid;grid-template-columns:1fr auto auto;gap:1rem;padding:.55rem 0;border-bottom:1px dashed var(--linha);font-size:.95rem}
+.prova-real{display:grid;grid-template-columns:1.2fr 1fr;gap:2rem;align-items:center;margin-top:2.2rem}
+.placar{background:#031318;border:1px solid var(--linha);border-radius:18px;padding:1.3rem;font-family:var(--mono)}
+.placar .lin{display:grid;grid-template-columns:1fr auto auto;gap:1rem;padding:.5rem 0;border-bottom:1px dashed var(--linha);font-size:.9rem}
 .placar .lin:last-child{border-bottom:0}
 .placar .ok{color:var(--verde)}
-.placar .t{color:var(--suave);font-size:.8rem;letter-spacing:.1em}
+.placar .t{color:var(--suave);font-size:.78rem;letter-spacing:.1em}
 
-.autor{display:grid;grid-template-columns:auto 1fr;gap:2rem;align-items:start;margin-top:2rem}
-.apito{width:6rem;height:6rem;border-radius:50%;background:var(--amarelo);color:#1B1A10;display:grid;place-items:center;
-  font-family:var(--display);font-weight:800;font-size:2rem}
-.autor p{font-size:1.15rem;line-height:1.65;max-width:44rem}
-.autor p + p{margin-top:1rem}
-.autor .assinatura{color:var(--amarelo);font-family:var(--mono);font-size:.9rem}
+.autor{display:grid;grid-template-columns:minmax(0,19rem) minmax(0,1fr);gap:clamp(1.5rem,4vw,3.5rem);align-items:start;margin-top:1.4rem}
+.retrato{margin:0;position:sticky;top:calc(var(--topo) + 1.5rem);border-radius:20px;overflow:hidden;
+  border:1px solid var(--linha);box-shadow:0 30px 70px -35px rgba(0,0,0,.9);aspect-ratio:4/5;max-width:100%}
+.retrato img{display:block;width:100%;height:100%;object-fit:cover}
+/* a corda de raia embaixo da foto, como a borda da piscina */
+.retrato::after{content:"";position:absolute;left:0;right:0;bottom:0;height:8px;
+  background:repeating-linear-gradient(90deg,var(--amarelo) 0 14px,var(--branco) 14px 18px)}
+.autor h2{margin-bottom:1.1rem}
+.autor p{font-size:1.06rem;line-height:1.68;max-width:44rem;color:var(--suave)}
+.autor p + p{margin-top:.9rem}
+.autor p.destaque{font-size:1.25rem;line-height:1.5;color:var(--espuma)}
+.autor p a{color:var(--amarelo)}
+.marcas-autor{list-style:none;margin:1.4rem 0 1.2rem;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(11rem,1fr));gap:.6rem;max-width:44rem}
+.marcas-autor li{border-left:3px solid var(--amarelo);padding:.2rem .8rem;display:flex;flex-direction:column}
+.marcas-autor b{font-family:var(--display);font-size:1.02rem}
+.marcas-autor span{color:var(--suave);font-size:.88rem}
+.contato{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.5rem}
+.contato a{display:inline-flex;flex-direction:column;gap:.1rem;text-decoration:none;border:1px solid var(--linha);
+  background:var(--agua2);border-radius:14px;padding:.7rem 1rem;transition:border-color .15s,transform .15s}
+.contato a:hover{border-color:var(--amarelo);transform:translateY(-2px)}
+.contato span{font-family:var(--mono);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--amarelo)}
+.contato b{font-weight:600;font-size:1rem;overflow-wrap:anywhere}
 
-.final{text-align:center;padding-block:5rem 6rem}
-.final h2{margin:0 auto;font-size:clamp(2rem,4.4vw,3.4rem);max-width:20ch}
+.final{text-align:center;padding-block:4.5rem 5.5rem}
+.final h2{margin:0 auto;font-size:clamp(1.8rem,3.8vw,3rem);max-width:20ch}
 .final .chamadas{justify-content:center}
-.rodape{border-top:1px solid var(--linha);padding-block:1.6rem;color:var(--suave);font-size:.9rem}
+.rodape{border-top:1px solid var(--linha);padding-block:1.5rem;color:var(--suave);font-size:.88rem}
 .rodape .dentro{display:flex;gap:1.2rem;flex-wrap:wrap;justify-content:space-between}
 
 /* aparece quando chega na tela; sem o script, já está tudo à vista */
 .anima .sobe{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
 .anima .sobe.visto{opacity:1;transform:none}
 
+@media (max-width:859px){
+  .filme .dentro{grid-template-columns:minmax(0,1fr);grid-template-areas:"palco" "legenda" "controles";gap:1rem}
+  .palco{justify-self:center;aspect-ratio:4/4.3;
+    width:min(100%,calc((100vh - var(--topo) - 12rem) * .93));
+    width:min(100%,calc((100svh - var(--topo) - 12rem) * .93))}
+  .quadro{font-size:2.9cqi}
+  .cena{padding:1.8em}
+  .legenda h3{font-size:1.3rem}
+  .legenda p{font-size:.97rem}
+  .q1 .cena{grid-template-columns:max-content;gap:1.4em}
+  .q1 .folha:nth-child(3),.q5 .doc:nth-child(3),.q2 .folha.bagunca{display:none}
+  .q2 .cena{grid-template-columns:max-content;gap:1.6em}
+  .q2 .ponte{flex-direction:row}
+  .q2 .codigos{flex-direction:row}
+  .q2 .ponte > span:last-child{display:none}
+  .q3 .cena{grid-template-columns:minmax(0,1fr);gap:1.4em}
+  .q3 .checagens li:nth-child(n+4){display:none}
+  .q5 .cena{grid-template-columns:repeat(2,max-content)}
+  .q5 .doc{width:12em}
+  .q4 .cena{padding-inline:1.6em}
+}
 @media (max-width:820px){
   .topo nav a:not(.botao){display:none}
-  .divisao,.prova-real,.autor{grid-template-columns:1fr}
-  .palco{aspect-ratio:3/4.4}
-  .q3 .checagens li:nth-child(n+4){display:none}
-  .q1 .cena,.q5 .cena{grid-template-columns:1fr 1fr}
-  .q1 .folha:nth-child(3),.q5 .doc:nth-child(3){display:none}
-  .q2 .cena,.q3 .cena{grid-template-columns:1fr;gap:3%}
-  .q2 .ponte{flex-direction:row}
-  .q2 .folha.bagunca{display:none}
+  .divisao,.prova-real,.autor{grid-template-columns:minmax(0,1fr)}
+  .retrato{position:relative;top:0;max-width:16rem}
+}
+@media (max-width:520px){
+  .marco .t{display:none}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
@@ -306,10 +352,10 @@ p{margin:0}
 <!-- ============ o filme: cinco quadros, um depois do outro ============ -->
 <section class="filme" id="filme" aria-label="Como o Balizador funciona, em cinco quadros">
   <div class="dentro">
-    <div class="palco" id="palco">
+    <div class="palco" id="palco" aria-hidden="true">
 
       <div class="quadro q1 ativo" data-titulo="A dor">
-        <div class="cena" aria-hidden="true">
+        <div class="cena">
           <div class="folha">
             <div class="aba">FICHA COL AURORA</div>
             <div class="ln"><span>4</span><span>NOME DO ALUNO</span><span>50 LIVRE</span><span>25 COSTAS</span></div>
@@ -335,14 +381,10 @@ p{margin:0}
           </div>
           <span class="relogio">03:47</span>
         </div>
-        <div class="legenda"><span class="num">01</span><div>
-          <h3>Cada escola manda a inscrição de um jeito.</h3>
-          <p>Alguém redigita tudo na véspera. Atleta repetido, tempo sem vírgula, prova sem
-            naipe: o erro só aparece na borda da piscina, com o atleta na raia errada.</p></div></div>
       </div>
 
       <div class="quadro q2" data-titulo="A IA reescreve">
-        <div class="cena" aria-hidden="true">
+        <div class="cena">
           <div class="folha bagunca">
             <div class="aba">FICHA COL AURORA</div>
             <div class="ln"><span>6</span><span>Ana Paula R.</span><span>X</span><span>3120</span></div>
@@ -352,69 +394,78 @@ p{margin:0}
           <div class="ponte">
             <span class="claude-chip">Claude</span>
             <div class="codigos"><span>PESSOA 1</span><span>PESSOA 2</span><span>DATA 1</span></div>
-            <span>nomes trocados por código</span>
+            <span>nomes trocados<br>por código</span>
           </div>
           <div class="folha limpa">
             <div class="aba">MODELO DO APP</div>
             <div class="ln cab"><span>#</span><span>NOME</span><span>PROVA</span><span>NAIPE</span><span>TEMPO</span></div>
-            <div class="ln"><span>1</span><span>Ana Paula R.</span><span>50M LIVRE</span><span>FEM</span><span>31.20</span></div>
-            <div class="ln"><span>2</span><span>Bruno Tavares</span><span>50M LIVRE</span><span>MASC</span><span>sem</span></div>
-            <div class="ln"><span>3</span><span>Lia Campos</span><span>25M LIVRE</span><span>FEM</span><span>sem</span></div>
-            <div class="ln"><span>4</span><span>Lia Campos</span><span>25M COSTAS</span><span>FEM</span><span>18.32</span></div>
-            <div class="ln"><span>5</span><span>Davi Souza</span><span>50M LIVRE</span><span>MASC</span><span>sem</span></div>
+            <div class="ln" style="--d:1s"><span>1</span><span>Ana Paula R.</span><span>50M LIVRE</span><span>FEM</span><span>31.20</span></div>
+            <div class="ln" style="--d:1.4s"><span>2</span><span>Bruno Tavares</span><span>50M LIVRE</span><span>MASC</span><span>sem</span></div>
+            <div class="ln" style="--d:1.8s"><span>3</span><span>Lia Campos</span><span>25M LIVRE</span><span>FEM</span><span>sem</span></div>
+            <div class="ln" style="--d:2.2s"><span>4</span><span>Lia Campos</span><span>25M COSTAS</span><span>FEM</span><span>18.32</span></div>
+            <div class="ln" style="--d:2.6s"><span>5</span><span>Davi Souza</span><span>50M LIVRE</span><span>MASC</span><span>sem</span></div>
           </div>
         </div>
-        <div class="legenda"><span class="num">02</span><div>
-          <h3>O Claude lê a planilha do jeito que veio e reescreve no modelo do app.</h3>
-          <p>Vai só uma amostra, com os nomes dos atletas trocados por código, e a tabela nova
-            volta para você conferir linha por linha antes de entrar.</p></div></div>
       </div>
 
       <div class="quadro q3" data-titulo="O app confere">
-        <div class="cena" aria-hidden="true">
+        <div class="cena">
           <ul class="checagens">
-            <li>Atleta repetido na mesma prova</li>
-            <li>Limite de provas por atleta</li>
-            <li class="achou">Tempo impossível para a distância</li>
-            <li>Classe paralímpica contra o regulamento</li>
-            <li>Prova fora do programa oficial</li>
+            <li>Atleta repetido na prova</li>
+            <li>Limite de provas</li>
+            <li class="achou">Tempo impossível</li>
+            <li>Classe contra o regulamento</li>
+            <li>Prova fora do programa</li>
           </ul>
           <div class="proposta">
             <span class="rot">CORREÇÃO PROPOSTA</span>
             <p class="caso">Ana Paula R., 50m livre: na planilha está "3120", que daria 52 minutos.</p>
             <p><b>Posso ler como 31.20?</b></p>
-            <div class="botoes"><span class="sim">Sim</span><span class="nao">Não</span></div>
-            <p class="feito">Corrigido. Ela foi para a raia certa.</p>
+            <div class="desfecho">
+              <div class="botoes"><span class="sim">Sim</span><span class="nao">Não</span></div>
+              <p class="feito">Corrigido. Ela foi para a raia certa.</p>
+            </div>
           </div>
         </div>
-        <div class="legenda"><span class="num">03</span><div>
-          <h3>Regras fixas conferem tudo. O que tem conserto vem com Sim e Não.</h3>
-          <p>Mais de quinze conferências rodam sozinhas. O Claude explica cada problema em português
-            claro e propõe a correção, mas nada muda sem o seu Sim.</p></div></div>
       </div>
 
       <div class="quadro q4" data-titulo="As raias">
-        <div class="cena" aria-hidden="true">
+        <div class="cena">
           <div class="piscina" id="piscina"></div>
           <span class="ordem">ordem: 4 5 3 6 2 7 1 8</span>
         </div>
-        <div class="legenda"><span class="num">04</span><div>
-          <h3>Séries e raias saem pela regra da natação, sempre a mesma.</h3>
-          <p>O melhor tempo nada no centro da última série, e as raias se preenchem do meio para
-            fora. Aqui a IA não decide nada: quem decide é a regra.</p></div></div>
       </div>
 
       <div class="quadro q5" data-titulo="Os arquivos">
-        <div class="cena" aria-hidden="true">
+        <div class="cena">
           <div class="doc"><span class="cab">JEPB 2026 · BALIZAMENTO</span><i></i><i></i><i></i><i></i><i></i><i></i><span class="etiqueta">PDF do balizamento</span></div>
           <div class="doc"><span class="cab">PAPELETAS DE RAIA</span><div class="papeletas"><span></span><span></span><span></span><span></span></div><span class="etiqueta">Papeletas</span></div>
           <div class="doc"><span class="cab">BALIZAMENTO.xlsx</span><i></i><i></i><i></i><i></i><i></i><span class="etiqueta">Planilha</span></div>
         </div>
-        <div class="legenda"><span class="num">05</span><div>
-          <h3>PDF, papeletas e planilha, prontos para imprimir.</h3>
-          <p>No padrão da folha oficial, com faixa de etapa, espaço para o tempo e quatro
-            papeletas por folha. O que levava a madrugada leva uma conversa.</p></div></div>
       </div>
+    </div>
+
+    <div class="legendas" aria-live="polite">
+      <div class="legenda ativo"><span class="num">01 · A DOR</span>
+        <h3>Cada escola manda a inscrição de um jeito.</h3>
+        <p>Alguém redigita tudo na véspera. Atleta repetido, tempo sem vírgula, prova sem
+          naipe: o erro só aparece na borda da piscina, com o atleta na raia errada.</p></div>
+      <div class="legenda"><span class="num">02 · A IA REESCREVE</span>
+        <h3>O Claude lê a planilha do jeito que veio e reescreve no modelo do app.</h3>
+        <p>Vai só uma amostra, com os nomes dos atletas trocados por código, e a tabela nova
+          volta para você conferir linha por linha antes de entrar.</p></div>
+      <div class="legenda"><span class="num">03 · O APP CONFERE</span>
+        <h3>Regras fixas conferem tudo. O que tem conserto vem com Sim e Não.</h3>
+        <p>Mais de quinze conferências rodam sozinhas. O Claude explica cada problema em português
+          claro e propõe a correção, mas nada muda sem o seu Sim.</p></div>
+      <div class="legenda"><span class="num">04 · AS RAIAS</span>
+        <h3>Séries e raias saem pela regra da natação, sempre a mesma.</h3>
+        <p>O melhor tempo nada no centro da última série, e as raias se preenchem do meio para
+          fora. Aqui a IA não decide nada: quem decide é a regra.</p></div>
+      <div class="legenda"><span class="num">05 · OS ARQUIVOS</span>
+        <h3>PDF, papeletas e planilha, prontos para imprimir.</h3>
+        <p>No padrão da folha oficial, com faixa de etapa, espaço para o tempo e quatro
+          papeletas por folha. O que levava a madrugada leva uma conversa.</p></div>
     </div>
 
     <div class="controles">
@@ -526,17 +577,37 @@ p{margin:0}
   <div class="dentro">
     <span class="olho">quem fez?</span>
     <div class="autor">
-      <span class="apito" aria-hidden="true">BZ</span>
+      <figure class="retrato sobe">
+        <img src="erick.jpg" width="640" height="800" alt="Erick Choai, de camisa preta, à noite, na borda de uma piscina iluminada" loading="lazy">
+      </figure>
       <div>
-        <h2 class="sobe">Feito por quem baliza competição na borda da piscina.</h2>
-        <p class="sobe" style="margin-top:1.2rem">Sou árbitro de natação, não programador. O
-          Balizador nasceu das madrugadas redigitando planilha antes do ParaJASC e do JEPB, e
-          cada regra dele veio de um erro que eu vi acontecer de verdade.</p>
-        <p class="sobe">Foi construído com conhecimento do esporte, muito trabalho e a IA
-          como ferramenta: para escrever o código e, agora, dentro do próprio produto,
-          conduzindo o balizamento com quem usa. Saber usar a IA é isto: colocar ela onde ela
-          faz diferença, e manter a regra onde a regra é melhor.</p>
-        <p class="assinatura sobe"><a href="https://github.com/ErickChoai/balizador" target="_blank" rel="noopener">github.com/ErickChoai/balizador</a></p>
+        <h2 class="sobe">Quem está por trás do Balizador</h2>
+        <p class="sobe destaque">Sou Erick Choai, estudante de Engenharia Elétrica, e gosto de resolver
+          problemas reais, de preferência os que eu mesmo vivo.</p>
+        <p class="sobe">O Balizador é um exemplo disso. Como árbitro de natação no banco de controle,
+          já precisei refazer uma chamada inteira por causa de um balizamento montado à mão com
+          erros. Em vez de aceitar o problema ou pagar por um software caro, construí uma ferramenta
+          gratuita que monta o balizamento, aponta os erros antes da prova e agora usa IA para
+          organizar planilhas de inscrição bagunçadas.</p>
+        <p class="sobe">Levo esse jeito de trabalhar para tudo o que faço. Na Intelbras, como analista
+          de suporte técnico em energia solar, investigo a causa de cada falha antes de propor a
+          solução. Uso IA no dia a dia para pesquisar, prototipar e construir, como no Balizador e no
+          e-commerce Grassence Parfums.</p>
+        <p class="sobe">Fui nadador profissional e campeão da Copa do Brasil de Águas Abertas em 2023.
+          Do esporte, trouxe a disciplina para levar cada projeto até o fim.</p>
+        <ul class="marcas-autor sobe" aria-label="Em resumo">
+          <li><b>Engenharia Elétrica</b><span>estudante</span></li>
+          <li><b>Intelbras</b><span>suporte técnico em energia solar</span></li>
+          <li><b>Copa do Brasil 2023</b><span>campeão em águas abertas</span></li>
+          <li><b>Árbitro de natação</b><span>banco de controle</span></li>
+        </ul>
+        <p class="sobe">Sugestões e erros encontrados são bem-vindos pelo
+          <a href="https://github.com/ErickChoai/balizador/issues" target="_blank" rel="noopener">GitHub</a>.</p>
+        <div class="contato sobe">
+          <a href="mailto:erickchoai@gmail.com"><span>e-mail</span><b>erickchoai@gmail.com</b></a>
+          <a href="tel:+5548991182698"><span>telefone</span><b>(48) 99118-2698</b></a>
+          <a href="https://github.com/ErickChoai/balizador" target="_blank" rel="noopener"><span>código</span><b>github.com/ErickChoai/balizador</b></a>
+        </div>
       </div>
     </div>
   </div>
@@ -554,7 +625,7 @@ p{margin:0}
 
 <footer class="rodape">
   <div class="dentro">
-    <span>Balizador · natação</span>
+    <span>Balizador · natação · <a href="mailto:erickchoai@gmail.com">erickchoai@gmail.com</a></span>
     <span><a href="app/">o app sem IA</a> · <a href="anterior/">a versão anterior</a> ·
       <a href="https://github.com/ErickChoai/balizador" target="_blank" rel="noopener">código</a></span>
   </div>
@@ -567,6 +638,7 @@ p{margin:0}
 (function () {
   "use strict";
   const quadros = [...document.querySelectorAll(".quadro")];
+  const legendas = [...document.querySelectorAll(".legenda")];
   const marcos = document.getElementById("marcos");
   const pausa = document.getElementById("pausa");
   const filme = document.querySelector(".filme");
@@ -588,7 +660,7 @@ p{margin:0}
   }
 
   marcos.innerHTML = quadros.map((q, k) =>
-    `<button type="button" class="marco" data-k="${k}"><span class="barra"><i></i></span>${k + 1}. ${q.dataset.titulo}</button>`).join("");
+    `<button type="button" class="marco" data-k="${k}"><span class="barra"><i></i></span><span>${k + 1}.<span class="t"> ${q.dataset.titulo}</span></span></button>`).join("");
   const botoes = [...marcos.querySelectorAll(".marco")];
   marcos.style.setProperty("--tempo", TEMPO + "ms");
 
@@ -599,6 +671,7 @@ p{margin:0}
       // reinicia as animações do quadro que entra
       if (i === atual) { q.classList.remove("ativo"); void q.offsetWidth; q.classList.add("ativo"); }
     });
+    legendas.forEach((l, i) => l.classList.toggle("ativo", i === atual));
     botoes.forEach((b, i) => {
       b.classList.toggle("ativo", i === atual);
       b.classList.toggle("visto", i < atual);

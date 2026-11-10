@@ -11552,15 +11552,45 @@ Para cada linha recebida, devolva:
     recusadas: new Set(),
   };
 
-  /* ---------------- o fio da conversa ---------------- */
-  function rolar() {
+  /* ---------------- o fio da conversa ----------------
+     A tela acompanha a conversa: o texto que o Claude está escrevendo fica
+     sempre à vista, acima da caixa de mensagem, e cartão maior que a tela
+     aparece pelo começo. Se a pessoa subiu para reler, a tela não é puxada
+     até ela voltar para o fim ou clicar em alguma coisa. */
+  let seguindo = true, rolandoAte = 0, ultimoY = 0;
+
+  function aVista(el, pelaPonta) {
+    const topo = ($(".topo") ? $(".topo").getBoundingClientRect().bottom : 0) + 12;
+    const caixa = $("#compositor");
+    const baixo = Math.min(window.innerHeight,
+      caixa ? caixa.getBoundingClientRect().top : window.innerHeight) - 12;
+    const r = el.getBoundingClientRect();
+    let delta = r.bottom - baixo;
+    // cartão: nunca esconder o começo dele; texto sendo escrito: seguir a ponta
+    if (!pelaPonta && r.top - delta < topo) delta = r.top - topo;
+    if (delta > 1) {
+      rolandoAte = Date.now() + 800;
+      window.scrollBy({ top: delta, behavior: pelaPonta ? "auto" : "smooth" });
+    }
+  }
+
+  function rolar(el, pelaPonta) {
     const fio = $("#fio");
-    if (!fio || !document.body.classList.contains("modo-conversa")) return;
-    setTimeout(() => {
-      const ultimo = fio.lastElementChild;
-      if (ultimo) ultimo.scrollIntoView({ block: "end", behavior: "smooth" });
+    if (!fio || !document.body.classList.contains("modo-conversa") || !seguindo) return;
+    requestAnimationFrame(() => {
+      const alvo = el || fio.lastElementChild;
+      if (alvo) aVista(alvo, pelaPonta);
     });
   }
+
+  window.addEventListener("scroll", () => {
+    const y = window.scrollY;
+    if (Date.now() > rolandoAte) {
+      if (y < ultimoY) seguindo = false;
+      if (window.innerHeight + y >= document.documentElement.scrollHeight - 120) seguindo = true;
+    }
+    ultimoY = y;
+  }, { passive: true });
 
   function adicionar(el) {
     $("#fio").appendChild(el);
@@ -12477,6 +12507,7 @@ Para cada linha recebida, devolva:
 
   async function acao(nome, botao) {
     const a = app(), e = a.estado;
+    seguindo = true;
     const bloco = botao && botao.closest("[data-bloco]");
     const cartaoAtual = botao && botao.closest(".cartao-conversa");
     // escolheu um caminho no começo: o cartão de boas-vindas fecha numa linha
@@ -13018,6 +13049,7 @@ Regras:
   function enviar(texto) {
     texto = String(texto || "").trim();
     if (!texto) return;
+    seguindo = true;
     bolha("eu", formatar(texto));
     return chamar(texto);
   }
@@ -13048,7 +13080,7 @@ Regras:
           parcial = text;
           fala.classList.remove("pensando");
           $(".texto", fala).innerHTML = formatar(text);
-          rolar();
+          rolar(fala, true);
         },
       };
       if (conv.ferramentas) opcoes.tools = ferramentas();
