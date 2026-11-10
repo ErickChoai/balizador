@@ -1352,3 +1352,61 @@ body.na-abertura .compositor-nota,body.na-abertura .trilha{display:none}
   .checagens-conv.entra li,.tabela-org.entra .linha-org,.cartao-conversa .piscina .raia,
   .saida-conv,.fala.tocou .raia-ia{animation:none}
 }
+
+/* =====================================================================
+   Ajustes depois do teste no claude.ai: tudo um pouco menor, a abertura
+   cabendo na tela com os dois caminhos à vista, a braçada para a frente e
+   a fala da IA dentro de um balão com selo.
+   ===================================================================== */
+html.noite{font-size:15px}
+.noite body{font-size:15.5px}
+.noite .cartao-conversa{padding:1rem 1.15rem 1.1rem;gap:.7rem}
+.noite .cartao-conversa h3{font-size:1.2rem}
+.noite .cartao-conversa .corpo{gap:.7rem}
+.noite .numeros b{font-size:1.55rem}
+.noite .numeros div{padding:.55rem .75rem}
+.noite .botao{padding:.6rem 1.1rem;font-size:.98rem}
+
+/* a braçada vai para a frente, por cima da água */
+@keyframes bracada{to{transform:rotate(360deg)}}
+
+/* a abertura: texto e caminhos à esquerda, a piscina à direita */
+.abertura-conv{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);
+  grid-template-areas:"olho piscina" "titulo piscina" "texto piscina" "caminhos caminhos" "extra extra";
+  column-gap:2rem;row-gap:.8rem;padding:1.2rem 0 2rem;align-items:start}
+.abertura-conv .olho{grid-area:olho}
+.abertura-conv h2{grid-area:titulo;font-size:clamp(1.7rem,3.6vw,2.6rem);max-width:none}
+.abertura-conv .linha-fina{grid-area:texto;font-size:1.02rem}
+.abertura-conv .piscina-abertura{grid-area:piscina;align-self:center}
+.abertura-conv .caminhos{grid-area:caminhos}
+.abertura-conv .recomecar,.abertura-conv > .link,.abertura-conv .garantia{grid-column:1/-1}
+.faixa{height:2.3rem}
+.caminho{padding:1rem 1.15rem;gap:.25rem}
+.caminho b{font-size:1.2rem}
+.caminho > span:last-child{font-size:.95rem}
+@media (max-width:760px){
+  .abertura-conv{grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"olho" "titulo" "texto" "caminhos" "piscina" "extra"}
+}
+
+/* a fala da IA: um balão com selo, para ninguém confundir com o app */
+.noite .fala.claude .texto{background:#0D3D4B;border:1px solid #2B6070;border-left:4px solid var(--agua);
+  border-radius:4px 14px 14px 14px;font-size:1rem;line-height:1.5;padding:.7rem .95rem}
+.fala .quem{display:flex;align-items:center;gap:.45rem;text-transform:none;letter-spacing:0;
+  font-family:"Instrument Sans",system-ui,sans-serif;font-size:.85rem;color:var(--tinta);padding-left:0}
+.fala .quem b{font-weight:700}
+.fala .quem em{font-style:normal;color:var(--suave);font-size:.78rem}
+.selo-ia{width:1.6rem;height:1.6rem;border-radius:50%;display:grid;place-items:center;flex:none;
+  background:var(--agua);color:var(--papel);font-family:"JetBrains Mono",monospace;font-size:.68rem;font-weight:700}
+.noite .fala.eu .texto{font-size:.98rem;padding:.55rem .9rem}
+.noite .guia b{font-size:1.12rem}
+.noite .guia p{font-size:.95rem}
+.noite .folha-conv table{font-size:.72rem}
+/* a abertura um pouco mais baixa, para os dois caminhos caberem em tela de notebook */
+.abertura-conv{padding:.5rem 0 1.6rem;row-gap:.6rem}
+.abertura-conv h2{font-size:clamp(1.55rem,3.1vw,2.3rem)}
+.noite .marca{margin-bottom:.55rem}
+.noite .topo{padding-top:.6rem}
+@media (max-height:600px){
+  .caminho > span:last-child{display:none}
+}

@@ -43,11 +43,14 @@
   };
 
   /* ---------------- o fio da conversa ----------------
-     A tela acompanha a conversa: o texto que o Claude está escrevendo fica
-     sempre à vista, acima da caixa de mensagem, e cartão maior que a tela
-     aparece pelo começo. Se a pessoa subiu para reler, a tela não é puxada
-     até ela voltar para o fim ou clicar em alguma coisa. */
-  let seguindo = true, rolandoAte = 0, ultimoY = 0;
+     A tela não corre na frente de quem lê. O primeiro elemento que chega
+     depois de um clique da pessoa é a âncora: a tela desce para mostrar o
+     que vem, mas nunca a ponto de esconder o começo da âncora. Se a pessoa
+     subiu para reler, a tela fica parada até o próximo clique. */
+  let seguindo = true, rolandoAte = 0, ultimoY = 0, ancora = null;
+
+  // um clique ou uma mensagem da pessoa: o que vier depois é a nova âncora
+  function novaVez() { seguindo = true; ancora = null; }
 
   function aVista(el, pelaPonta) {
     const topo = ($(".topo") ? $(".topo").getBoundingClientRect().bottom : 0) + 12;
@@ -58,6 +61,8 @@
     let delta = r.bottom - baixo;
     // cartão: nunca esconder o começo dele; texto sendo escrito: seguir a ponta
     if (!pelaPonta && r.top - delta < topo) delta = r.top - topo;
+    // e nunca passar do começo do que chegou depois do último clique
+    if (ancora && ancora.isConnected) delta = Math.min(delta, ancora.getBoundingClientRect().top - topo);
     if (delta > 1) {
       rolandoAte = Date.now() + 800;
       window.scrollBy({ top: delta, behavior: pelaPonta ? "auto" : "smooth" });
@@ -84,6 +89,7 @@
 
   function adicionar(el) {
     $("#fio").appendChild(el);
+    if (!ancora || !ancora.isConnected) ancora = el;
     rolar();
     return el;
   }
@@ -91,7 +97,8 @@
   function bolha(quem, html) {
     const div = document.createElement("div");
     div.className = "fala " + quem;
-    div.innerHTML = (quem === "claude" ? '<span class="quem">Claude</span>' : "") +
+    div.innerHTML = (quem === "claude" ? '<span class="quem"><span class="selo-ia" aria-hidden="true">IA</span>' +
+      '<b>Claude</b><em>inteligência artificial</em></span>' : "") +
       `<div class="texto">${html}</div>`;
     return adicionar(div);
   }
@@ -134,7 +141,11 @@
 
   // a resposta do Claude em HTML simples: parágrafos, listas, negrito
   function formatar(t) {
-    const limpo = IA.desmascarar(String(t || ""), conv.mascara).replace(/\s*—\s*/g, ", ");
+    const limpo = IA.desmascarar(String(t || ""), conv.mascara)
+      // chamada de ferramenta escrita como texto não é para a pessoa ver
+      .replace(/<(tool_call|tool_use|function_calls|function_call|invoke)\b[\s\S]*?(<\/\1>|$)/g, "")
+      .replace(/```(json)?\s*\{\s*"name"[\s\S]*?(```|$)/g, "")
+      .replace(/\s*—\s*/g, ", ").trim();
     const linhas = AT(limpo).split(/\r?\n/);
     const enfeita = (s) => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
       .replace(/`([^`]+)`/g, "<code>$1</code>").replace(/^#{1,4}\s+(.*)$/, "<b>$1</b>");
@@ -302,12 +313,11 @@
     preencher({ nome: sug.nome, tem_tempo: sug.temTempo, tem_revezamento: sug.temRevezamento,
                 tem_paradesporto: sug.temPara });
     renderTrilha();
-    cartaoPrograma();
     const ruins = (r && r.linhas || []).filter((l) => !l.ok);
-    await evento(`Demonstração guiada, passo 1. O app leu ${r ? r.provas.length : 0} provas do programa e não entendeu ` +
+    return contar(`Demonstração guiada, passo 1. O app leu ${r ? r.provas.length : 0} provas do programa e não entendeu ` +
       `${ruins.length} linhas: ${ruins.map((l) => `linha ${l.linha} "${l.texto}" (${l.motivo})`).join("; ")}. ` +
-      "Explique em uma ou duas frases por que o app recusa em vez de adivinhar, e diga que você pode corrigir essas linhas, com Sim e Não para cada uma.");
-    cartaoPropostaPrograma();
+      "O pedido para corrigir, com Sim e Não, aparece logo abaixo da sua fala. Em no máximo duas frases curtas, aponte o que você viu nessas linhas e diga que pode corrigir.",
+      cartaoPropostaPrograma);
   }
 
   function demoCompeticao() {
@@ -348,6 +358,8 @@
       "da última série. A IA não decide nada aqui. Os arquivos estão prontos.");
     const comTempo = (p) => p.series.reduce((s, x) => s + x.linhas.filter((l) => l.item.tempo != null).length, 0);
     const prova = e.provas.filter((p) => p.series.length && !p.revezamento).sort((x, y) => comTempo(y) - comTempo(x))[0];
+    return contar("Demonstração guiada, último passo: as raias de uma prova, os arquivos e o convite final aparecem logo abaixo da sua fala. " +
+      "Em duas frases curtas, diga o que a IA fez e o que o app fez nesta demonstração.", () => {
     cartaoRaias(prova ? prova.numero : undefined);
     cartaoArquivos();
     cartao("fim-demo", "Fim", "Agora com as suas planilhas?", `
@@ -362,7 +374,7 @@
         window.location.reload();
       }));
     });
-    return evento("Demonstração guiada, último passo: as raias e os arquivos estão na tela. Em duas frases, resuma o que a IA fez e o que o app fez nesta demonstração, e convide a pessoa a usar as próprias planilhas.");
+    });
   }
 
   /* O pedido à IA. Na demonstração, com prazo: passou de DEMO_PRAZO ou deu
@@ -396,12 +408,12 @@
   function comecar(caminho) {
     conv.comecou = true;
     document.body.classList.remove("na-abertura");
-    seguindo = true;
+    novaVez();
     renderTrilha();
     if (caminho === "demo") return iniciarDemo();
     bolha("eu", formatar("Quero balizar com as minhas planilhas."));
-    cartaoArquivo("programa");
-    return evento("A pessoa escolheu começar com as próprias planilhas. O cartão para enviar o programa de provas já está na tela. Dê boas-vindas em uma frase e diga o que vem.");
+    return contar("A pessoa escolheu começar com as próprias planilhas. O cartão para enviar o programa de provas aparece logo abaixo da sua fala. Dê boas-vindas em uma frase curta.",
+      () => cartaoArquivo("programa"));
   }
 
   function cartaoArquivo(tipo) {
@@ -457,9 +469,8 @@
         <div><b>${revez}</b><span>revezamentos</span></div>
       </div>
       ${ruins.length && !r.ok ? `<div class="alerta-conv">
-        <p>Não sigo assim: se uma prova ficar de fora, todas as seguintes ficam
-          com o número trocado.</p>
-        <ul>${ruins.slice(0, 5).map((l) => `<li>linha ${l.linha}: ${AT(l.motivo)}</li>`).join("")}</ul>
+        <p><b>${ruins.length === 1 ? "1 linha que o app não entendeu" : `${ruins.length} linhas que o app não entendeu`}</b></p>
+        <ul>${ruins.slice(0, 5).map((l) => `<li>linha ${l.linha}: <code>${AT(l.texto)}</code></li>`).join("")}</ul>
         <div class="acoes-cartao">
           ${conv.sample ? `<button type="button" class="botao" data-acao="corrigir_programa">
             Corrigir estas linhas com IA</button>` : ""}
@@ -565,16 +576,10 @@
     const e = app().estado;
     if (!e.inscricoes.length && e.recusa) {
       const temIA = !!(conv.sample && e.ultimaRecusa);
-      return cartao("inscritos", "Inscritos", "Esta planilha não está no formato", `
-        <p>Prefiro recusar a montar um balizamento errado sem ninguém perceber.
-          O que eu não entendi:</p>
+      return cartao("inscritos", "Inscritos", "Esta planilha não está no formato do app", `
         <ul class="motivos-conv">${e.recusa.abas.slice(0, 6).map((a) =>
-          `<li><b>${AT(a.aba)}</b>: ${AT(a.motivo)}</li>`).join("")}</ul>
+          `<li><b>${AT(a.aba)}</b>: ${AT(String(a.motivo).length > 90 ? String(a.motivo).slice(0, 88) + "…" : a.motivo)}</li>`).join("")}</ul>
         ${temIA ? `<div class="pergunta-conv destaque-ia">
-          <p><b>Posso organizar com IA.</b> Eu leio a estrutura da planilha e o app
-            põe cada inscrição no formato certo. Você vê exatamente o que vai ser
-            enviado, com os nomes trocados por código, e revisa linha por linha antes
-            de seguir.</p>
           <div class="acoes-cartao">
             <button type="button" class="botao" data-acao="organizar_ia">Organizar com IA</button>
             <button type="button" class="mini claro" data-acao="enviar_inscritos">Enviar outra planilha</button>
@@ -817,9 +822,6 @@
     const total = o.amostra.reduce((s, x) => s + x.total, 0);
     const vao = o.amostra.reduce((s, x) => s + x.linhas.length, 0);
     return cartao("organizar", "Inscritos", "Posso reescrever esta planilha no modelo do app?", `
-      <p>Eu leio como a planilha está montada e o app reescreve cada inscrição no modelo dele,
-        uma linha por inscrição, com nome, equipe, prova, tempo e a linha de onde veio. Você
-        confere a tabela nova antes de ela entrar.</p>
       <div class="numeros">
         <div><b>${vao}</b><span>de ${total} linhas vão, como amostra</span></div>
         <div class="bom"><b>${o.mascara.conta.PESSOA}</b><span>nomes trocados por código</span></div>
@@ -893,7 +895,13 @@
     const semConta = o.resumoAbas.find((x) => x.usada && !x.deuConta && !o.planoB[x.aba]);
     if (semConta) return cartaoAbaInteira(semConta.aba);
     if (o.pendentes.length && !o.provasFeitas) return cartaoProvasIA();
-    return cartaoOrganizada(true);
+    const prog = app().lerConfig().programa || [];
+    const conta = { ok: 0, incerto: 0, erro: 0 };
+    for (const l of o.linhas) if (!l.excluida) conta[IA.interpretar(l, prog).estado]++;
+    return contar(`A IA reescreveu a planilha no modelo do app: ${o.linhas.length} inscrições, ${conta.ok} prontas, ` +
+      `${conta.incerto} marcadas para a pessoa responder Sim ou Não, ${conta.erro} que não entram assim. ` +
+      "A tabela aparece logo abaixo da sua fala. Em no máximo duas frases curtas, diga o que você viu e o que a pessoa precisa fazer.",
+      () => cartaoOrganizada(true));
   }
 
   function cartaoAbaInteira(aba) {
@@ -945,9 +953,7 @@
     const o = org;
     const troca = (v) => IA.mascararCelula(v, o.mascara, o.voc);
     const n = o.pendentes.reduce((s, p) => s + p.linhas.length, 0);
-    return cartao("provas-ia", "Inscritos", "Posso casar estas provas com o programa?", `
-      <p>Em ${n} inscrição(ões) a prova está escrita de um jeito que o app não casou sozinho.
-        Para casar, vão só estes nomes de prova e o programa, sem nenhum dado de atleta.</p>
+    return cartao("provas-ia", "Inscritos", `Posso casar estas provas com o programa? (${n} inscrições)`, `
       <ul class="motivos-conv">${o.pendentes.slice(0, 12).map((p) =>
         `<li>${comCodigos(IA.descricaoDaProva(p.campos, troca))} <span class="apagado">(${p.linhas.length})</span></li>`).join("")}</ul>
       <div class="acoes-cartao">
@@ -1056,13 +1062,7 @@
       ligar(vivo);
       return vivo;
     }
-    const el = cartao("organizada", "Inscritos", AT(titulo), corpo, "Tabela reescrita no modelo do app", ligar);
-    if (primeira) {
-      evento(`A IA reescreveu a planilha no modelo do app: ${itens.length} inscrições, ${conta.ok} prontas, ` +
-        `${conta.incerto} marcadas para a pessoa responder Sim ou Não, ${conta.erro} que não entram assim. ` +
-        "A tabela já está na tela. Explique em poucas frases o que foi marcado e por quê, e peça para a pessoa responder.");
-    }
-    return el;
+    return cartao("organizada", "Inscritos", AT(titulo), corpo, "Tabela reescrita no modelo do app", ligar);
   }
 
   function usarOrganizadas() {
@@ -1073,16 +1073,15 @@
     ["organizada", "progresso-org", "progresso-aba", "progresso-provas"].forEach(fechar);
     nota(`As ${n} inscrições reescritas entraram e passaram pelas conferências de sempre.`);
     renderTrilha();
-    cartaoInscritos();
     if (conv.demo) {
       conv.demo.passo = 4;
       guia(4, "A conferência",
-        "As regras do app conferem tudo e acham os dois erros plantados. Cada correção vem pronta, " +
-        "e só acontece com o seu Sim.");
+        "As regras do app conferem tudo e acham os erros plantados. Cada correção só acontece com o seu Sim.");
     }
-    cartaoConferencia();
-    return evento(`A pessoa confirmou a tabela reescrita pela IA: ${n} inscrições entraram e já passaram pelas conferências. ` +
-      "Os cartões dos inscritos e da conferência já estão na tela. Resuma a conferência, começando pelos vermelhos e pelas correções propostas.");
+    app().propostasDeCorrecao();
+    return contar(`A pessoa confirmou a tabela reescrita pela IA: ${n} inscrições entraram e passaram pelas conferências. ` +
+      "A conferência, com as correções propostas, aparece logo abaixo da sua fala. Em no máximo duas frases curtas, aponte o que ela achou, começando pelos vermelhos.",
+      () => { if (!conv.demo) cartaoInscritos(); cartaoConferencia(); });
   }
 
   /* ---------------- a IA corrigindo linhas do programa ---------------- */
@@ -1096,10 +1095,7 @@
     corrProg = { r, ruins, pedido, itens: null, decisao: {} };
     return cartao("proposta-programa", "Programa", `Posso corrigir ${ruins.length === 1 ? "esta linha" : `estas ${ruins.length} linhas`} do programa?`, `
       <ul class="motivos-conv">${ruins.slice(0, 10).map((l) =>
-        `<li>linha ${l.linha}: <code>${AT(l.texto)}</code> <span class="apagado">${AT(l.motivo)}</span></li>`).join("")}</ul>
-      <p class="nota">O programa não tem dado de atleta: vão só estas linhas e a lista das provas que
-        o app já leu, para a IA ver o jeito deste programa escrever. Cada correção volta para você
-        dizer Sim ou Não.</p>
+        `<li>linha ${l.linha}: <code>${AT(l.texto)}</code></li>`).join("")}</ul>
       <details class="mais texto-exato"><summary>ver exatamente o que vai</summary><pre>${AT(textoExato(pedido))}</pre></details>
       <div class="acoes-cartao">
         <button type="button" class="botao" data-acao="prog_sim">Sim, pode corrigir</button>
@@ -1118,10 +1114,15 @@
       c.itens = IA.correcoesDoPrograma(r.dados, c.ruins);
       marcar(el, 1, "feito", `${c.itens.filter((x) => x.prova || x.naoEProva).length} correção(ões)`);
     } catch (err) {
-      $$("li.fazendo", el).forEach((li) => (li.className = "falhou"));
+      $("li.fazendo", el).forEach((li) => (li.className = "falhou"));
       return cartaoErroIA(err, "prog_sim");
     }
-    cartaoCorrecoesPrograma(true);
+    const vira = c.itens.map((x) => `linha ${x.linha} ${x.naoEProva ? "sai, porque não é prova"
+      : x.prova ? "vira " + D.tituloProva(x.prova.distancia, x.prova.estilo, x.prova.categoria, x.prova.naipe)
+      : "fica sem correção: " + x.problema}`).join("; ");
+    return contar(`A IA propôs correções para ${c.itens.length} linha(s) do programa: ${vira}. ` +
+      "A tabela com Sim e Não aparece logo abaixo da sua fala. Em uma frase curta, diga o que vai mudar.",
+      () => cartaoCorrecoesPrograma(true));
   }
 
   function cartaoCorrecoesPrograma(primeira) {
@@ -1139,7 +1140,7 @@
         <div class="org-origem">programa<b>linha ${x.linha}</b></div>
         <div class="org-de">${AT(x.original)}</div>
         <div class="org-para">${vira}
-          ${x.motivo ? `<ul class="motivos"><li>${AT(x.motivo)}</li></ul>` : ""}
+          ${x.motivo && (x.incerto || !pode) ? `<ul class="motivos"><li>${AT(x.motivo)}</li></ul>` : ""}
           ${pode ? `<div class="acoes-cartao">${d == null
             ? `<button type="button" class="botao" data-sim-prog="${x.linha}">Sim</button>
                <button type="button" class="mini claro" data-nao-prog="${x.linha}">Não</button>`
@@ -1169,12 +1170,7 @@
       ligar(vivo);
       return vivo;
     }
-    const el = cartao("correcoes-programa", "Programa", "Assim ficariam as linhas", corpo, "Correções do programa", ligar);
-    if (primeira) {
-      evento(`A IA propôs correções para ${c.itens.length} linha(s) do programa. A tabela com Sim e Não já está na tela. ` +
-        "Comente em uma ou duas frases o que mudou e peça para a pessoa responder.");
-    }
-    return el;
+    return cartao("correcoes-programa", "Programa", "Assim ficariam as linhas", corpo, "Correções do programa", ligar);
   }
 
   function aplicarCorrecoesPrograma() {
@@ -1188,10 +1184,10 @@
     fechar("progresso-prog");
     nota(`${aceitas.length} linha(s) do programa corrigida(s).`);
     renderTrilha();
-    cartaoPrograma();
-    return evento(`A pessoa aplicou ${aceitas.length} correção(ões) no programa. Agora são ${r2.provas.length} provas` +
+    return contar(`A pessoa aplicou ${aceitas.length} correção(ões) no programa. Agora são ${r2.provas.length} provas` +
       (r2.ok ? ", sem linha pendente." : ", e ainda há linha que o app não entende.") +
-      " O cartão do programa já está na tela, com o botão de baixar o programa no modelo do app.");
+      " O cartão do programa aparece logo abaixo da sua fala. Em uma frase curta, diga como ficou e que dá para seguir.",
+      cartaoPrograma);
   }
 
   /* ---------------- o que cada botão faz ---------------- */
@@ -1202,7 +1198,7 @@
 
   async function acao(nome, botao) {
     const a = app(), e = a.estado;
-    seguindo = true;
+    novaVez();
     const bloco = botao && botao.closest("[data-bloco]");
     const cartaoAtual = botao && botao.closest(".cartao-conversa");
     switch (nome) {
@@ -1221,8 +1217,8 @@
       case "sem_programa":
         a.seguirSemPrograma();
         nota("Seguindo sem o programa de provas.");
-        cartaoCompeticao();
-        return evento("A pessoa escolheu seguir sem o programa de provas. Sem ele, o app numera só as provas que têm inscritos, na ordem que deduzir. O cartão da competição já está na tela.");
+        return contar("A pessoa escolheu seguir sem o programa de provas. Sem ele, o app numera só as provas que têm inscritos, na ordem que deduzir. O cartão da competição aparece logo abaixo da sua fala.",
+          () => cartaoCompeticao());
       case "ignorar_linhas":
         e.programa.ok = true;
         a.liberarCompeticao(true);
@@ -1238,8 +1234,8 @@
       case "programa_ok":
         if (conv.demo) return demoCompeticao();
         renderTrilha();
-        cartaoCompeticao();
-        return evento("A pessoa confirmou o programa. O cartão da competição já está na tela: proponha os valores com base no programa e pergunte o que falta.");
+        return contar("A pessoa confirmou o programa. O cartão da competição aparece logo abaixo da sua fala: proponha os valores com base no programa (preencher_competicao) e pergunte o que só ela sabe.",
+          () => cartaoCompeticao());
       case "etapa_unica":
         a.etapaUnica();
         return cartaoCompeticao();
@@ -1250,8 +1246,8 @@
         nota("Competição confirmada.");
         renderTrilha();
         if (conv.demo) return demoInscritos();
-        cartaoArquivo("inscritos");
-        return evento("A pessoa confirmou a competição. O cartão para enviar os inscritos já está na tela.");
+        return contar("A pessoa confirmou a competição. O cartão para enviar os inscritos aparece logo abaixo da sua fala. Diga em uma frase curta o que vem.",
+          () => cartaoArquivo("inscritos"));
       }
       case "organizar_ia": return cartaoPropostaOrganizar();
       case "org_sim": fechar("organizar"); fechar("erro-ia"); return organizar();
@@ -1409,40 +1405,45 @@
       return cartaoArquivo("programa");
     }
     if (!r.provas.length) {
+      return contar(`A pessoa enviou ${origem}, mas não deu para ler nenhuma prova. Problemas: ${(r.problemas || []).join("; ")}. ` +
+        "O cartão com o modelo aparece logo abaixo da sua fala. Em duas frases curtas, diga o que faltou.", () =>
       cartao("programa", "Programa", "Não consegui ler um programa nesta planilha", `
         <ul class="motivos-conv">${(r.problemas || []).map((p) => `<li>${AT(p)}</li>`).join("")}</ul>
         <p class="nota">Uma linha por prova, com DISTÂNCIA, ESTILO, CATEGORIA e NAIPE.</p>
         <div class="acoes-cartao"><button type="button" class="mini claro" data-acao="modelo_programa">
-          Baixar a planilha modelo</button></div>`, "Programa recusado", ligarAcoes);
-      return evento(`A pessoa enviou ${origem}, mas não deu para ler nenhuma prova. Problemas: ${(r.problemas || []).join("; ")}`);
+          Baixar a planilha modelo</button></div>`, "Programa recusado", ligarAcoes));
     }
-    cartaoPrograma();
-    const ruins = (r.linhas || []).filter((l) => !l.ok).length;
+    const ruins = (r.linhas || []).filter((l) => !l.ok);
     const e = app().estado;
-    return evento(`A pessoa enviou ${origem}: ${r.provas.length} provas reconhecidas, ${ruins} linhas não entendidas, ` +
-      `${(e.perfil.etapas || []).length} etapas, ` +
+    return contar(`A pessoa enviou ${origem}: ${r.provas.length} provas reconhecidas, ${ruins.length} linhas não entendidas` +
+      (ruins.length ? ` (${ruins.map((l) => `linha ${l.linha} "${l.texto}": ${l.motivo}`).join("; ")})` : "") +
+      `, ${(e.perfil.etapas || []).length} etapas, ` +
       `${r.provas.filter((p) => /^\d+X/.test(p.distancia)).length} revezamentos. ` +
-      "O cartão do programa já está na tela. Diga em uma ou duas frases o que viu e peça para a pessoa conferir e confirmar.");
+      "O cartão do programa aparece logo abaixo da sua fala. Em no máximo duas frases curtas, diga o que você viu" +
+      (ruins.length ? " e ofereça corrigir as linhas com IA." : " e peça para conferir."), cartaoPrograma);
   }
 
   async function depoisDosInscritos(st, nome) {
     renderTrilha();
     const e = app().estado;
-    cartaoInscritos();
     if (st && st.aceita) {
-      cartaoConferencia();
-      return evento(`Os inscritos de ${nome} foram lidos: ${e.inscricoes.length} inscrições. ` +
-        "Os cartões dos inscritos e da conferência já estão na tela. Resuma a conferência, começando pelos vermelhos.");
+      app().propostasDeCorrecao();
+      return contar(`Os inscritos de ${nome} foram lidos: ${e.inscricoes.length} inscrições. ` +
+        "Os cartões dos inscritos e da conferência aparecem logo abaixo da sua fala. Em no máximo duas frases curtas, aponte o que a conferência achou, começando pelos vermelhos.",
+        () => { cartaoInscritos(); cartaoConferencia(); });
     }
     if (st && st.recusada) {
+      const motivos = e.recusa.abas.map((a) => `aba ${a.aba}: ${a.motivo}`).join("; ");
       if (conv.demo) {
-        await evento(`Demonstração guiada, passo 3. A ficha das escolas ${nome} foi recusada: ${e.recusa.abas.map((a) => `aba ${a.aba}: ${a.motivo}`).join("; ")}. ` +
-          "Explique em duas frases, sem jargão, por que o app recusa e que você pode reescrever a ficha no modelo do app, mandando só uma amostra com os nomes trocados por código.");
-        return cartaoPropostaOrganizar();
+        return contar(`Demonstração guiada, passo 3. A ficha das escolas ${nome} foi recusada: ${motivos}. ` +
+          "O pedido para reescrever, com Sim e Não, aparece logo abaixo da sua fala. Em no máximo duas frases curtas e sem jargão, aponte o que você viu na ficha e diga que pode reescrever no modelo do app, mandando só uma amostra com os nomes trocados por código.",
+          cartaoPropostaOrganizar);
       }
-      return evento(`A planilha de inscritos ${nome} foi recusada: ${e.recusa.abas.map((a) => `aba ${a.aba}: ${a.motivo}`).join("; ")}. ` +
-        "O cartão com o motivo e o botão de organizar com IA já está na tela. Explique em palavras simples e ofereça organizar com IA.");
+      return contar(`A planilha de inscritos ${nome} foi recusada: ${motivos}. ` +
+        "O cartão com o botão de organizar com IA aparece logo abaixo da sua fala. Em no máximo duas frases curtas, explique em palavras simples e ofereça organizar com IA.",
+        cartaoInscritos);
     }
+    cartaoInscritos();
     return evento(`A planilha de inscritos ${nome} não trouxe nenhuma inscrição.`);
   }
 
@@ -1732,8 +1733,9 @@ O caminho tem cinco etapas, nesta ordem:
 5. Arquivos: o PDF do balizamento, as papeletas e a planilha.
 
 Como conduzir:
-- Uma coisa de cada vez. Em uma ou duas frases, diga o que acabou de acontecer e o que vem agora.
-- Sempre que a próxima ação for da pessoa, chame a ferramenta mostrar com o cartão certo, para ela agir ali mesmo. Não chame mostrar para um cartão que a mensagem diz que já está na tela.
+- Uma coisa de cada vez, em no máximo duas frases curtas: o que você viu e o que a pessoa precisa decidir. Os cartões aparecem logo depois da sua fala e mostram os detalhes e os botões Sim e Não: não repita o que eles mostram nem descreva os botões.
+- Sempre que a próxima ação for da pessoa, chame a ferramenta mostrar com o cartão certo, para ela agir ali mesmo. Não chame mostrar para um cartão que a mensagem diz que vai aparecer depois da sua fala.
+- Nunca escreva uma chamada de ferramenta como texto (nada de tool_call, JSON de ferramenta ou marcação parecida). Se não tiver a ferramenta, só fale.
 - Competição: depois do programa, proponha valores com base nele (revezamento quando há provas 4x; paradesporto quando há categorias paralímpicas ou segmentos DF, DV, DI, DA, TEA) e pergunte o que só a pessoa sabe, principalmente quantas raias tem a piscina e quantas provas individuais cada atleta pode nadar. Quando ela responder, preencha com preencher_competicao e peça para conferir no cartão. Use confirmar_competicao só quando ela disser que está certo.
 - Programa com linha que o app não entendeu: explique e ofereça corrigir com IA (ferramenta corrigir_programa_com_ia). Cada correção volta com Sim e Não, e depois dá para baixar o programa no modelo do app.
 - Planilha de inscritos recusada: explique o motivo e ofereça reescrever a planilha no modelo do app (ferramenta organizar_com_ia). A pessoa vê o que vai ser enviado, responde Sim ou Não, e confere a tabela nova antes de ela entrar.
@@ -1751,7 +1753,7 @@ Regras:
   function enviar(texto) {
     texto = String(texto || "").trim();
     if (!texto) return;
-    seguindo = true;
+    novaVez();
     bolha("eu", formatar(texto));
     return chamar(texto);
   }
@@ -1759,7 +1761,17 @@ Regras:
   // o app contando ao Claude o que aconteceu na tela
   function evento(texto, extra) {
     if (!conv.sample) return Promise.resolve();
-    return chamar("[evento do app] " + texto, Object.assign({}, conv.demo ? DEMO_FALA : null, extra));
+    const x = Object.assign({}, conv.demo ? DEMO_FALA : null, extra);
+    const aviso = x.semFerramentas || !conv.ferramentas
+      ? " (Nesta resposta você está sem ferramentas: só fale, em no máximo duas frases curtas.)" : "";
+    return chamar("[evento do app] " + texto + aviso, x);
+  }
+
+  /* A IA fala primeiro, em poucas palavras, e só então o cartão aparece logo
+     abaixo da fala. Se a fala não vier a tempo, o cartão aparece assim mesmo. */
+  async function contar(texto, depois, extra) {
+    if (conv.sample) await evento(texto, Object.assign({ limite: 25000, silencioso: true }, extra));
+    return depois ? depois() : undefined;
   }
 
   /* extra: semFerramentas (só comentar), limite (ms até desistir), silencioso
@@ -1976,10 +1988,10 @@ Regras:
     definirModo("conversa");
     retrato = null;
     nota(`A revisão foi confirmada: ${dados.inscricoes} inscrições organizadas pela IA entraram.`);
-    cartaoInscritos();
-    cartaoConferencia();
     renderTrilha();
-    evento(`A pessoa revisou e confirmou as inscrições organizadas pela IA: ${dados.inscricoes} inscrições entraram, e já passaram pelas conferências de sempre. Os cartões dos inscritos e da conferência já estão na tela. Resuma a conferência, começando pelos vermelhos.`);
+    app().propostasDeCorrecao();
+    contar(`A pessoa revisou e confirmou as inscrições organizadas pela IA: ${dados.inscricoes} inscrições entraram, e já passaram pelas conferências de sempre. Os cartões dos inscritos e da conferência aparecem logo abaixo da sua fala. Em no máximo duas frases curtas, aponte o que a conferência achou, começando pelos vermelhos.`,
+      () => { cartaoInscritos(); cartaoConferencia(); });
     return true;
   }
 

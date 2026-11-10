@@ -2766,7 +2766,8 @@
   /* A virada: não sobrou vermelho nenhum. Aparece por cima, no meio, porque
      é a única coisa nesta tela que muda o que o árbitro faz em seguida. */
   function avisarQuePodeGerar() {
-    if ($("#avisoPodeGerar")) return;
+    // na conversa, quem avisa é o cartão dos arquivos, sem janela por cima
+    if ($("#avisoPodeGerar") || naConversa()) return;
     const fundo = document.createElement("div");
     fundo.className = "cortina";
     fundo.id = "avisoPodeGerar";
