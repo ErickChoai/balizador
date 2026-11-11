@@ -1852,3 +1852,57 @@ h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:normal}
 .lista-confirmar{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem}
 .lista-confirmar li{padding:.45rem .7rem;border-radius:6px;background:var(--papel2);border-left:3px solid var(--agua);
   font-size:1rem;line-height:1.4}
+/* =====================================================================
+   O cartão da linha, antes e depois: em cima a linha como estava na
+   planilha, embaixo como vai entrar, com o campo da dúvida em destaque.
+   A pergunta vem com opções, a sugestão do Mars marcada, e o "outro".
+   ===================================================================== */
+.cl-antes,.cl-depois{display:flex;flex-direction:column;gap:.2rem;padding:.55rem .65rem;border-radius:6px}
+.cl-antes{background:rgba(0,0,0,.18);border:1px dashed var(--linha)}
+.cl-depois{background:var(--papel);border:1px solid var(--linha)}
+.cartao-linha .cl-rot{display:block;margin:0 0 .1rem}
+.cartao-linha .cl-veio{display:block;font-size:.8rem;line-height:1.45}
+.cl-seta{font-family:var(--mono);font-size:.72rem;color:var(--suave);padding-left:.4rem;letter-spacing:.04em}
+.cl-campo{margin:0;font-size:.97rem;line-height:1.4}
+.cl-campo.cl-ruim{color:var(--grave);font-weight:600}
+.cl-campo.cl-ruim b{text-decoration:underline wavy;text-underline-offset:3px}
+ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;line-height:1.4}
+.cl-pergunta{margin:.15rem 0 0;font-weight:600;font-size:1.02rem;line-height:1.4}
+.opcoes-linha{display:flex;flex-direction:column;gap:.35rem}
+.opcao-linha{font:inherit;text-align:left;cursor:pointer;display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"rot tag" "exp tag";align-items:center;column-gap:.6rem;
+  padding:.55rem .75rem;border-radius:6px;border:1px solid var(--linha);background:var(--papel);color:var(--tinta)}
+.opcao-linha b{grid-area:rot;font-weight:600}
+.opcao-linha span{grid-area:exp;font-size:.85rem;color:var(--suave)}
+.opcao-linha em{grid-area:tag;font-style:normal;font-family:var(--mono);font-size:.68rem;letter-spacing:.04em;
+  color:#1B1A10;background:var(--amarelo);border-radius:4px;padding:.15rem .4rem;white-space:nowrap}
+.opcao-linha.sugerida{border-color:var(--amarelo);box-shadow:inset 3px 0 0 var(--amarelo)}
+.opcao-linha:hover:not(:disabled),.opcao-linha:focus-visible{border-color:var(--agua)}
+.opcao-linha.outro{border-style:dashed}
+.opcao-linha.outro.aberta{border-style:solid;border-color:var(--agua)}
+.opcao-linha:disabled{opacity:.6;cursor:default}
+.editor-linha{display:flex;flex-direction:column;gap:.5rem;padding:.6rem .7rem;border-radius:6px;
+  border:1px solid var(--agua);background:var(--papel)}
+.editor-linha .campo{display:flex;flex-direction:column;gap:.25rem;font-size:.9rem;color:var(--suave);min-width:0}
+.editor-linha input,.editor-linha select{font:inherit;font-size:1rem;width:100%;box-sizing:border-box;padding:.45rem .55rem;
+  border-radius:6px;border:1px solid var(--linha);background:var(--papel2);color:var(--tinta)}
+.erro-editor{margin:0;color:var(--grave);font-size:.92rem}
+/* na folha branca da conferência, as opções em cores claras */
+.correcao-unica .opcao-linha{background:#FFFFFF;color:#1A2B31;border-color:#C9D6DA}
+.correcao-unica .opcao-linha span{color:#56707A}
+.correcao-unica .opcao-linha.sugerida{border-color:#C9961A;box-shadow:inset 3px 0 0 #E2B23C}
+.correcao-unica .editor-linha{background:#FFFFFF;border-color:#0B7285}
+.correcao-unica .editor-linha .campo{color:#56707A}
+.correcao-unica .editor-linha input{background:#F4F7F8;color:#1A2B31;border-color:#C9D6DA}
+.correcao-unica .erro-editor{color:#A8261C}
+@media (max-width:640px){
+  .opcao-linha{padding:.45rem .65rem}
+  .opcao-linha span{font-size:.82rem}
+  .opoes-linha,.opcoes-linha{gap:.3rem}
+}
+
+/* linha de desfazer: discreta, sem ocupar altura à toa */
+.desfazer-linha{margin:0;line-height:1.2;text-align:right}
+.desfazer-linha .link{font-size:.92rem}
+.rot-linha{display:flex;justify-content:space-between;align-items:baseline;gap:.2rem .8rem;flex-wrap:wrap}
+.rot-linha .link{font-size:.88rem}

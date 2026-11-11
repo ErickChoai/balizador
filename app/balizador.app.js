@@ -4237,7 +4237,11 @@
                       : "Posso deixar sem tempo? Ele vai para as primeiras séries.",
         aplicar: () => { estado.ajustes.tempos[chaveDaLinha(t.item)] = alt ? alt.segundos : null; fim(); },
         feito: alt ? `${CX(t.nome)} agora está com ${B.formatarTempo(alt.segundos)}.`
-                   : `${CX(t.nome)} ficou sem tempo.` });
+                   : `${CX(t.nome)} ficou sem tempo.`,
+        // para a pergunta com opções: as leituras que cabem na prova, sem tempo, ou o que a pessoa escrever
+        tempo: { distancia: t.metros + "M", texto: t.texto, nome: CX(t.nome), prova: `${t.prova}ª ${t.titulo}`,
+                 opcoes: t.alternativas.map((a) => ({ segundos: a.segundos, como: a.como })),
+                 definir: (seg) => { estado.ajustes.tempos[chaveDaLinha(t.item)] = seg; fim(); } } });
     }
 
     const propostas = estado.propostas || [];
@@ -4367,7 +4371,51 @@
     renderEtapas();
   }
 
+  /* ---------------- o que o Mars faz pela conversa ----------------
+     Achar uma inscrição pelo nome do atleta e o número da prova, tirar,
+     devolver e mudar o tempo, sempre por cima do que foi lido, como os
+     botões da conferência. E a foto dos ajustes, para desfazer. */
+  function acharInscricoes(nome, prova) {
+    if (!estado.provas.length) montar();
+    const alvo = B.normalizar(nome);
+    if (!alvo) return [];
+    const achou = [];
+    for (const p of estado.provas) {
+      if (prova && p.numero !== Number(prova)) continue;
+      const todos = p.series.flatMap((s) => s.linhas.map((l) => l.item)).concat(p.cortados || []);
+      for (const it of todos) {
+        const n = B.normalizar(it.revezamento ? it.equipe : it.nome);
+        if (n && (n === alvo || n.includes(alvo) || alvo.includes(n))) {
+          achou.push({ numero: p.numero, titulo: p.titulo, distancia: p.distancia, item: it });
+        }
+      }
+    }
+    return achou;
+  }
+  function inscricoesRemovidas() {
+    return estado.inscricoes.filter((i) => estado.ajustes.removidas.has(chaveDaLinha(i)));
+  }
+  function tirarInscricao(item) { estado.ajustes.removidas.add(chaveDaLinha(item)); montar(); }
+  function devolverInscricao(item) { estado.ajustes.removidas.delete(chaveDaLinha(item)); montar(); }
+  function definirTempoInscricao(item, seg) { estado.ajustes.tempos[chaveDaLinha(item)] = seg; montar(); }
+  function fotoDosAjustes() {
+    const a = estado.ajustes;
+    return { removidas: new Set(a.removidas), nomes: Object.assign({}, a.nomes), aceitos: new Set(a.aceitos),
+             jaVistos: new Set(a.jaVistos), ultimosItens: Object.assign({}, a.ultimosItens),
+             tempos: Object.assign({}, a.tempos), classes: JSON.parse(JSON.stringify(a.classes || {})),
+             decisoes: JSON.parse(JSON.stringify(a.decisoes || {})) };
+  }
+  function restaurarAjustes(f) {
+    Object.assign(estado.ajustes, { removidas: new Set(f.removidas), nomes: Object.assign({}, f.nomes),
+      aceitos: new Set(f.aceitos), jaVistos: new Set(f.jaVistos), ultimosItens: Object.assign({}, f.ultimosItens),
+      tempos: Object.assign({}, f.tempos), classes: JSON.parse(JSON.stringify(f.classes)),
+      decisoes: JSON.parse(JSON.stringify(f.decisoes)) });
+    montar();
+  }
+
   window.BalizadorApp = {
+    acharInscricoes, inscricoesRemovidas, tirarInscricao, devolverInscricao, definirTempoInscricao,
+    fotoDosAjustes, restaurarAjustes,
     estado, claudeApp, LINK_CLAUDE, LINK_GITHUB, abrirPonte, linkDoResultado, lerCodigo,
     lerConfig, validarConfig, atualizarPreviaData, montar, montarSecoes,
     renderConferencia, irPara, mostrarPainel, liberar, aviso,
