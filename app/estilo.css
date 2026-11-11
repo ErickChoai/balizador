@@ -1796,3 +1796,59 @@ h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:normal}
   .passo:not(.ativo){font-size:0;gap:0}
   .passo:not(.ativo) b{font-size:.85rem}
 }
+/* =====================================================================
+   A reescrita, uma linha por cartão. Respondeu, o cartão fica verde e sai
+   para a direita; o próximo chega pela esquerda.
+   ===================================================================== */
+.pilha-org{position:relative;overflow:hidden;padding:2px}
+.cartao-linha{position:relative;display:flex;flex-direction:column;gap:.55rem;overflow:hidden;
+  background:var(--papel2);border:1px solid var(--linha);border-left:4px solid var(--ambar);border-radius:6px;padding:.8rem .9rem}
+.cartao-linha.erro{border-left-color:var(--grave)}
+.cartao-linha header{display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap}
+.cartao-linha header b{font-family:var(--texto);font-weight:600;font-size:.98rem}
+.cartao-linha .conta-problema{background:var(--ambar);color:#1B1A10}
+.cl-bloco{display:flex;flex-direction:column;gap:.15rem}
+.cl-rot{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--suave)}
+.cl-veio{margin:0;font-family:var(--mono);font-size:.84rem;color:var(--suave);overflow-wrap:anywhere}
+.cl-veio .sep{color:var(--linha)}
+.cl-vai{margin:0;font-size:1rem;line-height:1.45}
+.cl-duvida ul{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.95rem;line-height:1.4}
+.cl-sugestao{margin:0;padding:.55rem .7rem;border-radius:6px;background:var(--agua-fraca);font-size:.97rem;line-height:1.45}
+.cl-sugestao b{color:var(--agua)}
+.cartao-linha .cl-feito{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+  font-family:var(--display);font-weight:800;font-size:1.9rem;color:var(--bom);background:rgba(8,38,28,.86);
+  opacity:0;transition:opacity .25s ease}
+.cartao-linha.decidida{border-color:var(--bom);border-left-color:var(--bom);
+  animation:linhaSai .55s .4s cubic-bezier(.5,0,.75,0) forwards}
+.cartao-linha.decidida .cl-feito{opacity:1}
+.cartao-linha.chega{animation:linhaChega .45s cubic-bezier(.2,.8,.2,1) both}
+@keyframes linhaSai{to{opacity:0;transform:translateX(115%) rotate(2deg)}}
+@keyframes linhaChega{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){
+  .cartao-linha.decidida,.cartao-linha.chega{animation:none}
+}
+/* os secundários com a mesma cara dos links: amarelo na noite, sublinhado,
+   sem a faixa do botão principal */
+.mini,.mini.claro,.botao.claro{color:var(--agua);font-weight:500;margin-bottom:0}
+.botao.claro::after{display:none}
+.mini:hover,.mini.claro:hover,.botao.claro:hover{color:var(--tinta)}
+.correcao-unica .mini.claro,.correcoes .correcao .mini.claro{color:#0B7285}
+/* o botão principal ainda trancado: apagado de verdade, sem a corda */
+.botao:disabled{opacity:1;background:var(--papel2);color:var(--suave)}
+.botao:disabled::after{display:none}
+/* o cartão da linha mais baixo: rótulo na frente do texto, cabeçalho numa linha */
+.cartao-linha{gap:.45rem;padding:.65rem .8rem}
+.cartao-linha .cl-cabeca{display:flex;align-items:center;flex-wrap:nowrap;gap:.45rem;margin:0;padding:0;border:0}
+.cartao-linha .cl-cabeca b{font-family:var(--texto);font-weight:600;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.cartao-linha .cl-cabeca .conta-problema{margin:0;flex:none}
+.cl-veio{font-size:.78rem}
+.cl-vai{font-size:.96rem}
+.cl-bloco{display:block}
+.cl-rot{display:inline;margin-right:.45em}
+.cl-veio,.cl-vai{display:inline}
+.cl-duvida ul{display:inline-block;vertical-align:top;margin:0;padding-left:1rem;font-size:.92rem}
+.cl-sugestao{padding:.45rem .6rem;font-size:.94rem}
+/* o pedido de confirmação do Mars: o que vai mudar, item por item */
+.lista-confirmar{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.3rem}
+.lista-confirmar li{padding:.45rem .7rem;border-radius:6px;background:var(--papel2);border-left:3px solid var(--agua);
+  font-size:1rem;line-height:1.4}

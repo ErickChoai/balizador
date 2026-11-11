@@ -22,12 +22,12 @@
 
 <main>
   <!-- ============ A CONVERSA: só existe com o app aberto no claude.ai ============ -->
-  <section id="conversa" class="conversa" aria-label="Conversa com o Claude">
+  <section id="conversa" class="conversa" aria-label="Conversa com o Mars">
     <!-- a abertura: o que é, e os dois caminhos -->
     <div class="abertura-conv" id="aberturaConv">
       <h2>Criado por um árbitro, para o bem do esporte!</h2>
       <p class="linha-fina">Balizamento é decidir quem nada com quem e em qual faixa da piscina.
-        Você faz isso aqui, com o Claude.</p>
+        Você faz isso aqui com o Mars, assistente de balizamento.</p>
       <div class="piscina-abertura" id="piscinaAbertura" aria-hidden="true"></div>
       <div class="caminhos">
         <button type="button" class="caminho principal" data-caminho="demo">
@@ -45,7 +45,7 @@
         <button type="button" class="mini claro" id="recomecarNao">Não</button>
       </div>
       <button type="button" class="link" id="continuarConversa" hidden>voltar para onde eu estava</button>
-      <p class="garantia">O Claude usa a sua conta do claude.ai. Os nomes dos atletas vão para
+      <p class="garantia">O Mars funciona com a sua conta do claude.ai. Os nomes dos atletas vão para
         ele trocados por código.</p>
     </div>
     <div class="fio" id="fio" aria-live="polite"></div>
@@ -53,20 +53,20 @@
       <label class="anexar" title="Anexar uma planilha">
         <input type="file" id="anexo" accept=".xlsx,.xlsm,.csv" hidden>
         <span>Anexar planilha</span></label>
-      <textarea id="mensagem" rows="1" placeholder="Tem dúvida? Pergunte ao Claude. Por exemplo: o que é uma série?"></textarea>
+      <textarea id="mensagem" rows="1" placeholder="Tem dúvida? Pergunte ao Mars. Por exemplo: o que é uma série?"></textarea>
       <button type="submit" class="botao" id="enviarMensagem">Enviar</button>
       <button type="button" class="mini claro" id="pararMensagem" hidden>Parar</button>
     </form>
-    <p class="compositor-nota">O Claude usa a sua conta. O que você escreve e um
+    <p class="compositor-nota">O Mars usa a sua conta do claude.ai. O que você escreve e um
       resumo da tela vão para ele, com os nomes dos atletas trocados por código.</p>
   </section>
 
   <!-- ============ 1. PROGRAMA DE PROVAS ============ -->
   <section class="tela" data-tela="programa">
     <div class="cartao convite-claude" id="conviteClaude" hidden>
-      <h3>Faça o balizamento conversando com o Claude</h3>
+      <h3>Faça o balizamento conversando com o Mars</h3>
       <p class="nota">Aberto no claude.ai, o Balizador funciona como uma conversa
-        com o Claude, que conduz cada etapa com você e organiza planilhas fora do
+        com o Mars, assistente de balizamento, que conduz cada etapa com você e organiza planilhas fora do
         formato. Aqui, os cinco passos funcionam do jeito de sempre.</p>
       <p><a href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank"
         rel="noopener">Abrir o Balizador no claude.ai</a></p>
@@ -401,7 +401,7 @@
 
     <!-- 3c. a etapa opcional de IA: só existe quando a planilha foi recusada -->
     <div id="painelIA" hidden>
-    <h2>O Claude pode organizar esta planilha</h2>
+    <h2>O Mars pode organizar esta planilha</h2>
     <p class="sub">A IA só lê a planilha e põe cada inscrição no formato do app.
       Séries e raias continuam sendo montadas aqui, pelas regras de sempre, e
       nada segue sem a sua revisão.
@@ -411,7 +411,7 @@
 
     <!-- 3d. a revisão humana do que a IA organizou -->
     <div id="painelRevisao" hidden>
-    <h2>Confira o que o Claude organizou</h2>
+    <h2>Confira o que o Mars organizou</h2>
     <p class="sub">Cada linha mostra a planilha como ela está, ao lado de como a
       inscrição vai entrar no balizamento. Corrija o que estiver errado.</p>
     <div id="telaRevisao"></div>

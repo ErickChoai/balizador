@@ -1528,9 +1528,9 @@
     if (claudeApp.pronto && !claudeApp.sample) {
       return `
       <div class="recusa pergunta oferta-ia">
-        <h3>O Claude pode organizar ${parcial ? "as abas ignoradas" : "esta planilha"}</h3>
+        <h3>O Mars pode organizar ${parcial ? "as abas ignoradas" : "esta planilha"}</h3>
         <p>Isso funciona quando o Balizador é aberto pelo link do claude.ai: a IA
-           usa a conta Claude de quem está usando o app, sem chave nenhuma.
+           usa a conta do claude.ai de quem está usando o app, sem chave nenhuma.
            Aqui, corrija a planilha ou baixe a planilha modelo.</p>
         <p><a href="${LINK_CLAUDE}" target="_blank" rel="noopener">Abrir o
            Balizador no claude.ai</a></p>
@@ -1538,13 +1538,13 @@
     }
     return `
       <div class="recusa pergunta oferta-ia">
-        <h3>${parcial ? "O Claude pode organizar as abas ignoradas"
-                      : "O Claude pode organizar esta planilha"}</h3>
+        <h3>${parcial ? "O Mars pode organizar as abas ignoradas"
+                      : "O Mars pode organizar esta planilha"}</h3>
         <p>Ela lê a planilha e põe cada inscrição no formato do app. Séries e
            raias continuam sendo montadas aqui, pelas regras de sempre, e você
            revisa linha por linha antes de seguir.</p>
         <p class="nota">Nada é enviado sem você ver antes, e os nomes e as datas
-           vão trocados por código. A IA usa a sua conta Claude.</p>
+           vão trocados por código. O Mars usa a sua conta do claude.ai.</p>
         <div class="acoes">
           <button type="button" class="botao" id="btnOrganizarIA">Organizar com IA</button>
         </div>
@@ -1606,8 +1606,8 @@
         <h3>A conta que a IA usa</h3>
         ${!claudeApp.sample ? `<p class="alerta">A IA só funciona com o Balizador
           aberto pelo link do claude.ai. O resto do app funciona igual.</p>` : ""}
-        <p class="nota">Com a sua conta Claude, a mesma em que você entrou no
-          claude.ai. Na primeira vez que o app chamar a IA, o próprio Claude pede
+        <p class="nota">Com a sua conta do claude.ai, a mesma em que você entrou
+          lá. Na primeira vez que o app chamar a IA, o próprio claude.ai pede
           a sua licença. O uso conta no limite da sua conta, e ninguém precisa de
           chave.</p>
       </div>`;
@@ -1689,7 +1689,7 @@
     }
     return `
       <div class="cartao">
-        <h3>O que o Claude entendeu</h3>
+        <h3>O que o Mars entendeu</h3>
         <table class="tabela"><thead><tr><th>ABA</th><th>COMO ELA ESTÁ</th>
           <th>INSCRIÇÕES</th><th></th></tr></thead><tbody>${linhas}</tbody></table>
         ${notas.length ? `<p class="nota"><b>Do que a IA não teve certeza:</b></p>
@@ -1706,7 +1706,7 @@
     const p = ia.pedidosAba[aba];
     return `
       <div class="recusa leve">
-        <h3>O Claude precisa ver a aba ${AT(aba)} inteira</h3>
+        <h3>O Mars precisa ver a aba ${AT(aba)} inteira</h3>
         <p>O mapa não deu conta desta aba. Posso mandar a aba inteira,
           ${g.linhas.length} linhas, com os nomes e as datas trocados por código,
           para a IA transcrever linha a linha. Tudo volta para a mesma revisão.</p>

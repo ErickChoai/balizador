@@ -530,11 +530,11 @@
      função sample do claude.ai; o app nunca tenta de novo sozinho. */
   const ERROS_CLAUDE = {
     cancelled: "Envio cancelado. Nada foi usado.",
-    not_granted: "O app não recebeu licença para usar o Claude nesta página. A etapa de IA fica de fora; o resto funciona igual.",
-    sampling_disabled: "O Claude não está liberado para esta conta. A etapa de IA fica de fora; o resto funciona igual.",
+    not_granted: "O app não recebeu licença para usar a IA do claude.ai nesta página. A etapa de IA fica de fora; o resto funciona igual.",
+    sampling_disabled: "A IA do claude.ai não está liberada para esta conta. A etapa de IA fica de fora; o resto funciona igual.",
     session_expired: "A sua sessão no claude.ai expirou. Entre de novo e tente outra vez.",
-    rate_limited: "A sua conta Claude chegou no limite de uso, ou foram muitos pedidos seguidos. Espere um pouco e tente de novo.",
-    refused: "O Claude se recusou a fazer este pedido. Nada foi usado.",
+    rate_limited: "A sua conta do claude.ai chegou no limite de uso, ou foram muitos pedidos seguidos. Espere um pouco e tente de novo.",
+    refused: "O Mars recusou este pedido. Nada foi usado.",
     invalid_json: "A resposta da IA não é um JSON válido. Nada foi usado.",
     empty_completion: "A IA não respondeu nada. Nada foi usado. Tente de novo.",
     prompt_too_large: "Esta parte da planilha é grande demais para mandar de uma vez.",

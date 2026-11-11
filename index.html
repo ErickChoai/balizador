@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Balizador</title>
-<meta name="description" content="Balizamento de natação feito por um árbitro: séries e raias, conferência das inscrições, PDF e papeletas, com o Claude organizando as planilhas.">
+<meta name="description" content="Balizamento de natação feito por um árbitro: séries e raias, conferência das inscrições, PDF e papeletas, com o Mars organizando as planilhas.">
 <meta name="theme-color" content="#06222B">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230B7285'/%3E%3Ctext x='32' y='33' text-anchor='middle' dominant-baseline='central' font-family='Verdana,sans-serif' font-weight='bold' font-size='27' fill='%23fff'%3EBZ%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -296,6 +296,44 @@ p{margin:0}
   .q5 .doc{width:12em}
   .q4 .cena{padding-inline:1.6em}
 }
+/* o nome e a legenda embaixo dele */
+.nome-autor{display:flex;flex-direction:column;gap:.2rem;margin-bottom:.3rem}
+.nome-autor h2{margin:0}
+.cargo{color:var(--amarelo);font-size:1rem;font-weight:600}
+/* os seus dados: uma terceira coluna de lista, com o título dela */
+.dados{margin-top:2rem;max-width:44rem}
+.dados h3{font-size:1.7rem;padding-bottom:.45rem;border-bottom:3px solid var(--verde)}
+.linhas{margin:0}
+.linhas li{border-top:0;border-bottom:1px solid var(--linha)}
+.linhas li:last-child{border-bottom:1px solid var(--linha)}
+
+/* ---------- o menu de três barras ---------- */
+.menu-botao{flex:none;width:2.6rem;height:2.6rem;display:grid;place-content:center;gap:5px;padding:0;
+  background:none;border:1px solid var(--linha);border-radius:4px;cursor:pointer}
+.menu-botao span{display:block;width:1.2rem;height:2px;border-radius:2px;background:var(--espuma)}
+.menu-botao:hover,.menu-botao:focus-visible{border-color:var(--amarelo)}
+.menu-fundo{position:fixed;inset:0;z-index:40;background:rgba(2,10,14,.6);opacity:0;transition:opacity .25s}
+.menu-fundo.aberto{opacity:1}
+.menu{position:fixed;top:0;right:0;bottom:0;z-index:41;width:min(19rem,86vw);overflow:auto;
+  padding:max(14px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 1.2rem 14px;
+  background:var(--agua2);border-left:1px solid var(--linha);display:flex;flex-direction:column;gap:1rem;
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.menu.aberto{transform:none}
+.menu-topo{display:flex;align-items:center;gap:.7rem;padding:.2rem .3rem .8rem;border-bottom:1px solid var(--linha)}
+.menu-topo b{font-family:var(--display);font-size:1.45rem;font-weight:800}
+.menu-fechar{margin-left:auto;width:2.4rem;height:2.4rem;position:relative;background:none;border:0;cursor:pointer}
+.menu-fechar span{position:absolute;left:25%;right:25%;top:50%;height:2px;background:var(--espuma);border-radius:2px}
+.menu-fechar span:first-child{transform:rotate(45deg)}
+.menu-fechar span:last-child{transform:rotate(-45deg)}
+.menu-lista{display:flex;flex-direction:column;gap:.2rem}
+.menu-fora{padding-top:.8rem;border-top:1px solid var(--linha)}
+.menu-lista a{display:flex;align-items:center;gap:.8rem;padding:.7rem .8rem;border-radius:6px;text-decoration:none;
+  color:var(--suave);font-size:1rem;transition:background .15s,color .15s}
+.menu-lista a svg{width:1.25rem;height:1.25rem;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+.menu-lista a:hover,.menu-lista a:focus-visible{color:var(--espuma);background:rgba(255,255,255,.05)}
+.menu-lista a.atual{color:var(--azul);background:rgba(79,163,217,.14);font-weight:600}
+
 @media (max-width:820px){
   .divisao,.autor{grid-template-columns:minmax(0,1fr)}
   .retrato{max-width:15rem}
@@ -317,15 +355,37 @@ p{margin:0}
   <div class="dentro">
     <span class="sigla">BZ</span><b>Balizador</b>
     <a class="botao" href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener">Abrir o Balizador</a>
+    <button type="button" class="menu-botao" id="menuBotao" aria-label="Abrir o menu" aria-expanded="false" aria-controls="menu">
+      <span></span><span></span><span></span></button>
   </div>
 </header>
+
+<!-- o menu de três barras: as partes desta página e as outras páginas -->
+<div class="menu-fundo" id="menuFundo" hidden></div>
+<nav class="menu" id="menu" aria-label="Menu" hidden>
+  <div class="menu-topo"><span class="sigla">BZ</span><b>Balizador</b>
+    <button type="button" class="menu-fechar" id="menuFechar" aria-label="Fechar o menu"><span></span><span></span></button></div>
+  <div class="menu-lista">
+    <a href="#abertura" data-secao="abertura"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a>
+    <a href="#filme" data-secao="filme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5 3.5-5 3.5z"/></svg>Como funciona</a>
+    <a href="#autor" data-secao="autor"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Quem fez</a>
+    <a href="#regra" data-secao="regra"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/></svg>Quem cuida de cada parte</a>
+    <a href="#testado" data-secao="testado"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16.5 9.5"/></svg>Testes</a>
+  </div>
+  <div class="menu-lista menu-fora">
+    <a href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/></svg>Balizar com o Mars</a>
+    <a href="app/"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M8 20h8M12 16v4"/></svg>Versão offline</a>
+    <a href="anterior/"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Versão anterior</a>
+    <a href="https://github.com/ErickChoai/balizador" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14"/></svg>Código no GitHub</a>
+  </div>
+</nav>
 
 <section class="abertura" id="abertura">
   <div class="dentro">
     <h1>Criado por um árbitro, para o bem do esporte!</h1>
-    <p>Ele monta séries e raias, confere inscrições, gera PDF e papeletas, e o Claude arruma as planilhas bagunçadas.</p>
+    <p>Ele monta séries e raias, confere inscrições e gera PDF e papeletas. O Mars, assistente com inteligência artificial, arruma as planilhas bagunçadas.</p>
     <div class="chamadas">
-      <a class="botao" href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener">Balizar com o Claude</a>
+      <a class="botao" href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener">Balizar com o Mars</a>
       <a class="link-sec" href="app/">Prefere sem IA? Use a versão offline</a>
     </div>
   </div>
@@ -374,7 +434,7 @@ p{margin:0}
             <div class="ln"><span>8</span><span>Lia Campos</span><span>X</span><span>18,32</span></div>
           </div>
           <div class="ponte">
-            <span class="claude-chip">Claude</span>
+            <span class="claude-chip">Mars</span>
             <div class="codigos"><span>PESSOA 1</span><span>PESSOA 2</span><span>DATA 1</span></div>
             <span>nomes trocados<br>por código</span>
           </div>
@@ -429,7 +489,7 @@ p{margin:0}
     <div class="legendas" aria-live="polite">
       <div class="legenda ativo"><h3>Cada escola manda de um jeito.</h3>
         <p>O erro só aparece na borda da piscina.</p></div>
-      <div class="legenda"><h3>O Claude reescreve a planilha.</h3>
+      <div class="legenda"><h3>O Mars reescreve a planilha.</h3>
         <p>Do jeito que veio para o modelo do app.</p></div>
       <div class="legenda"><h3>O app confere cada inscrição.</h3>
         <p>Mais de quinze conferências rodam sozinhas, e nada muda sem o seu Sim.</p></div>
@@ -454,15 +514,15 @@ p{margin:0}
       <img src="erick.jpg" width="640" height="800" alt="Erick Choai, de camisa preta, à noite, na borda de uma piscina iluminada" loading="lazy">
     </figure>
     <div class="historia">
-      <h2>Erick Choai</h2>
+      <div class="nome-autor"><h2>Erick Choai</h2><p class="cargo">Idealizador e criador do Balizador</p></div>
       <p>No banco de controle, uma vez precisei refazer uma chamada inteira. O balizamento tinha sido montado à mão, com erros.</p>
-      <p>Nadei desde os 12 anos e cheguei a nadador profissional. Comecei na ACN, em Chapecó, e terminei no Clube Doze.</p>
-      <p>Em 2023 fui campeão da Copa do Brasil de Águas Abertas.</p>
+      <p>Nadei desde os 12 anos e cheguei ao profissional: comecei na ACN, em Chapecó, e terminei no Clube Doze. Nesse meio tempo, fui campeão da Copa do Brasil de Águas Abertas, em 2023.</p>
       <p>No ParaJASC, as 942 inscrições foram conferidas à mão contra o mapa de provas paralímpico.</p>
       <p>Foram 78 cortes por regulamento e 71 atletas sem classe definida.</p>
       <p>Não quis aceitar isso nem pagar por um software caro.</p>
       <p>Fiz uma ferramenta gratuita que monta o balizamento e aponta os erros antes da prova.</p>
-      <p>Fora da piscina, estudo Engenharia Elétrica e trabalho com suporte em energia solar na Intelbras.</p>
+      <p>Agora, fora das piscinas, estudo Engenharia Elétrica. Gosto de resolver problemas desde pequeno, porque cresci dentro da empresa dos meus pais.</p>
+      <p>Isso me acompanha até hoje: trabalho na Intelbras como analista na área de energia, principalmente energia solar.</p>
       <p>Erro ou sugestão, me escreva pelo
         <a href="https://github.com/ErickChoai/balizador/issues" target="_blank" rel="noopener">GitHub</a>.</p>
     </div>
@@ -473,9 +533,9 @@ p{margin:0}
 
 <section class="parte" id="regra">
   <div class="dentro">
-    <h2>O Claude e a regra</h2>
+    <h2>Quem cuida de cada parte</h2>
     <div class="divisao">
-      <div class="lado claude"><h3>O Claude</h3><ul>
+      <div class="lado claude"><h3>O Mars</h3><ul>
         <li>Reescreve planilhas de qualquer formato</li>
         <li>Corrige linhas do programa</li>
         <li>Explica cada problema</li>
@@ -488,11 +548,12 @@ p{margin:0}
         <li>Numeração das provas</li>
       </ul></div>
     </div>
+    <div class="dados"><h3>Os seus dados</h3>
     <ul class="linhas">
-      <li>Nome de atleta vai ao Claude como PESSOA 1.</li>
+      <li>Nome de atleta vai ao Mars como PESSOA 1.</li>
       <li>Nada entra sem a sua revisão.</li>
       <li>Sem internet, funciona sem a IA.</li>
-    </ul>
+    </ul></div>
   </div>
 </section>
 
@@ -525,7 +586,7 @@ p{margin:0}
       <a class="link-sec" href="anterior/">A versão anterior</a>
       <span>Atualizado em novembro de 2026</span>
     </div>
-    <a class="botao" href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener">Balizar com o Claude</a>
+    <a class="botao" href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener">Balizar com o Mars</a>
   </div>
 </footer>
 
@@ -599,6 +660,39 @@ p{margin:0}
     new IntersectionObserver((e) => document.documentElement.classList.toggle("passou", !e[0].isIntersecting))
       .observe(abertura);
   } else document.documentElement.classList.add("passou");
+
+  // o menu de três barras: abre pela direita, fecha no X, no fundo, no Esc e ao escolher
+  const menu = document.getElementById("menu"), fundo = document.getElementById("menuFundo");
+  const botaoMenu = document.getElementById("menuBotao");
+  const abrirMenu = (abre) => {
+    botaoMenu.setAttribute("aria-expanded", String(abre));
+    if (abre) {
+      menu.hidden = false; fundo.hidden = false;
+      void menu.offsetWidth;
+      menu.classList.add("aberto"); fundo.classList.add("aberto");
+      (menu.querySelector("a.atual") || menu.querySelector("a")).focus();
+    } else {
+      menu.classList.remove("aberto"); fundo.classList.remove("aberto");
+      setTimeout(() => { if (!menu.classList.contains("aberto")) { menu.hidden = true; fundo.hidden = true; } }, calmo ? 0 : 300);
+      botaoMenu.focus();
+    }
+  };
+  botaoMenu.onclick = () => abrirMenu(true);
+  document.getElementById("menuFechar").onclick = () => abrirMenu(false);
+  fundo.onclick = () => abrirMenu(false);
+  document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !menu.hidden) abrirMenu(false); });
+  menu.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => abrirMenu(false)));
+  // a parte da página em que a pessoa está fica marcada no menu
+  const itensMenu = [...menu.querySelectorAll("a[data-secao]")];
+  if ("IntersectionObserver" in window) {
+    const marcar = new IntersectionObserver((vistas) => {
+      for (const v of vistas) if (v.isIntersecting) {
+        itensMenu.forEach((a) => a.classList.toggle("atual", a.dataset.secao === v.target.id));
+      }
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    itensMenu.forEach((a) => { const alvo = document.getElementById(a.dataset.secao); if (alvo) marcar.observe(alvo); });
+  }
+  itensMenu[0].classList.add("atual");
 
   // as partes de baixo sobem quando chegam na tela
   if ("IntersectionObserver" in window && !calmo) {
