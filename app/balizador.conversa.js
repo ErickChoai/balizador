@@ -2481,6 +2481,10 @@
               : `<p class="cl-campo cl-ruim">Não entra assim: ${AT(r.motivos[0] || "falta dado para virar inscrição")}.</p>`}
           </div>
           ${perg.tipo === "geral" && r.motivos.length ? `<ul class="cl-duvida">${r.motivos.map((m) => `<li>${AT(m)}</li>`).join("")}</ul>` : ""}
+          ${perg.tipo === "erro" && r.motivos.length > 1
+            // os outros motivos da linha que não entra (no teste da versão 24, o primeiro era "falta o naipe",
+            // e o de verdade, o sexo M numa prova feminina, só aparecia na dúvida do Mars)
+            ? `<ul class="cl-duvida">${r.motivos.slice(1).map((m) => `<li>${AT(m)}</li>`).join("")}</ul>` : ""}
           <p class="cl-pergunta">${AT(perg.pergunta)}</p>
           ${opcoesHTML(perg.opcoes, "Outro: eu corrijo", i && i.revezamento ? "o tempo ou a prova" : "o nome, o tempo ou a prova")}
           <div class="editor-linha" hidden>
@@ -2508,6 +2512,7 @@
       conv.cartaoDaVez = (troca) => `revisão da planilha reescrita, cartão ${feitas + 1} de ${total}, ` +
         `linha ${l.origem.linha} da aba ${troca(l.origem.aba)}. Como está na planilha: ${original.map(troca).join(" · ")}. ` +
         `Como vai entrar: ${i ? `${nomeDe(troca)}, prova ${r.numero || "fora da lista"} ${tituloDa(atual)}, tempo ${i.tempo != null ? B.formatarTempo(i.tempo) : "sem tempo"}` : "não entra assim"}. ` +
+        (r.motivos.length ? `O que o app achou nesta linha: ${r.motivos.map(troca).join("; ")}. ` : "") +
         `Pergunta do cartão: ${perg.pergunta} Opções na tela: ${perg.opcoes.map((x) => x.rotulo + (x.sugerida ? " (sugestão)" : "")).join("; ")}; e "Outro", em que a pessoa escreve o tempo e escolhe a prova.`;
       if (i) {
         conv.alvoTempo = { distancia: i.distancia,
@@ -2827,6 +2832,8 @@
     return contar(`A pessoa aplicou ${aceitas.length} correção(ões) no programa. Agora são ${r2.provas.length} provas` +
       (r2.ok ? ", sem linha pendente." : ", e ainda há linha que o app não entende.") +
       avisoDeCategoria(r2.provas) +
+      // na demonstração a competição vem preenchida: no teste da versão 24, o Mars pediu raias e provas mesmo assim
+      (conv.demo ? " Na demonstração, a competição vem preenchida com valores de exemplo: não peça nenhum dado à pessoa." : "") +
       " O cartão do programa aparece logo abaixo da sua fala. Em uma frase curta, diga como ficou" + (avisoDeCategoria(r2.provas) ? " e aponte a pergunta da categoria." : " e que dá para seguir."),
       cartaoPrograma);
   }
@@ -3431,6 +3438,9 @@
           naoPular(x.cartao);
           naoTrocar(x.cartao);
           if (jaNaTela(x.cartao, x.prova)) return "esse cartão já está na tela: ele desce para logo abaixo da sua fala. Não precisa pedir de novo.";
+          // o mesmo pedido duas vezes na mesma resposta vira um cartão só
+          // (no teste da versão 24, "Raias da 1ª prova" apareceu fechado em cima do cartão novo)
+          if (conv.pendentes.some((p) => p.cartao === x.cartao && String(p.prova || "") === String(x.prova || ""))) return "esse cartão já vai aparecer depois da sua resposta.";
           conv.pendentes.push({ cartao: x.cartao, prova: x.prova });
           return "o cartão vai aparecer logo depois da sua resposta";
         },
@@ -4276,7 +4286,9 @@ Regras:
         if (v.num !== num) return false;
         let comum = 0;
         for (const x of w) if (v.w.has(x)) comum++;
-        return comum / (w.size + v.w.size - comum) >= 0.6 || comum / w.size >= 0.85;
+        // 0,6: no teste da versão 24, "Os arquivos estão liberados, porque a conferência não tem mais nenhum
+        // problema vermelho" repetia a frase de cima com 64% das palavras; as respostas boas ficaram abaixo disso
+        return comum / (w.size + v.w.size - comum) >= 0.6 || comum / w.size >= 0.6;
       });
       if (!igual) vistos.push({ w, num });
       return !igual;
@@ -4292,7 +4304,7 @@ Regras:
   // só na prévia privada: o detalhe técnico de uma falha, fechado, para o dono mandar
   const naPrevia = () => /prévia/i.test(document.title);
   // o número da prévia, à vista só nela: o celular às vezes abre uma versão guardada
-  const VERSAO_PREVIA = "24";
+  const VERSAO_PREVIA = "25";
   const detalheDoErro = (t) => `<details class="detalhe-erro"><summary>detalhe</summary><p>${AT(t)}</p></details>`;
 
   const RAIA_PENSANDO = `<div class="raia-ia"><span class="nadador-ia">${NADADOR}</span></div>
