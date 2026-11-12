@@ -867,6 +867,16 @@
    * impossível, que mostra a leitura ao lado da alternativa e deixa o árbitro
    * escolher, em vez de trocar o tempo dele por conta própria.
    */
+  /* "41 seg", "41s", "41 segundos" e "1min05" são tempos com a unidade
+     escrita. No teste grande de 12/11/2026, "41 seg" ia como sem tempo, e a
+     única opção oferecida era "Sem tempo". */
+  function semUnidades(t) {
+    return String(t).toLowerCase()
+      .replace(/\s*(minutos?|min|m)\s*(?=\d)/g, ":")
+      .replace(/\s*(segundos?|segs?|sec|s)\.?\s*$/, "")
+      .trim();
+  }
+
   function lerTempo(v) {
     if (v == null || v === "") return null;
     if (typeof v === "number") return isFinite(v) && v > 0 ? v : null;
@@ -877,7 +887,7 @@
     // errada em vez de ir para as primeiras, junto com quem não tem tempo.
     if (/^9{1,2}[:.,]9{2}([:.,]9{1,2})?$/.test(t)) return null;
     // 1'02"35 é 1:02.35 escrito do jeito antigo
-    t = t.replace(/[’']/g, ":").replace(/[”"]/g, ".").replace(/,/g, ".");
+    t = semUnidades(t.replace(/[’']/g, ":").replace(/[”"]/g, ".").replace(/,/g, "."));
     if (/[^0-9:.\s]/.test(t)) return null;
     const partes = t.split(/[:.]/).map((x) => x.trim()).filter((x) => x !== "");
     if (!partes.length || partes.some((x) => !/^\d+$/.test(x))) return null;
@@ -931,8 +941,8 @@
    * um tempo plausível para a distância. É o que vira o botão da conferência.
    */
   function alternativasDeTempo(texto, distancia) {
-    const t = String(texto == null ? "" : texto).trim()
-      .replace(/[’']/g, ":").replace(/[”"]/g, ".").replace(/,/g, ".");
+    const t = semUnidades(String(texto == null ? "" : texto).trim()
+      .replace(/[’']/g, ":").replace(/[”"]/g, ".").replace(/,/g, "."));
     if (!t || /[^0-9:.\s]/.test(t)) return [];
     const partes = t.split(/[:.]/).map((x) => x.trim()).filter((x) => x !== "");
     if (partes.some((x) => !/^\d+$/.test(x))) return [];

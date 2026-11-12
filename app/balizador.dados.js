@@ -1720,7 +1720,54 @@
     return saida;
   }
 
+  /* Categoria escrita quase igual a outra do mesmo programa: "INFATIL" numa
+     prova e INFANTIL em várias. O app não sabe qual é a certa, então só
+     aponta, para a pessoa decidir. No teste grande de 12/11/2026, quem notou
+     foi o Mars, e a pessoa não tinha onde corrigir. Só conta palavra longa
+     sem número: PETIZ 1 e PETIZ 2, ou MIRIM I e MIRIM II, são categorias
+     diferentes de verdade. */
+  function categoriasParecidas(provas) {
+    const lev = (a, b) => {
+      const d = Array.from({ length: b.length + 1 }, (_, j) => j);
+      for (let i = 1; i <= a.length; i++) {
+        let ant = d[0];
+        d[0] = i;
+        for (let j = 1; j <= b.length; j++) {
+          const t = d[j];
+          d[j] = Math.min(d[j] + 1, d[j - 1] + 1, ant + (a[i - 1] === b[j - 1] ? 0 : 1));
+          ant = t;
+        }
+      }
+      return d[b.length];
+    };
+    const conta = new Map();
+    for (const p of provas || []) {
+      const c = String(p.categoria || "").trim();
+      if (c) conta.set(c, (conta.get(c) || 0) + 1);
+    }
+    const achadas = [];
+    for (const [rara, n] of conta) {
+      const pr = norm(rara).split(/\s+/);
+      for (const [comum, m] of conta) {
+        if (rara === comum || m <= n || m < 2) continue;
+        const pc = norm(comum).split(/\s+/);
+        if (pr.join(" ") === pc.join(" ") || pr.length !== pc.length) continue;
+        const dif = pr.map((w, k) => [w, pc[k]]).filter(([a, b]) => a !== b);
+        if (dif.length !== 1) continue;
+        const [a, b] = dif[0];
+        if (a.length < 5 || b.length < 5 || /\d/.test(a + b)) continue;
+        if (lev(a, b) > (b.length > 6 ? 2 : 1)) continue;
+        achadas.push({ de: rara, para: comum, vezes: n, outras: m,
+          // o número é a posição na lista, o mesmo do balizamento e do cartão (não o da coluna Nº)
+          numeros: (provas || []).map((p, i) => (String(p.categoria || "").trim() === rara ? i + 1 : null)).filter((x) => x != null) });
+        break;
+      }
+    }
+    return achadas;
+  }
+
   const api = {
+    categoriasParecidas,
     lerCabecalhoProva, lerPlanilhaBlocos, lerPlanilhaLinhas, categoriaDaAba, chaveCategoria,
     lerPlanilhaLista, lerCabecalhoLista, ehAbaLista,
     lerPrograma, lerLinhaPrograma, chaveProva, conferirPlanilha, gerarModelo,

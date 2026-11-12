@@ -4224,7 +4224,9 @@
           caso: `${CX(r.nome)} (${CX(r.equipe)}) aparece duas vezes na ${nomeProva(p)}, ${r.motivo}.`,
           pergunta: `Posso tirar a inscrição repetida, da linha ${r.linha}?`,
           aplicar: () => { estado.ajustes.removidas.add(chaveDaLinha(r)); fim(); },
-          feito: `A inscrição repetida de ${CX(r.nome)} saiu.` });
+          feito: `A inscrição repetida de ${CX(r.nome)} saiu.`,
+          // para a cena do cartão: quem, em que prova e por quê, em pedaços
+          rep: { nome: CX(r.nome), equipe: CX(r.equipe), prova: nomeProva(p), motivo: r.motivo } });
       }
     }
 
@@ -4240,6 +4242,7 @@
                    : `${CX(t.nome)} ficou sem tempo.`,
         // para a pergunta com opções: as leituras que cabem na prova, sem tempo, ou o que a pessoa escrever
         tempo: { distancia: t.metros + "M", texto: t.texto, nome: CX(t.nome), prova: `${t.prova}ª ${t.titulo}`,
+                 lido: B.formatarTempo(t.tempo), metros: t.metros,
                  opcoes: t.alternativas.map((a) => ({ segundos: a.segundos, como: a.como })),
                  definir: (seg) => { estado.ajustes.tempos[chaveDaLinha(t.item)] = seg; fim(); } } });
     }
@@ -4262,8 +4265,13 @@
 
     const comDona = new Set(propostas.map((pr) => pr.origem.chave));
     for (const p of estado.provas.filter((x) => x.foraDoPrograma && x.series.length && !comDona.has(x.chave))) {
+      // quem está na prova: no teste grande, a pessoa perguntou "quem são as duas?", e nem o cartão nem o Mars sabiam
+      const nela = p.series.flatMap((s) => s.linhas.map((l) => l.item)).concat(p.cortados || [])
+        .map((it) => `${it.revezamento ? it.equipe : it.nome}${it.equipe && !it.revezamento ? " (" + it.equipe + ")" : ""}`);
       P.push({ id: "fora|" + p.chave, bloco: "foraPrograma",
         caso: `A ${nomeProva(p)} tem ${p.atletas} atleta(s), mas não está no programa.`,
+        quem: nela.slice(0, 6).join(", ") + (nela.length > 6 ? ` e mais ${nela.length - 6}` : ""),
+        dica: "O app não troca a prova de ninguém aqui: ele tira a prova do balizamento (Sim) ou deixa para decidir depois (Não). Para pôr o atleta noutra prova, a ficha precisa ser corrigida e enviada de novo, ou a inscrição corrigida na tela completa.",
         pergunta: "Posso tirar esta prova do balizamento e das papeletas?",
         aplicar: () => {
           for (const s of p.series) for (const l of s.linhas) estado.ajustes.removidas.add(chaveDaLinha(l.item));
@@ -4291,6 +4299,10 @@
         if (!sai.length) continue;
         P.push({ id: bloco + "|" + chave, bloco, escolha: true,
           caso: `${CX(a.nome)} (${CX(a.equipe)}) ${porque(a)}.`,
+          // para a cena: as provas do atleta, as que ficam e a que sai (no teste grande, aqui caía a cena genérica)
+          provas: minhas.map((x) => ({ numero: x.p.numero, titulo: x.p.titulo, sai: sai.includes(x) })),
+          regra: bloco === "limites" ? `o limite é ${teto} provas por atleta`
+            : bloco === "categorias" ? "cada atleta nada numa categoria só" : "cada atleta nada num naipe só",
           pergunta: `Sugestão: ficar com ${fica.map((x) => x.p.numero + "ª").join(", ")} e tirar ` +
                     `${sai.map((x) => x.p.numero + "ª " + x.p.titulo).join(", ")}. Posso aplicar?`,
           aplicar: () => {

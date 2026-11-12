@@ -1906,3 +1906,249 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
 .desfazer-linha .link{font-size:.92rem}
 .rot-linha{display:flex;justify-content:space-between;align-items:baseline;gap:.2rem .8rem;flex-wrap:wrap}
 .rot-linha .link{font-size:.88rem}
+
+/* =====================================================================
+   O que o Mars faz por conta própria: o cartão dele (a faixa amarela no
+   topo), a nota dele num cartão do app, o botão que ele sugere e a
+   resposta pronta que ele acrescenta.
+   ===================================================================== */
+.cartao-conversa[data-tipo="mars"]{border-top-color:var(--amarelo)}
+.falas-mars{display:flex;flex-direction:column;gap:.35rem}
+.falas-mars p{margin:0;font-size:1.04rem;line-height:1.5;max-width:68ch}
+.nota-mars{margin:0;padding:.45rem .7rem;border-radius:6px;background:var(--papel2);
+  border-left:3px solid var(--amarelo);font-size:.98rem;line-height:1.45}
+.nota-mars > b:first-child{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;
+  text-transform:uppercase;margin-right:.5em;color:var(--suave)}
+.opcoes-linha.resposta-mars{margin:0}
+.opcao-linha.resposta-mars{border-color:var(--amarelo)}
+/* o botão que o Mars sugere: um contorno, e a etiqueta ao lado (o botão
+   amarelo usa o ::after para a corda da raia, por isso nada de ::after aqui) */
+[data-mars-sugere]{outline:2px solid var(--amarelo);outline-offset:3px}
+.selo-sugere{display:inline-block;align-self:center;font-family:var(--mono);font-size:.66rem;letter-spacing:.04em;
+  font-weight:500;color:#1B1A10;background:var(--amarelo);border-radius:4px;padding:.12rem .4rem;white-space:nowrap}
+.correcao-unica .nota-mars{background:#F4F7F8;color:#1A2B31}
+/* a explicação de cada opção usa a largura toda; a etiqueta fica na linha do rótulo */
+.opcao-linha{grid-template-areas:"rot tag" "exp exp"}
+.opcao-linha span{margin-top:.1rem}
+@media (max-width:640px){
+  .opcao-linha[data-mars] span{font-size:.8rem;line-height:1.3}
+}
+/* só na prévia: o detalhe técnico de uma falha, fechado */
+.detalhe-erro{margin-top:.3rem;font-size:.75rem;color:var(--suave)}
+.detalhe-erro summary{cursor:pointer;font-family:var(--mono);letter-spacing:.04em}
+.detalhe-erro p{margin:.25rem 0 0;font-family:var(--mono);word-break:break-word}
+
+/* =====================================================================
+   As cenas do Mars: o jeito dos quadros da página do GitHub, pequeno e
+   dentro da fala. Pouco texto, muito para entender de uma olhada. Tocar
+   na cena repete. Quem pede menos movimento vê o fim direto.
+   ===================================================================== */
+.cena-mars{margin:.65rem 0 .15rem;padding:.75rem .8rem .7rem;border-radius:6px;background:rgba(0,0,0,.22);width:min(24rem,72vw);box-sizing:border-box;
+  border:1px solid var(--linha);display:flex;flex-direction:column;gap:.55rem;cursor:pointer;overflow:hidden;
+  max-width:26rem}
+.cena-mars figcaption{font-size:.86rem;color:var(--suave);line-height:1.35}
+.cena-mars .nadador-svg{width:2.2rem;height:auto;display:block}
+.cena-mars .nadador-svg .corpo,.cena-mars .nadador-svg .braco,.cena-mars .nadador-svg .esteira{fill:none;stroke:var(--tinta);stroke-width:2;stroke-linecap:round}
+.cena-mars .nadador-svg .touca{fill:var(--amarelo)}
+
+/* a célula: o que estava escrito, o nadador atravessa, e o certo chega */
+.cm-palco{display:flex;flex-direction:column;gap:.35rem}
+.cm-cel{font-family:var(--mono);font-size:.88rem;line-height:1.35;padding:.32rem .6rem;border-radius:5px;
+  overflow-wrap:anywhere;align-self:flex-start;max-width:100%}
+.cm-ruim{background:#F4F7F8;color:#1A2B31;outline:2px solid #E5675B;outline-offset:-2px;
+  animation:cmChega .5s cubic-bezier(.2,.8,.2,1) both,cmPisca .45s .55s 2 ease-in-out}
+.cm-raia{position:relative;height:1.5rem;border-bottom:2px dashed rgba(255,255,255,.22)}
+.cm-raia .cm-nadador{position:absolute;top:50%;left:0;transform:translateY(-50%);animation:cmNada 1.1s .8s ease-in-out both}
+.cm-bom{background:var(--bom-fraca);color:var(--tinta);border:1px solid var(--bom);display:flex;gap:.5rem;align-items:center;
+  animation:cmSurge .45s 1.8s cubic-bezier(.2,.8,.2,1.3) both}
+.cm-bom i{font-style:normal;color:var(--bom);font-weight:800}
+.cm-descartado{margin:0;font-size:.82rem;color:var(--suave);animation:cmSurge .4s 2.2s both}
+.cm-descartado s{font-family:var(--mono);text-decoration-color:#E5675B;text-decoration-thickness:2px}
+@keyframes cmChega{from{opacity:0;transform:translateY(.6rem) rotate(-2deg)}to{opacity:1;transform:none}}
+@keyframes cmPisca{50%{background:#F6AFA7}}
+@keyframes cmNada{from{left:0;opacity:0}15%{opacity:1}to{left:calc(100% - 2.2rem);opacity:1}}
+@keyframes cmSurge{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:none}}
+
+/* a inscrição repetida: as duas chegam, a de baixo sai, fica uma */
+.cm-linhas{display:flex;flex-direction:column;gap:.3rem}
+.cm-linha{font-family:var(--mono);font-size:.86rem;line-height:1.35;background:#F4F7F8;color:#1A2B31;border-radius:5px;
+  padding:.3rem .6rem;display:flex;gap:.5rem;align-items:center;justify-content:space-between;overflow-wrap:anywhere;
+  animation:cmChega .45s both}
+.cm-linha em{font-style:normal;font-size:.7rem;background:#E5675B;color:#2A0D0A;border-radius:4px;padding:.05rem .35rem;flex:none}
+.cm-linha.cm-sai{animation:cmChega .45s .2s both,cmSai .7s 1.6s ease-in forwards}
+.cm-fica{margin:0;font-size:.86rem;color:var(--bom);font-weight:600;animation:cmSurge .4s 2.3s both}
+@keyframes cmSai{to{opacity:0;transform:translateX(110%);max-height:0;padding-block:0;margin-top:-.3rem}}
+
+/* as raias: os atletas mergulham do mais rápido ao mais lento, e o
+   mais rápido fica no meio */
+.cm-titulo{margin:0;font-family:var(--mono);font-size:.74rem;letter-spacing:.04em;color:var(--suave)}
+.cm-piscina{display:flex;flex-direction:column;border-radius:5px;overflow:hidden;background:rgba(69,184,198,.08)}
+.cm-raia-linha{display:flex;align-items:center;gap:.6rem;min-height:1.75rem;padding:.12rem .5rem;border-bottom:2px dashed rgba(255,255,255,.16)}
+.cm-raia-linha:last-child{border-bottom:0}
+.cm-raia-linha > b{font-family:var(--mono);color:var(--amarelo);width:1rem;font-weight:500;font-size:.82rem}
+.cm-raia-linha.cm-meio{background:rgba(242,193,78,.09)}
+.cm-atleta{display:inline-flex;align-items:baseline;gap:.45rem;background:var(--tinta);color:var(--papel);border-radius:999px;
+  padding:.08rem .6rem;font-size:.8rem;font-weight:600;white-space:nowrap;max-width:85%;overflow:hidden;text-overflow:ellipsis;
+  animation:cmMergulha .55s var(--d,0s) cubic-bezier(.2,.8,.2,1) both}
+.cm-atleta small{font-family:var(--mono);font-weight:500;font-size:.72rem;opacity:.75}
+@keyframes cmMergulha{from{opacity:0;transform:translateX(-1.6rem) scale(.9)}to{opacity:1;transform:none}}
+
+/* as etapas: as feitas cheias, a da vez com o nadador, as outras esperando */
+.cena-etapas{gap:.3rem}
+.cm-etapa{display:grid;grid-template-columns:1.5rem 6.2rem minmax(0,1fr);align-items:center;gap:.5rem;font-size:.86rem;
+  color:var(--suave);animation:cmChega .4s var(--d,0s) both}
+.cm-etapa b{width:1.4rem;height:1.4rem;border-radius:50%;display:grid;place-items:center;font-size:.72rem;
+  border:1px solid var(--linha);font-family:var(--mono);font-weight:500}
+.cm-faixa{position:relative;height:1.3rem;border-bottom:2px dashed rgba(255,255,255,.14)}
+.cm-etapa.cm-feita{color:var(--tinta)}
+.cm-etapa.cm-feita b{background:var(--bom);border-color:var(--bom);color:#06221A}
+.cm-etapa.cm-feita .cm-faixa{border-bottom:2px solid var(--bom)}
+.cm-etapa.cm-atual{color:var(--tinta);font-weight:600}
+.cm-etapa.cm-atual b{background:var(--amarelo);border-color:var(--amarelo);color:#1B1A10}
+.cm-etapa.cm-atual .cm-nadador{position:absolute;top:50%;transform:translateY(-50%);animation:cmVaiVolta 2.6s .6s ease-in-out infinite alternate}
+@keyframes cmVaiVolta{from{left:0}to{left:calc(100% - 2.2rem)}}
+
+/* "ver mais": o resto de uma fala longa do Mars, fechado */
+.mais-mars{margin-top:.15rem}
+.mais-mars summary{cursor:pointer;color:var(--amarelo);font-size:.9rem;text-decoration:underline;text-underline-offset:3px;width:max-content}
+.mais-mars[open] summary{margin-bottom:.4rem}
+
+@media (prefers-reduced-motion: reduce){
+  .cena-mars *{animation:none!important}
+  .cm-linha.cm-sai{display:none}
+  .cm-raia .cm-nadador{left:auto;right:0}
+}
+/* a fala do Mars: o texto num bloco, as cenas noutro, os dois na mesma caixa */
+.corpo-fala{display:flex;flex-direction:column;gap:.5rem;min-width:0}
+.cenas-da-fala{display:flex;flex-direction:column;gap:.5rem;min-width:0}
+.cenas-da-fala .cena-mars{margin:.1rem 0 0}
+.fala.pensando .cenas-da-fala{display:none}
+
+/* =====================================================================
+   As cenas dos cartões fixos: cada cartão dos cinco passos mostra a sua
+   informação antes de ela virar pergunta, no jeito das cenas do Mars.
+   ===================================================================== */
+.cena-cartao{display:flex;flex-direction:column;gap:.4rem;min-width:0}
+
+/* o que está em vermelho na planilha, célula por célula */
+.cena-vermelhas{gap:.35rem}
+.cv-linha{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:.6rem;animation:cmChega .45s var(--d,0s) both}
+.cv-cel{font-family:var(--mono);font-size:.84rem;background:#F4F7F8;color:#1A2B31;border-radius:5px;padding:.22rem .55rem;
+  outline:2px solid #E5675B;outline-offset:-2px;max-width:11rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  animation:cmPisca .5s calc(var(--d,0s) + .45s) 2 ease-in-out}
+.cv-nota{font-size:.9rem;line-height:1.3;color:var(--tinta);display:flex;flex-direction:column;min-width:0}
+.cv-nota small{font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;color:var(--suave);text-transform:uppercase}
+
+/* o programa em pastilhas: uma por prova, em grupos por etapa */
+.tr-conta{margin:0;font-size:.95rem;color:var(--suave);display:flex;align-items:baseline;gap:.35rem;flex-wrap:wrap}
+.tr-conta b{font-family:var(--display);font-size:1.5rem;line-height:1;color:var(--tinta);font-variant-numeric:tabular-nums}
+.tr-grupos{display:flex;flex-wrap:wrap;gap:.45rem .9rem}
+.tr-grupo{display:flex;flex-direction:column;gap:.2rem}
+.tr-rot{font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;color:var(--suave);text-transform:uppercase}
+.tr-provas{display:flex;flex-wrap:wrap;gap:.22rem}
+.tr-provas i{font-style:normal;font-family:var(--mono);font-size:.72rem;min-width:1.55rem;height:1.55rem;display:grid;place-items:center;
+  border-radius:5px;background:var(--papel2);border:1px solid var(--linha);color:var(--tinta);animation:cmSurge .35s var(--d,0s) both}
+.tr-provas i.tr-rev{background:rgba(242,193,78,.16);border-color:var(--amarelo);color:var(--amarelo)}
+.tr-conta i.tr-rev{font-style:normal;font-family:var(--mono);font-size:.62rem;padding:.05rem .35rem;border-radius:4px;
+  border:1px solid var(--amarelo);color:var(--amarelo);background:rgba(242,193,78,.16);align-self:center}
+
+/* a mini piscina das raias e as provas por atleta, na competição */
+.mini-lugar{display:block;margin-top:.3rem;min-height:1.6rem}
+.mini-raias{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));height:1.6rem;border-radius:4px;overflow:hidden;
+  background:rgba(69,184,198,.14);border:1px solid var(--linha)}
+.mini-raias i{position:relative;border-left:1px dashed var(--linha)}
+.mini-raias i:first-child{border-left:0}
+.mini-raias i::after{content:"";position:absolute;left:50%;top:8%;width:.36rem;height:.36rem;margin-left:-.18rem;border-radius:50%;
+  background:var(--amarelo);animation:miniNada 1.8s var(--d,0s) ease-in-out infinite alternate}
+@keyframes miniNada{from{top:8%}to{top:calc(92% - .36rem)}}
+.mini-provas{display:flex;gap:.25rem;flex-wrap:wrap}
+.mini-provas i{font-style:normal;font-family:var(--mono);font-size:.7rem;padding:.12rem .45rem;border-radius:999px;
+  background:var(--papel2);border:1px solid var(--linha);color:var(--tinta);animation:cmSurge .3s var(--d,0s) both}
+
+/* a planilha caindo na zona de soltar */
+.zona-conversa .zona-icone{display:grid;place-items:end center;width:2.4rem;height:2.9rem;padding-bottom:.35rem;box-sizing:border-box;
+  border-radius:4px 10px 4px 4px;background:#F4F7F8;box-shadow:0 .4rem .8rem -.4rem rgba(0,0,0,.6);animation:zonaCai 3.2s ease-in-out infinite}
+.zona-conversa .zona-icone i{font-style:normal;font-family:var(--mono);font-size:.56rem;font-weight:700;color:#FFFFFF;background:#1F7A4D;
+  border-radius:3px;padding:.05rem .25rem}
+@keyframes zonaCai{0%{transform:translateY(-1.2rem) rotate(-8deg);opacity:0}25%{opacity:1}45%{transform:none}
+  55%{transform:translateY(-.2rem)}65%,85%{transform:none;opacity:1}100%{transform:translateY(.3rem);opacity:0}}
+
+/* o nome virando código, no pedido ao Mars */
+.troca-nome{display:grid;margin-top:.4rem;font-family:var(--mono)}
+.numeros .troca-nome > span{grid-area:1/1;justify-self:start;border-radius:999px;padding:.1rem .55rem;font-size:.78rem;
+  animation:tnTroca 4s infinite}
+.numeros .troca-nome .tn-nome{background:#F4F7F8;color:#1A2B31}
+.numeros .troca-nome .tn-cod{background:var(--info-fraca);color:var(--info);border:1px solid var(--info);animation-delay:-2s}
+@keyframes tnTroca{0%,40%{opacity:1;transform:none}50%,90%{opacity:0;transform:translateY(-.3rem)}100%{opacity:1;transform:none}}
+
+/* o atleta repetido e o tempo impossível, na folha branca do problema */
+.cena-rep{gap:.3rem}
+.cr-linha{font-family:var(--mono);font-size:.84rem;line-height:1.35;background:#F4F7F8;color:#1A2B31;border:1px solid #C9D6DA;border-radius:5px;
+  padding:.28rem .55rem;display:flex;justify-content:space-between;gap:.5rem;align-items:center;overflow-wrap:anywhere;animation:cmChega .45s both}
+.cr-linha.cr-repetida{border-color:#E5675B;animation:cmChega .45s .25s both,crMarca .5s .9s 2 ease-in-out}
+.cr-linha em{font-style:normal;font-size:.68rem;background:#E5675B;color:#2A0D0A;border-radius:4px;padding:.05rem .35rem;flex:none}
+@keyframes crMarca{50%{background:#FBE7E4}}
+.cr-motivo{margin:0;font-size:.86rem;color:#56707A}
+.lt-linha{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+.lt-escrito{font-family:var(--mono);font-size:.95rem;background:#F4F7F8;color:#1A2B31;border:2px solid #E5675B;border-radius:5px;
+  padding:.2rem .55rem;animation:cmChega .4s both,cmPisca .5s .5s 2 ease-in-out}
+.lt-vira{font-size:.8rem;color:#56707A;animation:cmSurge .3s .9s both}
+.lt-lido{font-family:var(--mono);font-size:.95rem;color:#A8261C;background:#FBE7E4;border-radius:5px;padding:.2rem .55rem;
+  display:flex;gap:.35rem;animation:cmSurge .4s 1.2s both}
+.lt-lido i{font-style:normal;font-weight:800}
+.lt-quem{margin:0;font-size:.86rem;color:#56707A;line-height:1.35}
+
+/* a linha da planilha reescrita: o que estava, e o que o Mars leu chegando por baixo */
+.cartao-linha .cl-antes{animation:cmChega .4s both}
+.cartao-linha .cl-seta{animation:cmSurge .3s .35s both}
+.cartao-linha .cl-depois{animation:clDesce .5s .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes clDesce{from{opacity:0;transform:translateY(-.6rem)}to{opacity:1;transform:none}}
+
+/* as correções do programa: o que vai ficar chega depois do que estava */
+.tabela-org.primeira .linha-org:not(.cabeca) .org-de{animation:cmChega .4s both}
+.tabela-org.primeira .linha-org:not(.cabeca) .org-vai{animation:cmSurge .45s .6s both}
+.tabela-org.primeira .linha-org:not(.cabeca):nth-child(3) .org-vai{animation-delay:1s}
+.tabela-org.primeira .linha-org:not(.cabeca):nth-child(4) .org-vai{animation-delay:1.4s}
+
+/* as linhas que vão para o Mars entram uma a uma */
+.cartao-conversa[data-tipo="proposta-programa"] .motivos-conv li,
+.cartao-conversa[data-tipo="provas-ia"] .motivos-conv li{animation:cmChega .4s both}
+.cartao-conversa[data-tipo="proposta-programa"] .motivos-conv li:nth-child(2),
+.cartao-conversa[data-tipo="provas-ia"] .motivos-conv li:nth-child(2){animation-delay:.2s}
+.cartao-conversa[data-tipo="proposta-programa"] .motivos-conv li:nth-child(3),
+.cartao-conversa[data-tipo="provas-ia"] .motivos-conv li:nth-child(3){animation-delay:.4s}
+.cartao-conversa[data-tipo="provas-ia"] .motivos-conv li:nth-child(n+4){animation-delay:.6s}
+
+/* os arquivos, cada um com o seu ícone */
+.saida-conv{position:relative}
+.arq-icone{font-style:normal;font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.04em;flex:none;
+  width:2.2rem;height:2.7rem;display:grid;place-items:end center;padding-bottom:.3rem;box-sizing:border-box;border-radius:4px 10px 4px 4px;
+  background:#F4F7F8;color:#FFFFFF;box-shadow:inset 0 -1.05rem 0 var(--arq,#0B7285);animation:cmSurge .4s .35s both}
+.arq-pdf{--arq:#C8473B}
+.arq-papeletas{--arq:#0B7285}
+.arq-xlsx{--arq:#1F7A4D}
+.saidas-conv .saida-conv{padding-right:3.3rem}
+.saidas-conv .saida-conv .arq-icone{position:absolute;top:.6rem;right:.7rem}
+
+@media (prefers-reduced-motion: reduce){
+  .cena-cartao *,.zona-conversa .zona-icone,.numeros .troca-nome > span,.mini-raias i::after,.mini-provas i,
+  .cartao-linha .cl-antes,.cartao-linha .cl-seta,.cartao-linha .cl-depois,.tabela-org.primeira .org-de,.tabela-org.primeira .org-vai,
+  .arq-icone,.motivos-conv li{animation:none!important}
+  .numeros .troca-nome .tn-nome{display:none}
+}
+/* a nota da célula vermelha numa linha só: o "linha N" vai na frente */
+.cv-nota{display:block;font-size:.88rem}
+.cv-nota small{margin-right:.15rem}
+/* as raias da mini piscina bem marcadas, e altura para o nadador ir e voltar */
+.mini-raias{height:2rem}
+.mini-raias i{border-left:1px dashed color-mix(in srgb,var(--suave) 60%,transparent)}
+.versao-previa{font-family:var(--mono);font-size:.78em;color:var(--amarelo)}
+/* o chip neutro das listas: arquivos, nomes que viram código, provas que vão para o Mars */
+.cv-cel.cv-neutro{outline-color:var(--agua);animation:none}
+/* os chips neutros das listas (as conferências, os arquivos, os nomes) cabem inteiros */
+.cv-cel.cv-neutro{max-width:15rem}
+
+/* a linha que não entra: o depois também é ruim, com ✗ e sem o verde de certo
+   (no teste grande, "Não entra assim" aparecia com ✓) */
+.cm-bom.cm-fora{background:#FBEDEB;color:#1A2B31;border-color:#E5675B}
+.cm-bom.cm-fora i{color:#C2433A}
