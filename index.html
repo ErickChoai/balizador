@@ -355,11 +355,11 @@ p{margin:0}
    pessoa não ter surpresa ao chegar no claude.ai. */
 /* tudo cabe numa tela: título curto, passos em letra de leitura e o filme do
    tamanho do texto (13/11/2026: grande demais, cortava os passos) */
-.usar{padding-block:clamp(2.2rem,5vw,3.2rem);background:var(--agua2)}
+.usar{padding-block:clamp(1.6rem,3.5vw,2.4rem);background:var(--agua2)}
 .usar h2{font-size:clamp(1.7rem,3.4vw,2.4rem);line-height:1.05;max-width:none}
 .usar .texto-curto{color:var(--suave);max-width:46rem;margin-top:.6rem;font-size:1rem;line-height:1.5}
 .usar-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(1.2rem,3vw,2.4rem);align-items:center;margin-top:1.4rem}
-.usar-passos{list-style:none;margin:0;padding:0;display:grid;gap:.75rem;counter-reset:passo}
+.usar-passos{list-style:none;margin:0;padding:0;display:grid;gap:.6rem;counter-reset:passo}
 .usar-passos li{display:grid;grid-template-columns:1.9rem minmax(0,1fr);gap:.7rem;align-items:start}
 .usar-passos li::before{counter-increment:passo;content:counter(passo);display:grid;place-items:center;width:1.9rem;height:1.9rem;
   border-radius:50%;background:var(--amarelo);color:var(--agua);font-family:var(--display);font-size:1.05rem;font-weight:800}
@@ -367,7 +367,9 @@ p{margin:0}
 .usar-passos span{color:var(--suave);font-size:.95rem;line-height:1.45}
 .usar-nota{margin-top:1.1rem;color:var(--suave);font-size:.9rem;max-width:46rem}
 .usar .chamadas{margin-top:1.1rem}
-.usar-grade > div{max-width:34rem;width:100%;justify-self:end}
+.usar-filme{max-width:31rem;width:100%;justify-self:end}
+.usar-esq{display:flex;flex-direction:column;gap:1.2rem;min-width:0}
+.usar-esq .chamadas{margin-top:0}
 
 .ud-tela{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:#0B2A33;
   border:1px solid var(--linha);box-shadow:0 1rem 2rem rgba(0,0,0,.35);font-size:clamp(.62rem,1vw,.8rem)}
@@ -413,7 +415,7 @@ p{margin:0}
 @keyframes udP1{0%,34%{opacity:1} 37%,100%{opacity:0}}
 @keyframes udP2{0%,35%{opacity:0} 38%,49%{opacity:1} 52%,100%{opacity:0}}
 @keyframes udP3{0%,50%{opacity:0} 54%,97%{opacity:1} 100%{opacity:0}}
-@media (max-width:760px){.usar-grade{grid-template-columns:minmax(0,1fr)} .usar-grade > div{justify-self:stretch;max-width:none}}
+@media (max-width:760px){.usar-grade{grid-template-columns:minmax(0,1fr)} .usar-filme{justify-self:stretch;max-width:none}}
 @media (prefers-reduced-motion:reduce){
   .ud-nome,.ud-menu,.ud-dup,.ud-pronto,.ud-cursor,.ud-p1,.ud-p2,.ud-p3{animation:none!important}
   .ud-menu{opacity:1;transform:none} .ud-dup{background:var(--amarelo);color:#06222B}
@@ -504,13 +506,20 @@ body{font-size:16px}
     <h2>Use o Balizador no seu claude.ai</h2>
     <p class="texto-curto">O Balizador abre no claude.ai. Lá você vê uma prévia com respostas já preparadas. Para o Mars conversar com você ao vivo e ler as suas planilhas, faça uma cópia do Balizador na sua conta: ela leva um toque, e as suas planilhas ficam só com você.</p>
     <div class="usar-grade">
+      <div class="usar-esq">
       <ol class="usar-passos">
         <li><div><b>Abra o Balizador</b><span>Toque em Balizar com o Mars e entre com a sua conta do claude.ai.</span></div></li>
         <li><div><b>Toque em Balizador, no alto</b><span>É o nome da página, no canto de cima. Ele abre um menu.</span></div></li>
         <li><div><b>Toque em Duplicar</b><span>O claude.ai cria a sua cópia e já abre nela.</span></div></li>
         <li><div><b>Comece com as suas planilhas</b><span>Na sua cópia, o Mars responde pela sua conta. Na primeira fala, o claude.ai pede para você continuar.</span></div></li>
       </ol>
-      <div>
+      <!-- o botão fica junto dos passos: embaixo de tudo, a seção passava da tela (13/11/2026) -->
+      <div class="chamadas">
+        <a class="botao" href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener">Balizar com o Mars</a>
+        <a class="link-sec" href="anterior/">Prefere sem IA? Use a versão offline</a>
+      </div>
+      </div>
+      <div class="usar-filme">
         <div class="ud-tela" aria-hidden="true">
           <div class="ud-url"><i></i><i></i><i></i>claude.ai/artifact/…</div>
           <div class="ud-barra"><span class="ud-nome">Balizador <i></i></span><span class="ud-bola"></span></div>
@@ -523,10 +532,6 @@ body{font-size:16px}
       </div>
     </div>
     <p class="usar-nota">A cópia usa a sua conta do claude.ai, e o uso do Mars conta nos limites dela. Sem a cópia, a prévia continua aberta para quem quiser conhecer o Balizador.</p>
-    <div class="chamadas">
-      <a class="botao" href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener">Balizar com o Mars</a>
-      <a class="link-sec" href="anterior/">Prefere sem IA? Use a versão offline</a>
-    </div>
   </div>
 </section>
 
