@@ -15,7 +15,8 @@ const fs = require("fs");
 const path = require("path");
 
 const AQUI = __dirname;
-const ler = (p) => fs.readFileSync(path.join(AQUI, p), "utf8");
+// o BOM do começo de um arquivo vira uma linha vazia no HTML: no corpo.html, era uma faixa de 28 px acima do topo
+const ler = (p) => fs.readFileSync(path.join(AQUI, p), "utf8").replace(/^﻿/, "");
 
 const partes = {
   xlsx: ler("node_modules/xlsx/dist/xlsx.full.min.js"),

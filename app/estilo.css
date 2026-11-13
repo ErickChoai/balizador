@@ -2294,3 +2294,12 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
 .abertura-conv .caminho.duplicar .passos-dup b,.fim-dup .passos-dup b{font-family:inherit;font-size:1em;line-height:inherit;font-weight:700;color:var(--tinta)}
 .abertura-conv .caminho.duplicar .dup-texto > span{font-size:1.08em}
 .caminho.duplicar .passos-dup{font-size:1.06em}
+
+/* os cartões da conversa acompanham o tamanho do que trazem: o cartão curto
+   não fica largo e vazio (13/11/2026); o que mostra tabela, planilha, raias
+   ou arquivos usa a largura toda */
+.fio > .cartao-conversa{width:fit-content;min-width:min(100%,30rem);max-width:100%}
+.fio > .cartao-conversa:is([data-tipo="raias"],[data-tipo^="folha"],[data-tipo="organizada"],[data-tipo="arquivos"],
+  [data-tipo="conferencia"],[data-tipo="problema"],[data-tipo="revisao"],[data-tipo="correcoes-programa"],[data-tipo="inscritos"]){width:auto}
+/* a abertura usa mais da largura da tela: menos vazio dos lados (13/11/2026) */
+.abertura-conv{max-width:76em}

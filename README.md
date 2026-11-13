@@ -10,8 +10,7 @@ Criado por Erick Choai.
 |---|---|
 | Página de entrada | https://erickchoai.github.io/balizador/ |
 | Balizador no claude.ai, com o Mars | https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6 |
-| Versão sem IA, que funciona sem internet | https://erickchoai.github.io/balizador/app/ |
-| Versão de antes da IA | https://erickchoai.github.io/balizador/anterior/ (etiqueta `site-antes-da-ia`) |
+| Versão offline, sem IA | https://erickchoai.github.io/balizador/anterior/ (etiqueta `site-antes-da-ia`) |
 
 ## Como usar no seu claude.ai
 
