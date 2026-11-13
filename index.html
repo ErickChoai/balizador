@@ -347,6 +347,76 @@ p{margin:0}
   *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   .q4 .nadador{opacity:1}
 }
+
+/* ---------- como usar o Balizador no seu claude.ai ----------
+   O Mars só conversa na conta de quem tem o Balizador. Quem chega pelo link
+   vê uma prévia e duplica o Balizador para a própria conta: o filme abaixo
+   mostra o toque em "Balizador", o "Duplicar" e a cópia pronta, para a
+   pessoa não ter surpresa ao chegar no claude.ai. */
+.usar{padding-block:clamp(3rem,7vw,4.5rem);background:var(--agua2)}
+.usar h2{font-size:clamp(2rem,5vw,3.1rem);line-height:1;max-width:22ch}
+.usar .texto-curto{color:var(--suave);max-width:40rem;margin-top:.9rem;font-size:1.08rem}
+.usar-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:2rem;align-items:center;margin-top:2rem}
+.usar-passos{list-style:none;margin:0;padding:0;display:grid;gap:1rem;counter-reset:passo}
+.usar-passos li{display:grid;grid-template-columns:2.4rem minmax(0,1fr);gap:.8rem;align-items:start}
+.usar-passos li::before{counter-increment:passo;content:counter(passo);display:grid;place-items:center;width:2.4rem;height:2.4rem;
+  border-radius:50%;background:var(--amarelo);color:var(--agua);font-family:var(--display);font-size:1.3rem;font-weight:800}
+.usar-passos b{display:block;font-family:var(--display);font-size:1.35rem;line-height:1.1;margin-bottom:.15rem}
+.usar-passos span{color:var(--suave)}
+.usar-nota{margin-top:1.4rem;color:var(--suave);font-size:.95rem;max-width:40rem}
+.usar .chamadas{margin-top:1.6rem}
+
+.ud-tela{position:relative;aspect-ratio:16/10;border-radius:14px;overflow:hidden;background:#0B2A33;
+  border:1px solid var(--linha);box-shadow:0 1.2rem 2.4rem rgba(0,0,0,.35);font-size:clamp(.72rem,1.4vw,.95rem)}
+.ud-url{position:absolute;inset:0 0 auto 0;height:9%;display:flex;align-items:center;gap:.5em;padding:0 3%;
+  background:#04161C;color:var(--suave);font-family:var(--mono);font-size:.85em}
+.ud-url i{width:.6em;height:.6em;border-radius:50%;background:var(--linha)}
+.ud-barra{position:absolute;top:9%;left:0;right:0;height:11%;display:flex;align-items:center;justify-content:space-between;
+  padding:0 4%;background:rgba(0,0,0,.3);border-bottom:1px solid var(--linha);color:var(--espuma)}
+.ud-nome{font-weight:700;display:flex;align-items:center;gap:.4em;padding:.15em .5em;border-radius:.4em;animation:udNome 8s infinite}
+.ud-nome i{width:.45em;height:.45em;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-.15em)}
+.ud-bola{width:1.5em;height:1.5em;border-radius:50%;background:var(--verde)}
+.ud-pagina{position:absolute;inset:26% 6% 6% 6%;display:grid;gap:.7em;align-content:start}
+.ud-pagina b{font-family:var(--display);font-size:1.9em;line-height:1;color:var(--espuma)}
+.ud-pagina span{height:.7em;border-radius:.35em;background:var(--linha)}
+.ud-pagina .ud-cartao{height:auto;display:block;padding:.7em .9em;border-radius:.7em;border:1px solid var(--amarelo);
+  background:rgba(242,193,78,.12);color:var(--espuma);font-weight:700;width:70%}
+.ud-menu{position:absolute;top:18%;left:3%;width:40%;height:52%;display:grid;grid-template-rows:repeat(4,1fr);padding:.3em;
+  border-radius:.6em;background:#0F3B47;border:1px solid var(--linha);box-shadow:0 .8em 1.6em rgba(0,0,0,.45);color:var(--espuma);
+  opacity:0;transform:translateY(-.4em);animation:udMenu 8s infinite}
+.ud-menu span{display:flex;align-items:center;padding:0 .7em;border-radius:.4em;white-space:nowrap}
+.ud-dup{animation:udDup 8s infinite}
+.ud-pronto{position:absolute;top:22%;right:4%;width:52%;display:grid;gap:.3em;padding:.8em 1em;border-radius:.7em;
+  background:#0F3B47;border:1px solid var(--amarelo);box-shadow:0 .8em 1.6em rgba(0,0,0,.45);color:var(--espuma);
+  opacity:0;transform:scale(.92);animation:udPronto 8s infinite}
+.ud-pronto b{font-family:var(--display);font-size:1.3em}
+.ud-pronto span{color:var(--suave)}
+.ud-pronto em{font-style:normal;color:var(--verde);font-weight:700}
+.ud-cursor{position:absolute;width:1.7em;height:1.7em;fill:#fff;stroke:#06222B;stroke-width:1.4;
+  filter:drop-shadow(0 .1em .15em rgba(0,0,0,.5));animation:udCursor 8s infinite;transform-origin:20% 10%}
+@keyframes udCursor{
+  0%{left:78%;top:84%;opacity:0;transform:scale(1)} 6%{opacity:1}
+  20%{left:10%;top:12%;transform:scale(1)} 22%{transform:scale(.8)} 24%{transform:scale(1)}
+  38%{left:12%;top:52%;transform:scale(1)} 41%{transform:scale(.8)} 43%{transform:scale(1)}
+  52%{left:12%;top:52%;opacity:1} 60%,100%{left:30%;top:72%;opacity:0}}
+@keyframes udNome{0%,19%{background:transparent} 21%,27%{background:rgba(242,193,78,.35)} 31%,100%{background:transparent}}
+@keyframes udMenu{0%,23%{opacity:0;transform:translateY(-.4em)} 26%,46%{opacity:1;transform:none} 50%,100%{opacity:0;transform:translateY(-.4em)}}
+@keyframes udDup{0%,36%{background:transparent;color:inherit} 39%,47%{background:var(--amarelo);color:#06222B} 50%,100%{background:transparent}}
+@keyframes udPronto{0%,50%{opacity:0;transform:scale(.92)} 55%,94%{opacity:1;transform:none} 100%{opacity:0}}
+.ud-legenda{display:grid;margin-top:.9rem;min-height:1.8rem}
+.ud-legenda > span{grid-area:1/1;display:flex;align-items:center;gap:.6rem;opacity:0;color:var(--espuma)}
+.ud-legenda b{display:inline-grid;place-items:center;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--amarelo);color:#06222B;flex:none}
+.ud-p1{animation:udP1 8s infinite} .ud-p2{animation:udP2 8s infinite} .ud-p3{animation:udP3 8s infinite}
+@keyframes udP1{0%,34%{opacity:1} 37%,100%{opacity:0}}
+@keyframes udP2{0%,35%{opacity:0} 38%,49%{opacity:1} 52%,100%{opacity:0}}
+@keyframes udP3{0%,50%{opacity:0} 54%,97%{opacity:1} 100%{opacity:0}}
+@media (max-width:760px){.usar-grade{grid-template-columns:minmax(0,1fr)}}
+@media (prefers-reduced-motion:reduce){
+  .ud-nome,.ud-menu,.ud-dup,.ud-pronto,.ud-cursor,.ud-p1,.ud-p2,.ud-p3{animation:none!important}
+  .ud-menu{opacity:1;transform:none} .ud-dup{background:var(--amarelo);color:#06222B}
+  .ud-cursor{left:12%;top:52%}
+  .ud-legenda{gap:.4rem} .ud-legenda > span{grid-area:auto;opacity:1}
+}
 </style>
 </head>
 <body>
@@ -367,6 +437,7 @@ p{margin:0}
     <button type="button" class="menu-fechar" id="menuFechar" aria-label="Fechar o menu"><span></span><span></span></button></div>
   <div class="menu-lista">
     <a href="#abertura" data-secao="abertura"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</a>
+    <a href="#usar" data-secao="usar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>Como usar no seu claude.ai</a>
     <a href="#filme" data-secao="filme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8.5 5 3.5-5 3.5z"/></svg>Como funciona</a>
     <a href="#autor" data-secao="autor"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Quem fez</a>
     <a href="#regra" data-secao="regra"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="8" height="16" rx="1.5"/><rect x="13" y="4" width="8" height="16" rx="1.5"/></svg>Quem cuida de cada parte</a>
@@ -384,6 +455,38 @@ p{margin:0}
   <div class="dentro">
     <h1>Criado por um árbitro, para o bem do esporte!</h1>
     <p>Ele monta séries e raias, confere inscrições e gera PDF e papeletas. O Mars, assistente com inteligência artificial, arruma as planilhas bagunçadas.</p>
+    <div class="chamadas">
+      <a class="botao" href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener">Balizar com o Mars</a>
+      <a class="link-sec" href="#usar">Como usar no seu claude.ai</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ como usar: duplicar o Balizador para a própria conta ============ -->
+<section class="usar" id="usar">
+  <div class="dentro">
+    <h2>Use o Balizador no seu claude.ai</h2>
+    <p class="texto-curto">O Balizador abre no claude.ai. Lá você vê uma prévia com respostas já preparadas. Para o Mars conversar com você ao vivo e ler as suas planilhas, faça uma cópia do Balizador na sua conta: ela leva um toque, e as suas planilhas ficam só com você.</p>
+    <div class="usar-grade">
+      <ol class="usar-passos">
+        <li><div><b>Abra o Balizador</b><span>Toque em Balizar com o Mars e entre com a sua conta do claude.ai.</span></div></li>
+        <li><div><b>Toque em Balizador, no alto</b><span>É o nome da página, no canto de cima. Ele abre um menu.</span></div></li>
+        <li><div><b>Toque em Duplicar</b><span>O claude.ai cria a sua cópia e já abre nela.</span></div></li>
+        <li><div><b>Comece com as suas planilhas</b><span>Na sua cópia, o Mars responde pela sua conta. Na primeira fala, o claude.ai pede para você continuar.</span></div></li>
+      </ol>
+      <div>
+        <div class="ud-tela" aria-hidden="true">
+          <div class="ud-url"><i></i><i></i><i></i>claude.ai/artifact/…</div>
+          <div class="ud-barra"><span class="ud-nome">Balizador <i></i></span><span class="ud-bola"></span></div>
+          <div class="ud-pagina"><b>Criado por um árbitro</b><span style="width:80%"></span><span style="width:60%"></span><span class="ud-cartao">Use o Balizador completo na sua conta</span></div>
+          <div class="ud-menu"><span>Compartilhar</span><span>Exportar</span><span class="ud-dup">Duplicar</span><span>Atualizar</span></div>
+          <div class="ud-pronto"><b>Balizador (Copy)</b><span>Agora você está visualizando sua cópia.</span><em>O Mars ao vivo, na sua conta</em></div>
+          <svg class="ud-cursor" viewBox="0 0 24 24"><path d="M5 2.5l13.5 9.2-6.1 1.2 3.4 6.8-2.7 1.3-3.4-6.8-4.7 4.1z"/></svg>
+        </div>
+        <p class="ud-legenda" aria-hidden="true"><span class="ud-p1"><b>2</b> No alto, toque em Balizador</span><span class="ud-p2"><b>3</b> No menu, toque em Duplicar</span><span class="ud-p3"><b>4</b> A cópia é sua, com o Mars</span></p>
+      </div>
+    </div>
+    <p class="usar-nota">A cópia usa a sua conta do claude.ai, e o uso do Mars conta nos limites dela. Sem a cópia, a prévia continua aberta para quem quiser conhecer o Balizador.</p>
     <div class="chamadas">
       <a class="botao" href="https://claude.ai/artifact/2GoSak7GpAhsDbZLT6KLU6" target="_blank" rel="noopener">Balizar com o Mars</a>
       <a class="link-sec" href="app/">Prefere sem IA? Use a versão offline</a>

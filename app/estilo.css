@@ -2194,3 +2194,77 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
 
 /* várias fichas de uma vez: a fala da pessoa diz quantas, sem o "Planilha:" de uma só */
 .fala.eu .anexo.varias::before{content:none}
+
+/* ---------- duplicar o Balizador para a própria conta (quem não é dono) ----------
+   Um filme curto, em laço: o toque em "Balizador" no alto do claude.ai, o
+   menu, o "Duplicar" e a cópia pronta. Tudo em em, para crescer com a abertura. */
+.caminho.duplicar{cursor:default;gap:.5em}
+.caminho.duplicar:hover{transform:none}
+.caminho.duplicar > span{color:var(--suave);font-size:.95em;line-height:1.45}
+.caminho.duplicar.chamando{animation:chamarDup 1.1s ease 2}
+@keyframes chamarDup{0%,100%{box-shadow:inset 0 -4px 0 var(--amarelo)}
+  50%{box-shadow:inset 0 -4px 0 var(--amarelo),0 0 0 .35em rgba(242,193,78,.45)}}
+.caminho.duplicar details.mais{font-size:.9em}
+.passos-dup{margin:.4em 0 0;padding-left:1.2em;display:grid;gap:.2em;color:var(--tinta)}
+
+.cena-dup{display:grid;gap:.45em;margin-top:.2em}
+.cd-tela{position:relative;aspect-ratio:16/8.4;border-radius:.7em;overflow:hidden;
+  background:var(--papel2);border:1px solid var(--linha);font-size:.78em;color:var(--tinta)}
+.cd-barra{position:absolute;inset:0 0 auto 0;height:17%;display:flex;align-items:center;justify-content:space-between;
+  padding:0 4%;background:rgba(0,0,0,.28);border-bottom:1px solid var(--linha)}
+.cd-nome{font-weight:700;display:flex;align-items:center;gap:.35em;padding:.1em .4em;border-radius:.35em;
+  animation:cdNome 7s infinite}
+.cd-nome i{width:.45em;height:.45em;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
+  transform:rotate(45deg) translateY(-.15em)}
+.cd-bola{width:1.4em;height:1.4em;border-radius:50%;background:#2E9E6E}
+.cd-corpo{position:absolute;inset:26% 6% 8% 6%;display:grid;gap:9%;align-content:start}
+.cd-corpo span{height:.7em;border-radius:.35em;background:var(--linha)}
+.cd-corpo span:nth-child(1){width:70%;height:1.1em;background:var(--suave);opacity:.5}
+.cd-corpo span:nth-child(2){width:88%}
+.cd-corpo span:nth-child(3){width:46%;height:2.2em;background:rgba(242,193,78,.22);border:1px solid var(--amarelo)}
+.cd-corpo span:nth-child(4){width:60%}
+.cd-menu{position:absolute;top:19%;left:3%;width:42%;height:62%;display:grid;grid-template-rows:repeat(4,1fr);
+  padding:.25em;border-radius:.5em;background:var(--papel);border:1px solid var(--linha);
+  box-shadow:0 .6em 1.4em rgba(0,0,0,.35);opacity:0;transform:translateY(-.4em);animation:cdMenu 7s infinite}
+.cd-menu span{display:flex;align-items:center;padding:0 .6em;border-radius:.35em;white-space:nowrap}
+.cd-dup{animation:cdDup 7s infinite}
+.cd-pronto{position:absolute;top:24%;right:4%;width:54%;display:grid;gap:.25em;padding:.6em .8em;border-radius:.6em;
+  background:var(--papel);border:1px solid var(--amarelo);box-shadow:0 .6em 1.4em rgba(0,0,0,.35);
+  opacity:0;transform:scale(.92);animation:cdPronto 7s infinite}
+.cd-pronto b{font-family:var(--display);font-size:1.15em}
+.cd-pronto span{color:var(--suave)}
+.cd-cursor{position:absolute;width:1.5em;height:1.5em;fill:#fff;stroke:#0F2027;stroke-width:1.4;
+  filter:drop-shadow(0 .1em .15em rgba(0,0,0,.5));animation:cdCursor 7s infinite;transform-origin:20% 10%}
+@keyframes cdCursor{
+  0%{left:80%;top:82%;opacity:0;transform:scale(1)}
+  6%{opacity:1}
+  20%{left:11%;top:5%;transform:scale(1)}
+  22%{transform:scale(.8)} 24%{transform:scale(1)}
+  38%{left:14%;top:55%;transform:scale(1)}
+  41%{transform:scale(.8)} 43%{transform:scale(1)}
+  52%{left:14%;top:55%;opacity:1}
+  60%,100%{left:30%;top:70%;opacity:0}}
+@keyframes cdNome{0%,19%{background:transparent} 21%,26%{background:rgba(242,193,78,.35)} 30%,100%{background:transparent}}
+@keyframes cdMenu{0%,23%{opacity:0;transform:translateY(-.4em)} 26%,46%{opacity:1;transform:none}
+  50%,100%{opacity:0;transform:translateY(-.4em)}}
+@keyframes cdDup{0%,36%{background:transparent;color:inherit} 39%,47%{background:var(--amarelo);color:#0F2027} 50%,100%{background:transparent}}
+@keyframes cdPronto{0%,50%{opacity:0;transform:scale(.92)} 55%,92%{opacity:1;transform:none} 100%{opacity:0}}
+
+.cd-legenda{display:grid;margin:0;font-size:.95em;min-height:1.6em}
+.cd-legenda > span{grid-area:1/1;display:flex;align-items:center;gap:.5em;opacity:0}
+.cd-legenda b{display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;
+  background:var(--amarelo);color:#0F2027;font-size:.85em;flex:none}
+.cd-p1{animation:cdP1 7s infinite} .cd-p2{animation:cdP2 7s infinite} .cd-p3{animation:cdP3 7s infinite}
+@keyframes cdP1{0%,34%{opacity:1} 37%,100%{opacity:0}}
+@keyframes cdP2{0%,35%{opacity:0} 38%,49%{opacity:1} 52%,100%{opacity:0}}
+@keyframes cdP3{0%,50%{opacity:0} 54%,96%{opacity:1} 100%{opacity:0}}
+.fim-dup .cena-dup{max-width:30rem}
+
+@media (prefers-reduced-motion:reduce){
+  .cd-nome,.cd-menu,.cd-dup,.cd-pronto,.cd-cursor,.cd-p1,.cd-p2,.cd-p3,.caminho.duplicar.chamando{animation:none}
+  .cd-menu{opacity:1;transform:none} .cd-dup{background:var(--amarelo);color:#0F2027}
+  .cd-cursor{left:14%;top:55%}
+  .cd-legenda{gap:.3em} .cd-legenda > span{grid-area:auto;opacity:1}
+}
+/* a prévia, ao lado do cartão de duplicar, fica do tamanho do próprio texto */
+.sem-mars .abertura-conv .caminhos{align-items:start}

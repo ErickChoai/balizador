@@ -1495,7 +1495,8 @@
      existem: a etapa de IA e a conversa somem, e o resto funciona igual.
   ------------------------------------------------------------------ */
   // noClaude: a página está aberta dentro do claude.ai (com ou sem as funções)
-  const claudeApp = { sample: null, downloads: null, pronto: false, noClaude: false };
+  // viaServidor: fora do claude.ai, o Mars fala pelo servidor do Balizador (balizador.servidor.js)
+  const claudeApp = { sample: null, downloads: null, pronto: false, noClaude: false, viaServidor: false };
   // o app sem IA, no GitHub Pages, onde o download funciona para qualquer um
   const LINK_GITHUB = "https://erickchoai.github.io/balizador/app/";
   // onde o Balizador está publicado no claude.ai, com a IA e a conversa
@@ -1509,6 +1510,21 @@
       const [sample, downloads] = await Promise.all([usar("sample"), usar("downloads")]);
       claudeApp.sample = sample;
       claudeApp.downloads = downloads;
+    } else {
+      // fora do claude.ai (o site do GitHub): o Mars pelo servidor, quando ele está configurado.
+      // ?servidor=... só vale no computador do dono, para testar um servidor antes de publicar
+      const S = window.BalizadorServidor;
+      let url = S && S.ENDERECO;
+      try {
+        const teste = new URLSearchParams(location.search).get("servidor");
+        if (teste && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) url = teste;
+      } catch (e) { /* sem endereço */ }
+      // só no site do Balizador: o arquivo aberto do disco e cópias em outro endereço ficam sem o Mars
+      const noSite = /^(erickchoai\.github\.io|localhost|127\.0\.0\.1)$/.test(location.hostname);
+      if (S && url && noSite) {
+        claudeApp.sample = S.criar(url);
+        claudeApp.viaServidor = true;
+      }
     }
     claudeApp.pronto = true;
     // fora do claude.ai, o quadro para colar o resultado que veio de lá;

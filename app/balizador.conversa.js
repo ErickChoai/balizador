@@ -1238,9 +1238,6 @@
     montarAbertura();
     document.body.classList.add("na-abertura");
     $("#recomecar").hidden = true;
-    $("#semMarsAviso").hidden = true;
-    // quem não é dono vê logo como ter o Mars ao vivo: duplicar o artefato para a própria conta
-    $("#duplicarMars").hidden = !conv.semMars;
     $("#continuarConversa").hidden = !conv.comecou;
     window.scrollTo(0, 0);
     ajustarAbertura();
@@ -1267,16 +1264,8 @@
   }
 
   function escolherCaminho(caminho) {
-    /* Sem o Mars, as planilhas da pessoa esperam: o aviso diz como ter o Mars
-       (duplicar o artefato, testado em 13/11/2026 com outra conta: na cópia o
-       Mars responde pela conta de quem duplicou) ou seguir pelos cinco passos. */
-    if (conv.semMars && caminho === "minhas") {
-      $("#semMarsAviso").hidden = false;
-      $("#duplicarMars").hidden = true;
-      $("#recomecar").hidden = true;
-      ajustarAbertura();
-      return;
-    }
+    // sem o Mars, as planilhas da pessoa esperam a cópia: o cartão de duplicar chama a atenção
+    if (conv.semMars && caminho === "minhas") return chamarDuplicar();
     if (conv.comecou) {
       // já tem coisa feita: começar de novo é recarregar, com a escolha guardada
       const box = $("#recomecar");
@@ -1430,7 +1419,7 @@
       if (el) {
         const p = document.createElement("p");
         p.className = "aviso-reserva";
-        p.textContent = "Neste acesso, o Mars não responde ao vivo. Entrou a resposta preparada para esta demonstração, conferida pelo mesmo validador.";
+        p.textContent = "Nesta prévia, entrou a resposta já preparada do Mars, conferida pelo mesmo validador. Na sua cópia, ele responde ao vivo.";
         $(".corpo", el).appendChild(p);
       }
       return IA.conferirResposta(reserva, pedido.esquema);
@@ -2094,7 +2083,16 @@
       <div class="acoes-cartao">
         <button type="button" class="botao" data-acao="baixar_${q}">Baixar</button>
         <button type="button" class="link" data-acao="previa_${q}">ver a prévia</button></div></div>`;
-    const fim = conv.demo ? `<div class="fim-demo">
+    // sem o Mars ao vivo, o fim da prévia mostra o caminho para a cópia, no lugar das planilhas da pessoa
+    const fim = conv.demo && conv.semMars ? `<div class="fim-demo fim-dup">
+        <b>Fim da prévia. Agora, na sua conta</b>
+        <ul><li>O Mars corrigiu a lista de provas e reescreveu a ficha das escolas, com respostas já preparadas.</li>
+          <li>Na sua cópia, ele faz isso ao vivo, com as suas planilhas, que ficam só com você.</li></ul>
+        ${CENA_DUPLICAR}
+        <div class="acoes-cartao">
+          <button type="button" class="mini claro" data-recomecar="demo">Ver a prévia de novo</button>
+        </div></div>`
+      : conv.demo ? `<div class="fim-demo">
         <b>Fim da demonstração</b>
         <ul><li>O Mars corrigiu a lista de provas e reescreveu a ficha das escolas.</li>
           <li>O app conferiu tudo e montou as séries pela regra.</li></ul>
@@ -4881,6 +4879,13 @@ Regras:
     }
     // no claude.ai, o Balizador veste a noite na piscina da página de entrada
     document.documentElement.classList.add("noite");
+    // no site do GitHub, o Mars responde pelo servidor do Balizador, não pela conta de quem abriu
+    if (a.claudeApp.viaServidor) {
+      const g = $("#aberturaConv .garantia");
+      if (g && g.firstChild && g.firstChild.nodeType === 3) {
+        g.firstChild.nodeValue = "O Mars responde pelo servidor do Balizador, sem precisar de conta. Os nomes dos atletas vão para ele trocados por código. ";
+      }
+    }
     const lim = conv.sample ? await conv.sample.limits().catch(() => null) : null;
     conv.ferramentas = !!(lim && lim.tools);
     conv.maxFerramentas = (lim && lim.tools && Number(lim.tools.maxCount)) || 0;
@@ -4893,29 +4898,73 @@ Regras:
     try { caminho = sessionStorage.getItem(CHAVE_COMECAR); sessionStorage.removeItem(CHAVE_COMECAR); } catch (e) { /* sem memória */ }
     if (caminho === "demo" || (caminho === "minhas" && !conv.semMars)) return comecar(caminho);
     mostrarAbertura();
-    // "Começar com as minhas planilhas" no fim da demonstração, sem o Mars: o aviso já vem aberto
-    if (caminho === "minhas") { $("#semMarsAviso").hidden = false; $("#duplicarMars").hidden = true; ajustarAbertura(); }
+    if (caminho === "minhas") chamarDuplicar();
   }
 
-  /* A conversa sem o Mars ao vivo: a demonstração anda, e a caixa de mensagem
-     diz por quê. Em 13/11/2026 o dono viu que o Mars só responde na conta que
-     publicou o Balizador: outra conta, ou ninguém logado, fica sem ele. */
+  /* Duplicar o Balizador para a própria conta, mostrado como um filme curto:
+     o toque em "Balizador" no alto do claude.ai, o menu, o "Duplicar" e a
+     cópia pronta. Em 13/11/2026 o dono decidiu que quem não é dono usa o
+     Balizador completo assim: o Mars só responde na conta de quem publicou,
+     e na cópia a conta é da própria pessoa. */
+  const CENA_DUPLICAR = `<div class="cena-dup" aria-hidden="true">
+      <div class="cd-tela">
+        <div class="cd-barra"><span class="cd-nome">Balizador <i></i></span><span class="cd-bola"></span></div>
+        <div class="cd-corpo"><span></span><span></span><span></span><span></span></div>
+        <div class="cd-menu"><span>Compartilhar</span><span>Exportar</span><span class="cd-dup">Duplicar</span><span>Atualizar</span></div>
+        <div class="cd-pronto"><b>Balizador (Copy)</b><span>Agora você está visualizando sua cópia.</span></div>
+        <svg class="cd-cursor" viewBox="0 0 24 24"><path d="M5 2.5l13.5 9.2-6.1 1.2 3.4 6.8-2.7 1.3-3.4-6.8-4.7 4.1z"/></svg>
+      </div>
+      <p class="cd-legenda"><span class="cd-p1"><b>1</b> No alto, toque em Balizador</span><span class="cd-p2"><b>2</b> No menu, toque em Duplicar</span><span class="cd-p3"><b>3</b> A cópia é sua, com o Mars</span></p>
+    </div>`;
+  const PASSOS_DUPLICAR = `<ol class="passos-dup"><li>No alto da página, toque em <b>Balizador</b>.</li>
+      <li>No menu, toque em <b>Duplicar</b>.</li><li>Na sua cópia, o Mars conversa com você e lê as suas planilhas.</li></ol>`;
+
+  function cartaoDuplicar() {
+    return `<div class="caminho principal duplicar" id="duplicarMars">
+      <b>Use o Balizador completo na sua conta</b>
+      <span>A versão completa roda na sua própria conta do claude.ai. Assim o Mars conversa com você, e as suas planilhas ficam só com você.</span>
+      ${CENA_DUPLICAR}
+      <details class="mais"><summary>ver o passo a passo</summary>${PASSOS_DUPLICAR}</details>
+    </div>`;
+  }
+
+  // quem tenta usar as próprias planilhas sem a cópia: o cartão de duplicar pisca e aparece
+  function chamarDuplicar() {
+    const d = $("#duplicarMars");
+    if (!d) return;
+    d.classList.remove("chamando");
+    void d.offsetWidth;
+    d.classList.add("chamando");
+    d.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  /* A conversa sem o Mars ao vivo: a prévia da demonstração anda com as
+     respostas preparadas, e o caminho para o Balizador completo é a cópia.
+     Sem a cópia não há "minhas planilhas": sem o Mars, o app perde o sentido
+     (o dono, 13/11/2026). */
   function prepararSemMars() {
     document.body.classList.add("sem-mars");
     const g = $("#aberturaConv .garantia");
     if (g && g.firstChild && g.firstChild.nodeType === 3) {
-      g.firstChild.nodeValue = "Neste acesso, o Mars não conversa ao vivo. A demonstração usa as respostas já preparadas para este campeonato. ";
+      g.firstChild.nodeValue = "A prévia usa respostas já preparadas do Mars. Na sua cópia, ele responde ao vivo. ";
     }
-    const minhas = $('[data-caminho="minhas"] span');
-    if (minhas) minhas.textContent = "Para o Mars ler as suas, duplique o Balizador para a sua conta.";
+    const caminhos = $("#aberturaConv .caminhos");
+    if (caminhos && !$("#duplicarMars")) caminhos.insertAdjacentHTML("afterbegin", cartaoDuplicar());
+    const minhas = $('[data-caminho="minhas"]');
+    if (minhas) minhas.style.display = "none";
+    const demo = $('[data-caminho="demo"]');
+    if (demo) {
+      demo.classList.remove("principal");
+      const b = $("b", demo), s = $("span", demo);
+      if (b) b.textContent = "Ver uma prévia";
+      if (s) s.textContent = "A demonstração com as respostas já preparadas do Mars. Leva uns 3 minutos.";
+    }
     const caixa = $("#mensagem");
-    if (caixa) { caixa.disabled = true; caixa.placeholder = "Para conversar com o Mars, duplique o Balizador (menu no alto)."; }
+    if (caixa) { caixa.disabled = true; caixa.placeholder = "Na sua cópia do Balizador, o Mars conversa com você."; }
     const env = $("#enviarMensagem");
     if (env) env.disabled = true;
     const anexar = $("#compositor .anexar");
     if (anexar) anexar.style.display = "none";
-    const tela = $("#semMarsTela");
-    if (tela) tela.onclick = () => irParaTela("programa");
   }
 
   // o app avisa daqui o que aconteceu numa tela que a conversa abriu

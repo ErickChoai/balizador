@@ -2205,6 +2205,80 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
 /* várias fichas de uma vez: a fala da pessoa diz quantas, sem o "Planilha:" de uma só */
 .fala.eu .anexo.varias::before{content:none}
 
+/* ---------- duplicar o Balizador para a própria conta (quem não é dono) ----------
+   Um filme curto, em laço: o toque em "Balizador" no alto do claude.ai, o
+   menu, o "Duplicar" e a cópia pronta. Tudo em em, para crescer com a abertura. */
+.caminho.duplicar{cursor:default;gap:.5em}
+.caminho.duplicar:hover{transform:none}
+.caminho.duplicar > span{color:var(--suave);font-size:.95em;line-height:1.45}
+.caminho.duplicar.chamando{animation:chamarDup 1.1s ease 2}
+@keyframes chamarDup{0%,100%{box-shadow:inset 0 -4px 0 var(--amarelo)}
+  50%{box-shadow:inset 0 -4px 0 var(--amarelo),0 0 0 .35em rgba(242,193,78,.45)}}
+.caminho.duplicar details.mais{font-size:.9em}
+.passos-dup{margin:.4em 0 0;padding-left:1.2em;display:grid;gap:.2em;color:var(--tinta)}
+
+.cena-dup{display:grid;gap:.45em;margin-top:.2em}
+.cd-tela{position:relative;aspect-ratio:16/8.4;border-radius:.7em;overflow:hidden;
+  background:var(--papel2);border:1px solid var(--linha);font-size:.78em;color:var(--tinta)}
+.cd-barra{position:absolute;inset:0 0 auto 0;height:17%;display:flex;align-items:center;justify-content:space-between;
+  padding:0 4%;background:rgba(0,0,0,.28);border-bottom:1px solid var(--linha)}
+.cd-nome{font-weight:700;display:flex;align-items:center;gap:.35em;padding:.1em .4em;border-radius:.35em;
+  animation:cdNome 7s infinite}
+.cd-nome i{width:.45em;height:.45em;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
+  transform:rotate(45deg) translateY(-.15em)}
+.cd-bola{width:1.4em;height:1.4em;border-radius:50%;background:#2E9E6E}
+.cd-corpo{position:absolute;inset:26% 6% 8% 6%;display:grid;gap:9%;align-content:start}
+.cd-corpo span{height:.7em;border-radius:.35em;background:var(--linha)}
+.cd-corpo span:nth-child(1){width:70%;height:1.1em;background:var(--suave);opacity:.5}
+.cd-corpo span:nth-child(2){width:88%}
+.cd-corpo span:nth-child(3){width:46%;height:2.2em;background:rgba(242,193,78,.22);border:1px solid var(--amarelo)}
+.cd-corpo span:nth-child(4){width:60%}
+.cd-menu{position:absolute;top:19%;left:3%;width:42%;height:62%;display:grid;grid-template-rows:repeat(4,1fr);
+  padding:.25em;border-radius:.5em;background:var(--papel);border:1px solid var(--linha);
+  box-shadow:0 .6em 1.4em rgba(0,0,0,.35);opacity:0;transform:translateY(-.4em);animation:cdMenu 7s infinite}
+.cd-menu span{display:flex;align-items:center;padding:0 .6em;border-radius:.35em;white-space:nowrap}
+.cd-dup{animation:cdDup 7s infinite}
+.cd-pronto{position:absolute;top:24%;right:4%;width:54%;display:grid;gap:.25em;padding:.6em .8em;border-radius:.6em;
+  background:var(--papel);border:1px solid var(--amarelo);box-shadow:0 .6em 1.4em rgba(0,0,0,.35);
+  opacity:0;transform:scale(.92);animation:cdPronto 7s infinite}
+.cd-pronto b{font-family:var(--display);font-size:1.15em}
+.cd-pronto span{color:var(--suave)}
+.cd-cursor{position:absolute;width:1.5em;height:1.5em;fill:#fff;stroke:#0F2027;stroke-width:1.4;
+  filter:drop-shadow(0 .1em .15em rgba(0,0,0,.5));animation:cdCursor 7s infinite;transform-origin:20% 10%}
+@keyframes cdCursor{
+  0%{left:80%;top:82%;opacity:0;transform:scale(1)}
+  6%{opacity:1}
+  20%{left:11%;top:5%;transform:scale(1)}
+  22%{transform:scale(.8)} 24%{transform:scale(1)}
+  38%{left:14%;top:55%;transform:scale(1)}
+  41%{transform:scale(.8)} 43%{transform:scale(1)}
+  52%{left:14%;top:55%;opacity:1}
+  60%,100%{left:30%;top:70%;opacity:0}}
+@keyframes cdNome{0%,19%{background:transparent} 21%,26%{background:rgba(242,193,78,.35)} 30%,100%{background:transparent}}
+@keyframes cdMenu{0%,23%{opacity:0;transform:translateY(-.4em)} 26%,46%{opacity:1;transform:none}
+  50%,100%{opacity:0;transform:translateY(-.4em)}}
+@keyframes cdDup{0%,36%{background:transparent;color:inherit} 39%,47%{background:var(--amarelo);color:#0F2027} 50%,100%{background:transparent}}
+@keyframes cdPronto{0%,50%{opacity:0;transform:scale(.92)} 55%,92%{opacity:1;transform:none} 100%{opacity:0}}
+
+.cd-legenda{display:grid;margin:0;font-size:.95em;min-height:1.6em}
+.cd-legenda > span{grid-area:1/1;display:flex;align-items:center;gap:.5em;opacity:0}
+.cd-legenda b{display:inline-grid;place-items:center;width:1.5em;height:1.5em;border-radius:50%;
+  background:var(--amarelo);color:#0F2027;font-size:.85em;flex:none}
+.cd-p1{animation:cdP1 7s infinite} .cd-p2{animation:cdP2 7s infinite} .cd-p3{animation:cdP3 7s infinite}
+@keyframes cdP1{0%,34%{opacity:1} 37%,100%{opacity:0}}
+@keyframes cdP2{0%,35%{opacity:0} 38%,49%{opacity:1} 52%,100%{opacity:0}}
+@keyframes cdP3{0%,50%{opacity:0} 54%,96%{opacity:1} 100%{opacity:0}}
+.fim-dup .cena-dup{max-width:30rem}
+
+@media (prefers-reduced-motion:reduce){
+  .cd-nome,.cd-menu,.cd-dup,.cd-pronto,.cd-cursor,.cd-p1,.cd-p2,.cd-p3,.caminho.duplicar.chamando{animation:none}
+  .cd-menu{opacity:1;transform:none} .cd-dup{background:var(--amarelo);color:#0F2027}
+  .cd-cursor{left:14%;top:55%}
+  .cd-legenda{gap:.3em} .cd-legenda > span{grid-area:auto;opacity:1}
+}
+/* a prévia, ao lado do cartão de duplicar, fica do tamanho do próprio texto */
+.sem-mars .abertura-conv .caminhos{align-items:start}
+
 </style>
 </head>
 <body>
@@ -2253,13 +2327,6 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
         <p><b>Começar de novo?</b> O que você fez nesta conversa se perde.</p>
         <button type="button" class="botao" id="recomecarSim">Sim, começar de novo</button>
         <button type="button" class="mini claro" id="recomecarNao">Não</button>
-      </div>
-      <div class="recomecar" id="duplicarMars" hidden>
-        <p><b>Quer o Mars ao vivo, na sua conta?</b> Com a sua conta do claude.ai, abra o menu <b>Balizador</b> no alto da página e toque em <b>Duplicar</b>. A cópia fica sua, e o Mars responde nela.</p>
-      </div>
-      <div class="recomecar" id="semMarsAviso" hidden>
-        <p><b>Neste acesso, o Mars não lê planilhas.</b> Ele só responde na conta que publicou o Balizador. Para ter o Mars com as suas planilhas, abra o menu <b>Balizador</b> no alto da página e toque em <b>Duplicar</b>: a cópia fica na sua conta. Sem o Mars, os cinco passos funcionam com a planilha no modelo.</p>
-        <button type="button" class="botao" id="semMarsTela">Seguir pelos cinco passos</button>
       </div>
       <button type="button" class="link" id="continuarConversa" hidden>voltar para onde eu estava</button>
       <p class="garantia">O Mars funciona com a sua conta do claude.ai. Os nomes dos atletas vão para
@@ -8030,6 +8097,12 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     not_declared: "A etapa de IA não está disponível nesta página.",
     capability_disabled: "A etapa de IA não está disponível nesta página.",
     capability_removed: "A etapa de IA não está disponível nesta versão do claude.ai.",
+    // o Mars pelo servidor do Balizador, fora do claude.ai
+    network_error: "Não consegui falar com o servidor do Mars. Confira a internet e tente de novo.",
+    senha: "A senha do Mars não confere. Recarregue a página e digite de novo.",
+    overloaded: "O Claude está ocupado agora. Espere um pouco e tente de novo.",
+    servidor_falhou: "O servidor do Mars não respondeu direito. Tente de novo.",
+    sem_chave: "O servidor do Mars está sem a chave da API.",
   };
 
   function explicarErro(err) {
@@ -8885,6 +8958,145 @@ Para cada linha recebida, devolva:
   raiz.BalizadorRegras = api;
   if (typeof module !== "undefined" && module.exports) module.exports = api;
 })(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>/* =====================================================================
+   O Mars pelo servidor do Balizador
+
+   No claude.ai, o Mars usa a conta de quem publicou o Balizador (a função
+   "sample" do claude.ai). Em 13/11/2026 o dono viu que outra conta, mesmo
+   convidada, fica sem o Mars; e a banca não ia ter como usar. Fora do
+   claude.ai, no site do GitHub, o Mars passa a falar com o Claude por um
+   servidor pequeno (servidor/mars-worker.js, no Cloudflare), que guarda a
+   chave da API do dono. A chave nunca chega ao navegador.
+
+   Esta peça imita o jeito de chamar do claude.ai (sample, sample.json e
+   sample.limits), para o resto do app não mudar: as mesmas travas, os
+   mesmos cartões, os nomes dos atletas trocados por código antes de sair.
+   ===================================================================== */
+(function () {
+  "use strict";
+
+  // o endereço do servidor publicado no Cloudflare; vazio, o app fica sem o Mars fora do claude.ai
+  const ENDERECO = "";
+  const CHAVE_SENHA = "balizador.senhaMars";
+  const MAX_RODADAS = 10;
+
+  const lerSenha = () => { try { return localStorage.getItem(CHAVE_SENHA) || ""; } catch (e) { return ""; } };
+  const gravarSenha = (s) => { try { localStorage.setItem(CHAVE_SENHA, s); } catch (e) { /* sem memória */ } };
+
+  function criar(url) {
+    async function enviar(corpo, signal, deNovo) {
+      const cab = { "Content-Type": "application/json" };
+      const senha = lerSenha();
+      if (senha) cab["X-Senha-Mars"] = senha;
+      let r;
+      try {
+        r = await fetch(url, { method: "POST", headers: cab, body: JSON.stringify(corpo), signal });
+      } catch (e) {
+        if (e && e.name === "AbortError") throw { code: "cancelled", message: "Parado." };
+        throw { code: "network_error", message: "Não consegui falar com o servidor do Mars." };
+      }
+      const texto = await r.text();
+      let d = null;
+      try { d = JSON.parse(texto); } catch (e) { /* resposta sem JSON */ }
+      if (r.ok && d) return d;
+      // a senha da banca: pedida uma vez, guardada neste navegador
+      if (r.status === 401 && d && d.code === "senha" && !deNovo) {
+        const s = window.prompt("Senha do Mars:");
+        if (s) { gravarSenha(s.trim()); return enviar(corpo, signal, true); }
+      }
+      const tipo = d && d.error && d.error.type;
+      const code = (d && d.code) ||
+        (r.status === 429 || tipo === "rate_limit_error" ? "rate_limited"
+          : r.status === 529 || tipo === "overloaded_error" ? "overloaded"
+          : r.status === 413 ? "prompt_too_large"
+          : r.status === 400 || tipo === "invalid_request_error" ? "invalid_request"
+          : "servidor_falhou");
+      throw { code, message: (d && (d.message || (d.error && d.error.message))) || ("HTTP " + r.status) };
+    }
+
+    const mensagens = (input) => (typeof input === "string"
+      ? [{ role: "user", content: input }]
+      : (input || []).map((m) => ({ role: m.role, content: m.content })));
+
+    /* sample(input, opcoes): a conversa, com as ferramentas do app.
+       Cada rodada vai inteira ao servidor; quando o Claude pede uma
+       ferramenta, o app executa aqui mesmo e devolve o resultado, como o
+       claude.ai faz. O texto é o da última rodada que escreveu. */
+    async function sample(input, opcoes) {
+      const o = opcoes || {};
+      const msgs = mensagens(input);
+      // as instruções vêm iguais em toda chamada: ficam no cache da API, mais rápido e mais barato
+      const primeira = msgs[0];
+      if (primeira && typeof primeira.content === "string" && primeira.content.length > 3000) {
+        msgs[0] = { role: primeira.role, content: [{ type: "text", text: primeira.content, cache_control: { type: "ephemeral" } }] };
+      }
+      const ferramentas = o.tools || [];
+      const tools = ferramentas.map((t) => ({
+        name: t.name, description: t.description || "",
+        input_schema: t.inputSchema || { type: "object", properties: {} },
+      }));
+      const modelo = o.model || (o.modelTier === "quick" ? "claude-haiku-5-5" : undefined);
+      let ultimo = "";
+      for (let rodada = 0; rodada < MAX_RODADAS; rodada++) {
+        const d = await enviar({
+          model: modelo, max_tokens: o.maxTokens || 16000, effort: o.effort,
+          messages: msgs, tools: tools.length ? tools : undefined,
+        }, o.signal);
+        if (d.stop_reason === "refusal") throw { code: "refused", message: "O Claude recusou o pedido." };
+        const blocos = Array.isArray(d.content) ? d.content : [];
+        const texto = blocos.filter((b) => b.type === "text").map((b) => b.text).join("");
+        if (texto) {
+          ultimo = texto;
+          if (o.onText) o.onText({ text: texto, delta: texto });
+        }
+        const pedidos = blocos.filter((b) => b.type === "tool_use");
+        if (d.stop_reason !== "tool_use" || !pedidos.length) {
+          if (!ultimo) throw { code: "empty_completion", message: "Sem resposta." };
+          return { text: ultimo, truncated: d.stop_reason === "max_tokens" };
+        }
+        // a resposta do Claude volta inteira, como veio, e as ferramentas respondem logo depois
+        msgs.push({ role: "assistant", content: blocos });
+        const resultados = [];
+        for (const p of pedidos) {
+          const f = ferramentas.find((t) => t.name === p.name);
+          let conteudo = "", erro = false;
+          try {
+            if (!f) throw new Error("Ferramenta desconhecida: " + p.name);
+            const v = await f.execute(p.input || {}, { signal: o.signal });
+            conteudo = typeof v === "string" ? v : JSON.stringify(v == null ? null : v);
+          } catch (e) {
+            erro = true;
+            conteudo = String((e && e.message) || e || "erro");
+          }
+          const r = { type: "tool_result", tool_use_id: p.id, content: conteudo || "(vazio)" };
+          if (erro) r.is_error = true;
+          resultados.push(r);
+        }
+        msgs.push({ role: "user", content: resultados });
+      }
+      throw { code: "invalid_request", message: "O Mars usou ferramentas demais numa resposta só." };
+    }
+
+    // sample.json: a resposta em JSON, sem ferramentas, com mais espaço para a planilha reescrita
+    sample.json = async function (input, opcoes) {
+      const r = await sample(input, Object.assign({}, opcoes, { tools: undefined, maxTokens: 32000 }));
+      let t = String(r.text || "").trim();
+      const cerca = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+      if (cerca) t = cerca[1].trim();
+      const ini = t.search(/[[{]/);
+      if (ini > 0) t = t.slice(ini);
+      try { return JSON.parse(t); } catch (e) {
+        throw { code: "invalid_json", message: "A resposta não veio em JSON.", text: r.text };
+      }
+    };
+
+    sample.limits = async () => ({ tools: { maxCount: 30 }, images: false, modelTiers: ["quick", "default", "complex"] });
+    return sample;
+  }
+
+  window.BalizadorServidor = { ENDERECO, criar };
+})();
 </script>
 <script>﻿/* =====================================================================
    BALIZADOR, interface
@@ -10383,7 +10595,8 @@ Para cada linha recebida, devolva:
      existem: a etapa de IA e a conversa somem, e o resto funciona igual.
   ------------------------------------------------------------------ */
   // noClaude: a página está aberta dentro do claude.ai (com ou sem as funções)
-  const claudeApp = { sample: null, downloads: null, pronto: false, noClaude: false };
+  // viaServidor: fora do claude.ai, o Mars fala pelo servidor do Balizador (balizador.servidor.js)
+  const claudeApp = { sample: null, downloads: null, pronto: false, noClaude: false, viaServidor: false };
   // o app sem IA, no GitHub Pages, onde o download funciona para qualquer um
   const LINK_GITHUB = "https://erickchoai.github.io/balizador/app/";
   // onde o Balizador está publicado no claude.ai, com a IA e a conversa
@@ -10397,6 +10610,21 @@ Para cada linha recebida, devolva:
       const [sample, downloads] = await Promise.all([usar("sample"), usar("downloads")]);
       claudeApp.sample = sample;
       claudeApp.downloads = downloads;
+    } else {
+      // fora do claude.ai (o site do GitHub): o Mars pelo servidor, quando ele está configurado.
+      // ?servidor=... só vale no computador do dono, para testar um servidor antes de publicar
+      const S = window.BalizadorServidor;
+      let url = S && S.ENDERECO;
+      try {
+        const teste = new URLSearchParams(location.search).get("servidor");
+        if (teste && /^(localhost|127\.0\.0\.1)$/.test(location.hostname)) url = teste;
+      } catch (e) { /* sem endereço */ }
+      // só no site do Balizador: o arquivo aberto do disco e cópias em outro endereço ficam sem o Mars
+      const noSite = /^(erickchoai\.github\.io|localhost|127\.0\.0\.1)$/.test(location.hostname);
+      if (S && url && noSite) {
+        claudeApp.sample = S.criar(url);
+        claudeApp.viaServidor = true;
+      }
     }
     claudeApp.pronto = true;
     // fora do claude.ai, o quadro para colar o resultado que veio de lá;
@@ -14658,9 +14886,6 @@ Para cada linha recebida, devolva:
     montarAbertura();
     document.body.classList.add("na-abertura");
     $("#recomecar").hidden = true;
-    $("#semMarsAviso").hidden = true;
-    // quem não é dono vê logo como ter o Mars ao vivo: duplicar o artefato para a própria conta
-    $("#duplicarMars").hidden = !conv.semMars;
     $("#continuarConversa").hidden = !conv.comecou;
     window.scrollTo(0, 0);
     ajustarAbertura();
@@ -14687,16 +14912,8 @@ Para cada linha recebida, devolva:
   }
 
   function escolherCaminho(caminho) {
-    /* Sem o Mars, as planilhas da pessoa esperam: o aviso diz como ter o Mars
-       (duplicar o artefato, testado em 13/11/2026 com outra conta: na cópia o
-       Mars responde pela conta de quem duplicou) ou seguir pelos cinco passos. */
-    if (conv.semMars && caminho === "minhas") {
-      $("#semMarsAviso").hidden = false;
-      $("#duplicarMars").hidden = true;
-      $("#recomecar").hidden = true;
-      ajustarAbertura();
-      return;
-    }
+    // sem o Mars, as planilhas da pessoa esperam a cópia: o cartão de duplicar chama a atenção
+    if (conv.semMars && caminho === "minhas") return chamarDuplicar();
     if (conv.comecou) {
       // já tem coisa feita: começar de novo é recarregar, com a escolha guardada
       const box = $("#recomecar");
@@ -14850,7 +15067,7 @@ Para cada linha recebida, devolva:
       if (el) {
         const p = document.createElement("p");
         p.className = "aviso-reserva";
-        p.textContent = "Neste acesso, o Mars não responde ao vivo. Entrou a resposta preparada para esta demonstração, conferida pelo mesmo validador.";
+        p.textContent = "Nesta prévia, entrou a resposta já preparada do Mars, conferida pelo mesmo validador. Na sua cópia, ele responde ao vivo.";
         $(".corpo", el).appendChild(p);
       }
       return IA.conferirResposta(reserva, pedido.esquema);
@@ -15514,7 +15731,16 @@ Para cada linha recebida, devolva:
       <div class="acoes-cartao">
         <button type="button" class="botao" data-acao="baixar_${q}">Baixar</button>
         <button type="button" class="link" data-acao="previa_${q}">ver a prévia</button></div></div>`;
-    const fim = conv.demo ? `<div class="fim-demo">
+    // sem o Mars ao vivo, o fim da prévia mostra o caminho para a cópia, no lugar das planilhas da pessoa
+    const fim = conv.demo && conv.semMars ? `<div class="fim-demo fim-dup">
+        <b>Fim da prévia. Agora, na sua conta</b>
+        <ul><li>O Mars corrigiu a lista de provas e reescreveu a ficha das escolas, com respostas já preparadas.</li>
+          <li>Na sua cópia, ele faz isso ao vivo, com as suas planilhas, que ficam só com você.</li></ul>
+        ${CENA_DUPLICAR}
+        <div class="acoes-cartao">
+          <button type="button" class="mini claro" data-recomecar="demo">Ver a prévia de novo</button>
+        </div></div>`
+      : conv.demo ? `<div class="fim-demo">
         <b>Fim da demonstração</b>
         <ul><li>O Mars corrigiu a lista de provas e reescreveu a ficha das escolas.</li>
           <li>O app conferiu tudo e montou as séries pela regra.</li></ul>
@@ -18301,6 +18527,13 @@ Regras:
     }
     // no claude.ai, o Balizador veste a noite na piscina da página de entrada
     document.documentElement.classList.add("noite");
+    // no site do GitHub, o Mars responde pelo servidor do Balizador, não pela conta de quem abriu
+    if (a.claudeApp.viaServidor) {
+      const g = $("#aberturaConv .garantia");
+      if (g && g.firstChild && g.firstChild.nodeType === 3) {
+        g.firstChild.nodeValue = "O Mars responde pelo servidor do Balizador, sem precisar de conta. Os nomes dos atletas vão para ele trocados por código. ";
+      }
+    }
     const lim = conv.sample ? await conv.sample.limits().catch(() => null) : null;
     conv.ferramentas = !!(lim && lim.tools);
     conv.maxFerramentas = (lim && lim.tools && Number(lim.tools.maxCount)) || 0;
@@ -18313,29 +18546,73 @@ Regras:
     try { caminho = sessionStorage.getItem(CHAVE_COMECAR); sessionStorage.removeItem(CHAVE_COMECAR); } catch (e) { /* sem memória */ }
     if (caminho === "demo" || (caminho === "minhas" && !conv.semMars)) return comecar(caminho);
     mostrarAbertura();
-    // "Começar com as minhas planilhas" no fim da demonstração, sem o Mars: o aviso já vem aberto
-    if (caminho === "minhas") { $("#semMarsAviso").hidden = false; $("#duplicarMars").hidden = true; ajustarAbertura(); }
+    if (caminho === "minhas") chamarDuplicar();
   }
 
-  /* A conversa sem o Mars ao vivo: a demonstração anda, e a caixa de mensagem
-     diz por quê. Em 13/11/2026 o dono viu que o Mars só responde na conta que
-     publicou o Balizador: outra conta, ou ninguém logado, fica sem ele. */
+  /* Duplicar o Balizador para a própria conta, mostrado como um filme curto:
+     o toque em "Balizador" no alto do claude.ai, o menu, o "Duplicar" e a
+     cópia pronta. Em 13/11/2026 o dono decidiu que quem não é dono usa o
+     Balizador completo assim: o Mars só responde na conta de quem publicou,
+     e na cópia a conta é da própria pessoa. */
+  const CENA_DUPLICAR = `<div class="cena-dup" aria-hidden="true">
+      <div class="cd-tela">
+        <div class="cd-barra"><span class="cd-nome">Balizador <i></i></span><span class="cd-bola"></span></div>
+        <div class="cd-corpo"><span></span><span></span><span></span><span></span></div>
+        <div class="cd-menu"><span>Compartilhar</span><span>Exportar</span><span class="cd-dup">Duplicar</span><span>Atualizar</span></div>
+        <div class="cd-pronto"><b>Balizador (Copy)</b><span>Agora você está visualizando sua cópia.</span></div>
+        <svg class="cd-cursor" viewBox="0 0 24 24"><path d="M5 2.5l13.5 9.2-6.1 1.2 3.4 6.8-2.7 1.3-3.4-6.8-4.7 4.1z"/></svg>
+      </div>
+      <p class="cd-legenda"><span class="cd-p1"><b>1</b> No alto, toque em Balizador</span><span class="cd-p2"><b>2</b> No menu, toque em Duplicar</span><span class="cd-p3"><b>3</b> A cópia é sua, com o Mars</span></p>
+    </div>`;
+  const PASSOS_DUPLICAR = `<ol class="passos-dup"><li>No alto da página, toque em <b>Balizador</b>.</li>
+      <li>No menu, toque em <b>Duplicar</b>.</li><li>Na sua cópia, o Mars conversa com você e lê as suas planilhas.</li></ol>`;
+
+  function cartaoDuplicar() {
+    return `<div class="caminho principal duplicar" id="duplicarMars">
+      <b>Use o Balizador completo na sua conta</b>
+      <span>A versão completa roda na sua própria conta do claude.ai. Assim o Mars conversa com você, e as suas planilhas ficam só com você.</span>
+      ${CENA_DUPLICAR}
+      <details class="mais"><summary>ver o passo a passo</summary>${PASSOS_DUPLICAR}</details>
+    </div>`;
+  }
+
+  // quem tenta usar as próprias planilhas sem a cópia: o cartão de duplicar pisca e aparece
+  function chamarDuplicar() {
+    const d = $("#duplicarMars");
+    if (!d) return;
+    d.classList.remove("chamando");
+    void d.offsetWidth;
+    d.classList.add("chamando");
+    d.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  /* A conversa sem o Mars ao vivo: a prévia da demonstração anda com as
+     respostas preparadas, e o caminho para o Balizador completo é a cópia.
+     Sem a cópia não há "minhas planilhas": sem o Mars, o app perde o sentido
+     (o dono, 13/11/2026). */
   function prepararSemMars() {
     document.body.classList.add("sem-mars");
     const g = $("#aberturaConv .garantia");
     if (g && g.firstChild && g.firstChild.nodeType === 3) {
-      g.firstChild.nodeValue = "Neste acesso, o Mars não conversa ao vivo. A demonstração usa as respostas já preparadas para este campeonato. ";
+      g.firstChild.nodeValue = "A prévia usa respostas já preparadas do Mars. Na sua cópia, ele responde ao vivo. ";
     }
-    const minhas = $('[data-caminho="minhas"] span');
-    if (minhas) minhas.textContent = "Para o Mars ler as suas, duplique o Balizador para a sua conta.";
+    const caminhos = $("#aberturaConv .caminhos");
+    if (caminhos && !$("#duplicarMars")) caminhos.insertAdjacentHTML("afterbegin", cartaoDuplicar());
+    const minhas = $('[data-caminho="minhas"]');
+    if (minhas) minhas.style.display = "none";
+    const demo = $('[data-caminho="demo"]');
+    if (demo) {
+      demo.classList.remove("principal");
+      const b = $("b", demo), s = $("span", demo);
+      if (b) b.textContent = "Ver uma prévia";
+      if (s) s.textContent = "A demonstração com as respostas já preparadas do Mars. Leva uns 3 minutos.";
+    }
     const caixa = $("#mensagem");
-    if (caixa) { caixa.disabled = true; caixa.placeholder = "Para conversar com o Mars, duplique o Balizador (menu no alto)."; }
+    if (caixa) { caixa.disabled = true; caixa.placeholder = "Na sua cópia do Balizador, o Mars conversa com você."; }
     const env = $("#enviarMensagem");
     if (env) env.disabled = true;
     const anexar = $("#compositor .anexar");
     if (anexar) anexar.style.display = "none";
-    const tela = $("#semMarsTela");
-    if (tela) tela.onclick = () => irParaTela("programa");
   }
 
   // o app avisa daqui o que aconteceu numa tela que a conversa abriu
