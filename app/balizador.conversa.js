@@ -1239,6 +1239,8 @@
     document.body.classList.add("na-abertura");
     $("#recomecar").hidden = true;
     $("#semMarsAviso").hidden = true;
+    // quem não é dono vê logo como ter o Mars ao vivo: duplicar o artefato para a própria conta
+    $("#duplicarMars").hidden = !conv.semMars;
     $("#continuarConversa").hidden = !conv.comecou;
     window.scrollTo(0, 0);
     ajustarAbertura();
@@ -1265,9 +1267,12 @@
   }
 
   function escolherCaminho(caminho) {
-    // sem a conta do claude.ai, as planilhas da pessoa esperam: o aviso diz como entrar
+    /* Sem o Mars, as planilhas da pessoa esperam: o aviso diz como ter o Mars
+       (duplicar o artefato, testado em 13/11/2026 com outra conta: na cópia o
+       Mars responde pela conta de quem duplicou) ou seguir pelos cinco passos. */
     if (conv.semMars && caminho === "minhas") {
       $("#semMarsAviso").hidden = false;
+      $("#duplicarMars").hidden = true;
       $("#recomecar").hidden = true;
       ajustarAbertura();
       return;
@@ -4889,7 +4894,7 @@ Regras:
     if (caminho === "demo" || (caminho === "minhas" && !conv.semMars)) return comecar(caminho);
     mostrarAbertura();
     // "Começar com as minhas planilhas" no fim da demonstração, sem o Mars: o aviso já vem aberto
-    if (caminho === "minhas") { $("#semMarsAviso").hidden = false; ajustarAbertura(); }
+    if (caminho === "minhas") { $("#semMarsAviso").hidden = false; $("#duplicarMars").hidden = true; ajustarAbertura(); }
   }
 
   /* A conversa sem o Mars ao vivo: a demonstração anda, e a caixa de mensagem
@@ -4902,9 +4907,9 @@ Regras:
       g.firstChild.nodeValue = "Neste acesso, o Mars não conversa ao vivo. A demonstração usa as respostas já preparadas para este campeonato. ";
     }
     const minhas = $('[data-caminho="minhas"] span');
-    if (minhas) minhas.textContent = "Neste acesso, pelos cinco passos do app, sem o Mars.";
+    if (minhas) minhas.textContent = "Para o Mars ler as suas, duplique o Balizador para a sua conta.";
     const caixa = $("#mensagem");
-    if (caixa) { caixa.disabled = true; caixa.placeholder = "Neste acesso, o Mars não conversa ao vivo."; }
+    if (caixa) { caixa.disabled = true; caixa.placeholder = "Para conversar com o Mars, duplique o Balizador (menu no alto)."; }
     const env = $("#enviarMensagem");
     if (env) env.disabled = true;
     const anexar = $("#compositor .anexar");

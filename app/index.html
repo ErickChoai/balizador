@@ -2254,8 +2254,11 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
         <button type="button" class="botao" id="recomecarSim">Sim, começar de novo</button>
         <button type="button" class="mini claro" id="recomecarNao">Não</button>
       </div>
+      <div class="recomecar" id="duplicarMars" hidden>
+        <p><b>Quer o Mars ao vivo, na sua conta?</b> Com a sua conta do claude.ai, abra o menu <b>Balizador</b> no alto da página e toque em <b>Duplicar</b>. A cópia fica sua, e o Mars responde nela.</p>
+      </div>
       <div class="recomecar" id="semMarsAviso" hidden>
-        <p><b>Neste acesso, o Mars não lê planilhas.</b> Ele trabalha só na conta do claude.ai que publicou o Balizador. Os cinco passos do app funcionam com a planilha no modelo, sem o Mars.</p>
+        <p><b>Neste acesso, o Mars não lê planilhas.</b> Ele só responde na conta que publicou o Balizador. Para ter o Mars com as suas planilhas, abra o menu <b>Balizador</b> no alto da página e toque em <b>Duplicar</b>: a cópia fica na sua conta. Sem o Mars, os cinco passos funcionam com a planilha no modelo.</p>
         <button type="button" class="botao" id="semMarsTela">Seguir pelos cinco passos</button>
       </div>
       <button type="button" class="link" id="continuarConversa" hidden>voltar para onde eu estava</button>
@@ -14656,6 +14659,8 @@ Para cada linha recebida, devolva:
     document.body.classList.add("na-abertura");
     $("#recomecar").hidden = true;
     $("#semMarsAviso").hidden = true;
+    // quem não é dono vê logo como ter o Mars ao vivo: duplicar o artefato para a própria conta
+    $("#duplicarMars").hidden = !conv.semMars;
     $("#continuarConversa").hidden = !conv.comecou;
     window.scrollTo(0, 0);
     ajustarAbertura();
@@ -14682,9 +14687,12 @@ Para cada linha recebida, devolva:
   }
 
   function escolherCaminho(caminho) {
-    // sem a conta do claude.ai, as planilhas da pessoa esperam: o aviso diz como entrar
+    /* Sem o Mars, as planilhas da pessoa esperam: o aviso diz como ter o Mars
+       (duplicar o artefato, testado em 13/11/2026 com outra conta: na cópia o
+       Mars responde pela conta de quem duplicou) ou seguir pelos cinco passos. */
     if (conv.semMars && caminho === "minhas") {
       $("#semMarsAviso").hidden = false;
+      $("#duplicarMars").hidden = true;
       $("#recomecar").hidden = true;
       ajustarAbertura();
       return;
@@ -18306,7 +18314,7 @@ Regras:
     if (caminho === "demo" || (caminho === "minhas" && !conv.semMars)) return comecar(caminho);
     mostrarAbertura();
     // "Começar com as minhas planilhas" no fim da demonstração, sem o Mars: o aviso já vem aberto
-    if (caminho === "minhas") { $("#semMarsAviso").hidden = false; ajustarAbertura(); }
+    if (caminho === "minhas") { $("#semMarsAviso").hidden = false; $("#duplicarMars").hidden = true; ajustarAbertura(); }
   }
 
   /* A conversa sem o Mars ao vivo: a demonstração anda, e a caixa de mensagem
@@ -18319,9 +18327,9 @@ Regras:
       g.firstChild.nodeValue = "Neste acesso, o Mars não conversa ao vivo. A demonstração usa as respostas já preparadas para este campeonato. ";
     }
     const minhas = $('[data-caminho="minhas"] span');
-    if (minhas) minhas.textContent = "Neste acesso, pelos cinco passos do app, sem o Mars.";
+    if (minhas) minhas.textContent = "Para o Mars ler as suas, duplique o Balizador para a sua conta.";
     const caixa = $("#mensagem");
-    if (caixa) { caixa.disabled = true; caixa.placeholder = "Neste acesso, o Mars não conversa ao vivo."; }
+    if (caixa) { caixa.disabled = true; caixa.placeholder = "Para conversar com o Mars, duplique o Balizador (menu no alto)."; }
     const env = $("#enviarMensagem");
     if (env) env.disabled = true;
     const anexar = $("#compositor .anexar");
