@@ -25,6 +25,7 @@ const partes = {
   saida: ler("balizador.saida.js"),
   exemplos: ler("balizador.exemplos.js"),
   ia: ler("balizador.ia.js"),
+  regras: ler("balizador.regras.js"),
   app: ler("balizador.app.js"),
   conversa: ler("balizador.conversa.js"),
   css: ler("estilo.css"),
@@ -75,6 +76,7 @@ const SCRIPTS = `<script>${partes.xlsx}</script>
 <script>${partes.saida}</script>
 <script>${partes.exemplos}</script>
 <script>${partes.ia}</script>
+<script>${partes.regras}</script>
 <script>${partes.app}</script>
 <script>${partes.conversa}</script>`;
 

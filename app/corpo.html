@@ -44,6 +44,10 @@
         <button type="button" class="botao" id="recomecarSim">Sim, começar de novo</button>
         <button type="button" class="mini claro" id="recomecarNao">Não</button>
       </div>
+      <div class="recomecar" id="semMarsAviso" hidden>
+        <p><b>Neste acesso, o Mars não lê planilhas.</b> Ele trabalha só na conta do claude.ai que publicou o Balizador. Os cinco passos do app funcionam com a planilha no modelo, sem o Mars.</p>
+        <button type="button" class="botao" id="semMarsTela">Seguir pelos cinco passos</button>
+      </div>
       <button type="button" class="link" id="continuarConversa" hidden>voltar para onde eu estava</button>
       <p class="garantia">O Mars funciona com a sua conta do claude.ai. Os nomes dos atletas vão para
         ele trocados por código.</p>
@@ -51,7 +55,7 @@
     <div class="fio" id="fio" aria-live="polite"></div>
     <form class="compositor" id="compositor">
       <label class="anexar" title="Anexar uma planilha">
-        <input type="file" id="anexo" accept=".xlsx,.xlsm,.csv" hidden>
+        <input type="file" id="anexo" accept=".xlsx,.xlsm,.csv" multiple hidden>
         <span>Anexar planilha</span></label>
       <textarea id="mensagem" rows="1" placeholder="Tem dúvida? Pergunte ao Mars. Por exemplo: o que é uma série?"></textarea>
       <button type="submit" class="botao" id="enviarMensagem">Enviar</button>

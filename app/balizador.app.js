@@ -357,11 +357,17 @@
     if (b) b.disabled = !ok;
   }
 
+  /* A planilha lida do arquivo. O .csv vai como texto puro: separado por
+     ponto e vírgula, como o Excel brasileiro salva, "38,00" virava 3800 (a
+     vírgula era lida como separador de milhar). Quem lê tempo e data é o app. */
+  function lerPlanilha(buf, nome) {
+    return XLSX.read(buf, /\.csv$/i.test(String(nome || "")) ? { type: "array", raw: true } : { type: "array", cellDates: false });
+  }
+
   async function carregarPrograma(file) {
     let wb;
     try {
-      const buf = await file.arrayBuffer();
-      wb = XLSX.read(buf, { type: "array", cellDates: false });
+      wb = lerPlanilha(await file.arrayBuffer(), file.name);
     } catch (e) {
       estado.programa = null;
       liberarCompeticao(false);
@@ -1320,8 +1326,8 @@
 
   async function carregarArquivo(file) {
     lerConfig();
-    const buf = await file.arrayBuffer();
-    const wb = XLSX.read(buf, { type: "array", cellDates: false });
+    // várias fichas juntadas pela conversa chegam já como uma planilha só (file.wb)
+    const wb = file.wb || lerPlanilha(await file.arrayBuffer(), file.name);
     const ignorar = estado.perfil.ignorarAbas;
 
     // planilha nova, etapa de IA nova: a tabela de troca dos nomes da
@@ -4247,6 +4253,9 @@
     const P = [];
     const nomeProva = (p) => `${p.numero}ª ${p.titulo}`;
     const fim = () => { montar(); renderConferencia(); };
+    // com várias fichas juntas, a linha vem com o nome da ficha (a aba): "ESCOLA AURORA, linha 3"
+    const variasAbas = new Set(estado.inscricoes.map((i) => i.aba)).size > 1;
+    const ondeEsta = (it) => (variasAbas && it.aba ? `${it.aba}, linha ${it.linha}` : `linha ${it.linha}`);
     const numeroDa = new Map();
     for (const p of estado.provas) {
       for (const s of p.series) for (const l of s.linhas) numeroDa.set(chaveDaLinha(l.item), p);
@@ -4263,13 +4272,13 @@
                         B.normalizar(it.equipe || "") === B.normalizar(r.equipe || "") && chaveDaLinha(it) !== chaveDaLinha(r));
         const fmt = (t) => (t == null ? "sem tempo" : B.formatarTempo(t));
         if (outra && fmt(outra.tempo) !== fmt(r.tempo)) {
-          const fica = (manter, sai) => ({ rotulo: `Ficar com ${fmt(manter.tempo)} (linha ${manter.linha})`,
+          const fica = (manter, sai) => ({ rotulo: `Ficar com ${fmt(manter.tempo)} (${ondeEsta(manter)})`,
             aplicar: () => { estado.ajustes.removidas.add(chaveDaLinha(sai)); fim(); },
-            feito: `${CX(r.nome)} ficou com ${fmt(manter.tempo)}; a linha ${sai.linha} saiu.` });
+            feito: `${CX(r.nome)} ficou com ${fmt(manter.tempo)}; a inscrição da ${ondeEsta(sai)} saiu.` });
           const ops = [fica(outra, r), fica(r, outra)];
           P.push({ id: "rep|" + chaveDaLinha(r), bloco: "duplicados", opcoes: ops,
             caso: `${CX(r.nome)} (${CX(r.equipe)}) aparece duas vezes na ${nomeProva(p)}, com tempos diferentes: ` +
-                  `${fmt(outra.tempo)} na linha ${outra.linha} e ${fmt(r.tempo)} na linha ${r.linha}.`,
+                  `${fmt(outra.tempo)} na ${ondeEsta(outra)} e ${fmt(r.tempo)} na ${ondeEsta(r)}.`,
             pergunta: "Os tempos são diferentes. Qual inscrição fica?",
             aplicar: ops[0].aplicar, feito: ops[0].feito,
             rep: { nome: CX(r.nome), equipe: CX(r.equipe), prova: nomeProva(p), motivo: "os tempos são diferentes",
@@ -4278,7 +4287,7 @@
         }
         P.push({ id: "rep|" + chaveDaLinha(r), bloco: "duplicados",
           caso: `${CX(r.nome)} (${CX(r.equipe)}) aparece duas vezes na ${nomeProva(p)}, ${r.motivo}.`,
-          pergunta: `Posso tirar a inscrição repetida, da linha ${r.linha}?`,
+          pergunta: `Posso tirar a inscrição repetida, da ${ondeEsta(r)}?`,
           aplicar: () => { estado.ajustes.removidas.add(chaveDaLinha(r)); fim(); },
           feito: `A inscrição repetida de ${CX(r.nome)} saiu.`,
           // para a cena do cartão: quem, em que prova e por quê, em pedaços
@@ -4507,7 +4516,7 @@
 
   window.BalizadorApp = {
     acharInscricoes, inscricoesRemovidas, tirarInscricao, devolverInscricao, definirTempoInscricao,
-    fotoDosAjustes, restaurarAjustes,
+    fotoDosAjustes, restaurarAjustes, lerPlanilha,
     estado, claudeApp, LINK_CLAUDE, LINK_GITHUB, abrirPonte, linkDoResultado, lerCodigo,
     lerConfig, validarConfig, atualizarPreviaData, montar, montarSecoes,
     renderConferencia, irPara, mostrarPainel, liberar, aviso,

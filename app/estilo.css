@@ -2191,3 +2191,6 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
 }
 /* o tempo de cada linha repetida não quebra no meio (no painel estreito, "46.30" virava "46.3" e "0") */
 .cr-linha b{flex:none;font-weight:700}
+
+/* várias fichas de uma vez: a fala da pessoa diz quantas, sem o "Planilha:" de uma só */
+.fala.eu .anexo.varias::before{content:none}

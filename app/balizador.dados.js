@@ -1555,13 +1555,13 @@
         for (const i of itens) {
           const k = B.chaveAtleta(i);
           if (vistos.has(k)) {
-            repetidos.push(Object.assign({}, i, {
-              motivo: "já estava inscrito nesta prova" +
-                      (vistos.get(k) ? ", na linha " + vistos.get(k) : ""),
-            }));
+            // com várias fichas juntas, a linha sozinha não diz onde: vai junto o nome da ficha (a aba)
+            const antes = vistos.get(k);
+            const onde = antes.linha ? ", na " + (antes.aba && antes.aba !== i.aba ? antes.aba + ", " : "") + "linha " + antes.linha : "";
+            repetidos.push(Object.assign({}, i, { motivo: "já tinha inscrição nesta prova" + onde }));
             continue;
           }
-          vistos.set(k, i.linha || 0);
+          vistos.set(k, { linha: i.linha || 0, aba: i.aba || "" });
           unicos.push(i);
         }
       }

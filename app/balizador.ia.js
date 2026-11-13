@@ -309,10 +309,13 @@
      Do começo, do meio e do fim de cada aba: o começo traz o cabeçalho, o
      meio mostra que o padrão continua, o fim pega o TOTAL e a assinatura do
      responsável. Aba pequena vai inteira, mascarada do mesmo jeito. */
-  const AMOSTRA = { comeco: 15, meio: 5, fim: 4 };
+  const AMOSTRA_PADRAO = { comeco: 15, meio: 5, fim: 4 };
+  // muitas fichas juntas (uma por equipe): cada aba vai com menos linhas, para o pedido não ficar enorme
+  const AMOSTRA_CURTA = { comeco: 10, meio: 3, fim: 3 };
 
   // as posições (entre as linhas com conteúdo) que vão na amostra
-  function posicoesDaAmostra(total) {
+  function posicoesDaAmostra(total, lim) {
+    const AMOSTRA = lim || AMOSTRA_PADRAO;
     const limite = AMOSTRA.comeco + AMOSTRA.meio + AMOSTRA.fim;
     if (total <= limite) return [...Array(total).keys()];
     const idx = new Set();
@@ -325,8 +328,9 @@
 
   function montarAmostra(grades, m, voc, opts) {
     opts = opts || {};
+    const lim = grades.length > 6 ? AMOSTRA_CURTA : AMOSTRA_PADRAO;
     return grades.map((g) => {
-      const pos = opts.inteira ? [...g.linhas.keys()] : posicoesDaAmostra(g.linhas.length);
+      const pos = opts.inteira ? [...g.linhas.keys()] : posicoesDaAmostra(g.linhas.length, lim);
       return {
         aba: g.aba, total: g.linhas.length, colunas: g.colunas, mesclas: g.mesclas,
         primeira: g.linhas[0].n, ultima: g.linhas[g.linhas.length - 1].n,
@@ -583,7 +587,7 @@ Para cada aba, devolva:
 - provas_em_colunas: só no layout provas_em_colunas. Para cada coluna de prova, a letra, a prova escrita por extenso como está no cabeçalho (junte as partes quando o cabeçalho ocupar duas linhas, como "50M" em cima e "LIVRE" embaixo) e a letra da coluna de tempo daquela prova, quando houver uma separada. Nos outros layouts, lista vazia.
 - prova_da_aba, categoria_da_aba, naipe_da_aba, equipe_da_aba: quando a aba inteira é de uma prova, de uma categoria, de um naipe ou de uma equipe, dito no nome da aba ou num título. Copie como está escrito, inclusive os códigos. null quando não for o caso.
 - textos_de_lixo: textos que marcam linhas que não são inscrição nem título, como TOTAL, assinatura do responsável, observações. Copie como aparecem na amostra.
-- incertezas: tudo de que você não tem certeza, com a linha e a coluna quando fizer sentido e o motivo numa frase curta, em português. A coluna diz de qual prova é a dúvida, numa ficha com uma coluna por prova. O motivo aparece na tela para a pessoa: escreva para ela, sem falar de código, de PESSOA, de máscara nem de texto escondido. Não ponha em incertezas o que o app lê sozinho: o sexo escrito por extenso ou abreviado (Fem, Masc, menina, menino), o tempo com ponto, vírgula ou unidade (38.5, 41 seg), a data em outro formato (2014-05-12) e o nome todo em minúsculas.
+- incertezas: tudo de que você não tem certeza, com a linha e a coluna quando fizer sentido e o motivo numa frase curta, em português. A coluna diz de qual prova é a dúvida, numa ficha com uma coluna por prova. O motivo aparece na tela para a pessoa: escreva para ela, sem falar de código, de PESSOA, de máscara nem de texto escondido. Não ponha em incertezas o que o app lê sozinho: o sexo escrito por extenso ou abreviado (Fem, Masc, menina, menino), o tempo com ponto, vírgula ou unidade (38.5, 41 seg), a data em outro formato (2014-05-12), o nome todo em minúsculas e a prova marcada só com X (é inscrição sem tempo).
 
 Não chute. Na dúvida, deixe null e explique em incertezas.`;
 
@@ -764,8 +768,13 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
           incertasPorLinha.get(inc.linha).push({ motivo, coluna: letra(inc.coluna) });
         } else resumo.notas.push(motivo);
       }
+      // a prova marcada só com X é inscrição sem tempo, e o app lê isso sozinho: não vira dúvida
+      // (no teste das várias fichas, cada X de 4 escolas virou um cartão "está certa assim?")
+      const soOX = (m) => /(^|[^a-z])x([^a-z]|$)/i.test(m) && /sem tempo|s[oó] com|marcad/i.test(m) &&
+        !/repet|duplic|outra|duas vezes|nome|sexo|naipe|categoria|idade|nasc/i.test(m);
       const incertezasDa = (n, suas) => (incertasPorLinha.get(n) || [])
         .filter((x) => !suas || !x.coluna || !colunasDeProva.has(x.coluna) || suas.includes(x.coluna))
+        .filter((x) => !soOX(x.motivo))
         .map((x) => x.motivo);
 
       let tituloAtual = "", contexto = "";
