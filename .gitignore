@@ -1,7 +1,7 @@
 # dependências: restauradas com "npm install" dentro de app/
 node_modules/
 
-# nunca versionar planilhas de inscritos nem balizamentos gerados —
+# nunca versionar planilhas de inscritos nem balizamentos gerados:
 # contêm nome, escola e classificação funcional de atletas
 *.xlsx
 *.xlsm

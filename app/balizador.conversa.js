@@ -4879,13 +4879,6 @@ Regras:
     }
     // no claude.ai, o Balizador veste a noite na piscina da página de entrada
     document.documentElement.classList.add("noite");
-    // no site do GitHub, o Mars responde pelo servidor do Balizador, não pela conta de quem abriu
-    if (a.claudeApp.viaServidor) {
-      const g = $("#aberturaConv .garantia");
-      if (g && g.firstChild && g.firstChild.nodeType === 3) {
-        g.firstChild.nodeValue = "O Mars responde pelo servidor do Balizador, sem precisar de conta. Os nomes dos atletas vão para ele trocados por código. ";
-      }
-    }
     const lim = conv.sample ? await conv.sample.limits().catch(() => null) : null;
     conv.ferramentas = !!(lim && lim.tools);
     conv.maxFerramentas = (lim && lim.tools && Number(lim.tools.maxCount)) || 0;

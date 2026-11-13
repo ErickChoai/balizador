@@ -555,12 +555,6 @@
     not_declared: "A etapa de IA não está disponível nesta página.",
     capability_disabled: "A etapa de IA não está disponível nesta página.",
     capability_removed: "A etapa de IA não está disponível nesta versão do claude.ai.",
-    // o Mars pelo servidor do Balizador, fora do claude.ai
-    network_error: "Não consegui falar com o servidor do Mars. Confira a internet e tente de novo.",
-    senha: "A senha do Mars não confere. Recarregue a página e digite de novo.",
-    overloaded: "O Claude está ocupado agora. Espere um pouco e tente de novo.",
-    servidor_falhou: "O servidor do Mars não respondeu direito. Tente de novo.",
-    sem_chave: "O servidor do Mars está sem a chave da API.",
   };
 
   function explicarErro(err) {

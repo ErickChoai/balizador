@@ -26,7 +26,6 @@ const partes = {
   exemplos: ler("balizador.exemplos.js"),
   ia: ler("balizador.ia.js"),
   regras: ler("balizador.regras.js"),
-  servidor: ler("balizador.servidor.js"),
   app: ler("balizador.app.js"),
   conversa: ler("balizador.conversa.js"),
   css: ler("estilo.css"),
@@ -78,7 +77,6 @@ const SCRIPTS = `<script>${partes.xlsx}</script>
 <script>${partes.exemplos}</script>
 <script>${partes.ia}</script>
 <script>${partes.regras}</script>
-<script>${partes.servidor}</script>
 <script>${partes.app}</script>
 <script>${partes.conversa}</script>`;
 
