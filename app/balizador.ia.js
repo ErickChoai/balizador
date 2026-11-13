@@ -130,6 +130,13 @@
     "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO", "ESCOLAR",
     "MODALIDADE", "MODALIDADES", "JEPB", "JASC", "PARAJASC", "JESC", "OLESC",
     "JEBS", "JUBS", "CBDA",
+    // o sexo escrito por extenso e as abreviações de prova (no teste gigante, "menino" virou PESSOA 72)
+    "MENINO", "MENINA", "MENINOS", "MENINAS", "HOMEM", "MULHER", "RAPAZ", "MOCA",
+    "LIVR", "BORB", "BORBO", "COST", "PEIT", "JUV", "INF", "MIR", "PMB",
+    // o recado de quem não vai nadar
+    "DESISTIU", "DESISTENTE", "CANCELADO", "CANCELADA", "RETIRADO", "RETIRADA",
+    "SUBSTITUIDO", "SUBSTITUIDA", "AUSENTE",
+    "REVEZAMENTOS", "PROVAS", "INSCRITAS", "EQUIPES", "RESUMO", "LEIA",
     // palavras de instrução e de recado, que nome de gente não tem
     "OU", "ESCREVA", "ESCREVER", "INFORME", "INFORMAR", "AQUI", "ATE",
     "ENVIAR", "ENVIE", "TODAS", "TODOS", "TODA", "TODO", "UNICA", "UNICO",
@@ -262,6 +269,9 @@
       return /\d{5,}/.test(t.replace(/\s/g, "")) && !/[:.,'"’”]/.test(t)
         ? p.replace(t, codigoPara(m, "NUMERO", t)) : p;
     }
+    // prova abreviada ("50L", "100LV", "4x50M"): número com até três letras não é nome de ninguém
+    // (no teste gigante, "50L" foi como PESSOA, e o Mars falou de "código de pessoa" na tela)
+    if (/^\d{1,3}(x\d{2,3})?\s?[a-z]{1,3}\.?$/i.test(t)) return p;
     if (D.lerProvaPorExtenso(t)) return p;
     const palavras = N(t).split(/\s+/).map(chavePalavra);
     if (palavras.some((w) => voc.instituicao.has(w))) return p;
@@ -573,7 +583,7 @@ Para cada aba, devolva:
 - provas_em_colunas: só no layout provas_em_colunas. Para cada coluna de prova, a letra, a prova escrita por extenso como está no cabeçalho (junte as partes quando o cabeçalho ocupar duas linhas, como "50M" em cima e "LIVRE" embaixo) e a letra da coluna de tempo daquela prova, quando houver uma separada. Nos outros layouts, lista vazia.
 - prova_da_aba, categoria_da_aba, naipe_da_aba, equipe_da_aba: quando a aba inteira é de uma prova, de uma categoria, de um naipe ou de uma equipe, dito no nome da aba ou num título. Copie como está escrito, inclusive os códigos. null quando não for o caso.
 - textos_de_lixo: textos que marcam linhas que não são inscrição nem título, como TOTAL, assinatura do responsável, observações. Copie como aparecem na amostra.
-- incertezas: tudo de que você não tem certeza, com a linha e a coluna quando fizer sentido e o motivo numa frase curta, em português.
+- incertezas: tudo de que você não tem certeza, com a linha e a coluna quando fizer sentido e o motivo numa frase curta, em português. A coluna diz de qual prova é a dúvida, numa ficha com uma coluna por prova. O motivo aparece na tela para a pessoa: escreva para ela, sem falar de código, de PESSOA, de máscara nem de texto escondido. Não ponha em incertezas o que o app lê sozinho: o sexo escrito por extenso ou abreviado (Fem, Masc, menina, menino), o tempo com ponto, vírgula ou unidade (38.5, 41 seg), a data em outro formato (2014-05-12) e o nome todo em minúsculas.
 
 Não chute. Na dúvida, deixe null e explique em incertezas.`;
 
@@ -741,24 +751,32 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
                      (a.linha_cabecalho ? a.linha_cabecalho + 1 : 1);
 
       // as incertezas com linha vão para a linha; as outras ficam na aba
+      // com a coluna: numa ficha com uma coluna por prova, a dúvida de uma coluna fica só
+      // na inscrição dela (no teste grande, a dúvida do tempo de NICOLAS aparecia nas duas provas)
       const incertasPorLinha = new Map();
+      const letra = (c) => String(c || "").trim().toUpperCase();
+      const colunasDeProva = new Set((a.provas_em_colunas || [])
+        .flatMap((pc) => [pc.coluna, pc.coluna_tempo]).filter(Boolean).map(letra));
       for (const inc of a.incertezas) {
         const motivo = desmascarar(inc.motivo, m);
         if (inc.linha != null) {
           if (!incertasPorLinha.has(inc.linha)) incertasPorLinha.set(inc.linha, []);
-          incertasPorLinha.get(inc.linha).push(motivo);
+          incertasPorLinha.get(inc.linha).push({ motivo, coluna: letra(inc.coluna) });
         } else resumo.notas.push(motivo);
       }
+      const incertezasDa = (n, suas) => (incertasPorLinha.get(n) || [])
+        .filter((x) => !suas || !x.coluna || !colunasDeProva.has(x.coluna) || suas.includes(x.coluna))
+        .map((x) => x.motivo);
 
       let tituloAtual = "", contexto = "";
       const ignora = (l, motivo, tipo) => ignoradas.push({
         aba: a.aba, linha: l.n, motivo, tipo: tipo || "ignorada", original: l.cel });
-      const novaLinha = (l, campos, sub) => {
+      const novaLinha = (l, campos, sub, suas) => {
         linhas.push({
           id: a.aba + "|" + l.n + (sub != null ? "|" + sub : ""),
           origem: { aba: a.aba, linha: l.n, sub: sub != null ? sub : undefined },
           original: l.cel, campos,
-          incertezas: (incertasPorLinha.get(l.n) || []).slice(),
+          incertezas: incertezasDa(l.n, suas),
           via: "mapa", excluida: false,
         });
         resumo.inscricoes++;
@@ -834,7 +852,8 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
             const tempoSep = pc.coluna_tempo ? texto(l.cel[col(pc.coluna_tempo)]) : "";
             // a célula da prova com um número dentro é o próprio tempo
             const tempo = tempoSep || (/\d/.test(marca) && B.lerTempo(marca) != null ? marca : "");
-            novaLinha(l, Object.assign({}, c, { prova: fixo(pc.prova), tempo: tempo || c.tempo }), k);
+            novaLinha(l, Object.assign({}, c, { prova: fixo(pc.prova), tempo: tempo || c.tempo }), k,
+              [pc.coluna, pc.coluna_tempo].filter(Boolean).map(letra));
             achou++;
           });
           if (!achou) ignora(l, "atleta sem nenhuma prova marcada");
@@ -902,6 +921,7 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
    * Como a linha vai entrar no balizamento.
    * Devolve { inscricao, estado: "ok" | "incerto" | "erro", motivos, numero }.
    */
+  const RE_DESISTIU = /\b(DESISTIU|DESISTENTE|DESISTENCIA|CANCELAD[OA]|CANCELOU|NAO VAI|RETIRAD[OA]|SUBSTITUID[OA])\b/;
   function interpretar(l, programa) {
     programa = programa || [];
     const campos = camposInterpretados(l, programa);
@@ -909,6 +929,10 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
     // linha que a pessoa conferiu ou corrigiu já não carrega a dúvida da IA;
     // o que o app mesmo aponta (tempo ilegível, prova fora do programa) fica
     const motivos = (l.conferida ? [] : l.incertezas.slice()).concat(lida.avisos);
+    // "DESISTIU" ou "CANCELADO" escrito na linha: o app pergunta, mesmo que o Mars não tenha visto
+    const desistiu = l.conferida ? null : (l.original || []).map((x) => String(x == null ? "" : x).trim())
+      .find((x) => RE_DESISTIU.test(N(x)));
+    if (desistiu && !motivos.some((m) => RE_DESISTIU.test(N(m)))) motivos.push(`a planilha diz "${desistiu}" nesta linha`);
     if (l.resolvida && l.resolvida.incerto && l.escolhida == null && !l.conferida) {
       motivos.push("a prova: " + (l.resolvida.motivo || "a IA não teve certeza"));
     }
@@ -973,7 +997,7 @@ Para cada descrição, devolva:
 - categoria: como está escrita no programa. Quando a prova do programa junta categorias com +, devolva só a parte que corresponde a esta descrição, como PARALÍMPICO "A".
 - naipe: FEM, MASC ou MISTO.
 - numero_programa: o número da prova do programa que corresponde, ou null quando não houver programa ou nenhuma prova bater.
-- incerto e motivo: marque incerto quando a descrição permitir mais de uma leitura, e explique numa frase curta, em português.
+- incerto e motivo: marque incerto quando a descrição permitir mais de uma leitura, e explique numa frase curta, em português. O motivo aparece na tela para a pessoa: escreva para ela, sem falar de código, de PESSOA, de máscara nem de texto escondido.
 
 Não invente o que a descrição não diz. Sem naipe na descrição, naipe null e incerto true, mesmo que o programa só tenha uma prova parecida.`;
 
@@ -1027,7 +1051,7 @@ Devolva uma inscrição para cada atleta em cada prova:
 - nome, equipe, tempo, nascimento, classe, segmento: como estão escritos, ou null.
 - prova: a prova por extenso, juntando o que a planilha diz em títulos, cabeçalhos ou colunas, como "50M LIVRE".
 - categoria e naipe: como estão escritos, venham da linha, de um título ou do nome da aba, ou null.
-- incerto e motivo: marque incerto quando tiver dúvida e explique numa frase curta, em português.
+- incerto e motivo: marque incerto quando tiver dúvida e explique numa frase curta, em português. O motivo aparece na tela para a pessoa: escreva para ela, sem falar de código, de PESSOA, de máscara nem de texto escondido.
 
 Em linhas_ignoradas, liste as linhas com conteúdo que não viraram inscrição (títulos, cabeçalhos, totais, assinaturas), com o motivo.`;
 

@@ -597,15 +597,20 @@
       const equipes = new Map();
       for (const i of lista) {
         const k = normalizar(i.equipe);
-        if (!equipes.has(k)) equipes.set(k, { rotulo: i.equipe, provas: [] });
+        if (!equipes.has(k)) equipes.set(k, { rotulo: i.equipe, provas: [], datas: new Set() });
         equipes.get(k).provas.push(i.tituloProva);
+        const d = String(i.nascimento == null ? "" : i.nascimento).replace(/\s+/g, "");
+        if (d) equipes.get(k).datas.add(d);
       }
       if (equipes.size < 2) continue;
       const v = [...equipes.values()];
+      // a mesma data completa nas duas instituições: quase certo que é a mesma pessoa
+      const datas = new Set(v.flatMap((x) => [...x.datas]));
+      const mesmaData = datas.size === 1 && v.every((x) => x.datas.size === 1);
       achados.push({
-        tipo: "MESMO NOME EM DUAS EQUIPES", gravidade: "aviso",
+        tipo: "MESMO NOME EM DUAS EQUIPES", gravidade: mesmaData ? "critico" : "aviso",
         nome: lista[0].nome, equipe: v.map((x) => x.rotulo).join(" e "),
-        quantidade: v.length,
+        quantidade: v.length, mesmaData, data: mesmaData ? [...datas][0] : "",
         provas: v.map((x) => x.rotulo + ": " + x.provas.join(", ")),
       });
     }

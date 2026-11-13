@@ -81,7 +81,9 @@
              jaVistos: new Set(), ultimosItens: {}, tempos: {}, classes: {},
              // atletas cujas provas o árbitro já escolheu na mão. Se o que
              // ele escolheu continua furando a regra, é exceção autorizada.
-             decisoes: {} };
+             decisoes: {},
+             // nomes que o árbitro disse serem de duas pessoas diferentes, não de uma inscrita duas vezes
+             duasPessoas: new Set() };
   }
 
   /* ---------------- perfil ---------------- */
@@ -312,6 +314,9 @@
     if (prog && prog.provas && prog.provas.length) {
       const et = etapasDoPrograma(prog.provas);
       if (et.length) estado.perfil.etapas = et;
+      // o nome escrito no título da lista de provas entra no campo, para a pessoa conferir
+      const campoNome = $("#nomeComp");
+      if (prog.titulo && campoNome && !campoNome.value.trim()) campoNome.value = prog.titulo;
       // as datas já estavam na planilha: não faz sentido pedir de novo
       const datas = datasDoPrograma(prog.provas);
       if (datas && !estado.perfil.dataInicio && !estado.perfil.dataFim) {
@@ -443,7 +448,7 @@
     }
 
     const voltas = etapasForaDeOrdem(r.provas);
-    const trocadas = r.provas.filter((p, i) => p.numero != null && p.numero !== i + 1);
+    const trocadas = r.provas.filter((p, i) => !numeroBate(r.provas, i));
     const juncoes = juncoesDoPrograma(r.provas);
     const juntar = estado.perfil.juntarPrograma !== false;
 
@@ -2214,6 +2219,10 @@
     estado.categorias = B.conferirCategorias(planas);
 
     estado.mesmoNome = B.conferirMesmoNome(planas);
+    // o árbitro disse que são duas pessoas: vira só aviso
+    for (const m of estado.mesmoNome) {
+      if (m.mesmaData && (estado.ajustes.duasPessoas || new Set()).has(B.normalizar(m.nome))) m.mesmaData = false;
+    }
     estado.classes = B.conferirClasses(planas);
     estado.naipes = B.conferirNaipes(planas);
     estado.parecidos = B.conferirParecidos(planas);
@@ -2463,6 +2472,19 @@
         resolver: () => resolverClasses(estado.classes),
       },
       {
+        id: "mesmaPessoa", titulo: "A mesma pessoa em duas instituições",
+        nivel: "critico", itens: estado.mesmoNome.filter((a) => a.mesmaData).map((a) => ({
+          prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
+          detalhe: "nascimento em " + a.data + " nas duas · " + a.provas.join(" · "),
+        })),
+        explica: `O mesmo nome e a mesma data de nascimento, inscritos por duas
+          instituições. Quase sempre é a mesma pessoa inscrita duas vezes, e aí
+          <b>o limite de provas não a alcança</b>: o app conta as provas por nome
+          mais instituição.
+          <br><br>Tire as inscrições de uma das instituições na planilha. Se forem
+          duas pessoas, siga assim.`,
+      },
+      {
         id: "nascimentos", titulo: "Atleta com duas datas de nascimento",
         nivel: "critico", itens: estado.nascimentos.map((a) => ({
           prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
@@ -2595,7 +2617,7 @@
       {
         rotuloVer: "ver os nomes",
         id: "mesmoNome", titulo: "Mesmo nome em duas instituições",
-        nivel: "info", itens: estado.mesmoNome.map((a) => ({
+        nivel: "info", itens: estado.mesmoNome.filter((a) => !a.mesmaData).map((a) => ({
           prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
           detalhe: a.provas.join(" · "),
         })),
@@ -2973,11 +2995,24 @@
   /* A coluna Nº do programa contra a posição da linha. Quem manda é a ordem
      das linhas; este bloco existe para o árbitro conferir contra o programa
      oficial impresso, onde uma prova a menos desloca todas as seguintes. */
+  /* O número da coluna Nº bate com a ordem das linhas, ou com a posição
+     dentro da etapa: muita lista recomeça em 1 a cada etapa (no teste
+     gigante, a prova 3 existia quatro vezes, uma em cada etapa). */
+  function numeroBate(provas, i) {
+    const p = provas[i];
+    if (p.numero == null || p.numero === i + 1) return true;
+    const et = String(p.etapa || "").trim();
+    if (!et) return false;
+    let k = i;
+    while (k > 0 && String(provas[k - 1].etapa || "").trim() === et) k--;
+    return p.numero === i - k + 1;
+  }
+
   function numeracaoTrocada() {
     const prog = (estado.perfil.programa || []);
     const saida = [];
     prog.forEach((p, i) => {
-      if (p.numero == null || p.numero === i + 1) return;
+      if (numeroBate(prog, i)) return;
       saida.push({
         prova: i + 1,
         titulo: D.tituloProva(p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe),
@@ -4220,6 +4255,27 @@
 
     for (const p of estado.provas) {
       for (const r of (p.repetidos || [])) {
+        /* Com tempos diferentes, o app não escolhe qual fica: a pessoa escolhe
+           (no teste gigante, LETÍCIA tinha 46,30 numa linha e 44,90 na outra,
+           e o cartão propunha tirar a segunda sem mostrar os tempos). */
+        const outra = p.series.flatMap((s) => s.linhas.map((l) => l.item))
+          .find((it) => it !== r && B.normalizar(it.nome || "") === B.normalizar(r.nome || "") &&
+                        B.normalizar(it.equipe || "") === B.normalizar(r.equipe || "") && chaveDaLinha(it) !== chaveDaLinha(r));
+        const fmt = (t) => (t == null ? "sem tempo" : B.formatarTempo(t));
+        if (outra && fmt(outra.tempo) !== fmt(r.tempo)) {
+          const fica = (manter, sai) => ({ rotulo: `Ficar com ${fmt(manter.tempo)} (linha ${manter.linha})`,
+            aplicar: () => { estado.ajustes.removidas.add(chaveDaLinha(sai)); fim(); },
+            feito: `${CX(r.nome)} ficou com ${fmt(manter.tempo)}; a linha ${sai.linha} saiu.` });
+          const ops = [fica(outra, r), fica(r, outra)];
+          P.push({ id: "rep|" + chaveDaLinha(r), bloco: "duplicados", opcoes: ops,
+            caso: `${CX(r.nome)} (${CX(r.equipe)}) aparece duas vezes na ${nomeProva(p)}, com tempos diferentes: ` +
+                  `${fmt(outra.tempo)} na linha ${outra.linha} e ${fmt(r.tempo)} na linha ${r.linha}.`,
+            pergunta: "Os tempos são diferentes. Qual inscrição fica?",
+            aplicar: ops[0].aplicar, feito: ops[0].feito,
+            rep: { nome: CX(r.nome), equipe: CX(r.equipe), prova: nomeProva(p), motivo: "os tempos são diferentes",
+                   tempos: [fmt(outra.tempo), fmt(r.tempo)] } });
+          continue;
+        }
         P.push({ id: "rep|" + chaveDaLinha(r), bloco: "duplicados",
           caso: `${CX(r.nome)} (${CX(r.equipe)}) aparece duas vezes na ${nomeProva(p)}, ${r.motivo}.`,
           pergunta: `Posso tirar a inscrição repetida, da linha ${r.linha}?`,
@@ -4245,6 +4301,30 @@
                  lido: B.formatarTempo(t.tempo), metros: t.metros,
                  opcoes: t.alternativas.map((a) => ({ segundos: a.segundos, como: a.como })),
                  definir: (seg) => { estado.ajustes.tempos[chaveDaLinha(t.item)] = seg; fim(); } } });
+    }
+
+    /* A mesma pessoa (nome e data de nascimento) inscrita por duas
+       instituições: a pessoa escolhe onde a inscrição fica, ou diz que são
+       duas pessoas. Antes, o cartão só mandava para a tela completa. */
+    for (const m of estado.mesmoNome.filter((x) => x.mesmaData)) {
+      const chave = B.normalizar(m.nome);
+      const dela = estado.inscricoes.filter((i) => !i.revezamento && B.normalizar(i.nome || "") === chave &&
+        !estado.ajustes.removidas.has(chaveDaLinha(i)));
+      const equipes = [...new Map(dela.map((i) => [B.normalizar(i.equipe || ""), i.equipe])).values()];
+      if (equipes.length < 2) continue;
+      const ficaEm = (eq) => ({ rotulo: `Fica só em ${CX(eq)}`,
+        aplicar: () => {
+          for (const i of dela) if (B.normalizar(i.equipe || "") !== B.normalizar(eq)) estado.ajustes.removidas.add(chaveDaLinha(i));
+          fim();
+        },
+        feito: `${CX(m.nome)} ficou só em ${CX(eq)}.` });
+      const ops = equipes.map(ficaEm).concat([{ rotulo: "São duas pessoas",
+        aplicar: () => { estado.ajustes.duasPessoas.add(chave); fim(); },
+        feito: `Certo: são duas pessoas chamadas ${CX(m.nome)}.` }]);
+      P.push({ id: "pessoa|" + chave, bloco: "mesmaPessoa", opcoes: ops,
+        caso: `${CX(m.nome)}, nascimento em ${m.data}, tem inscrição pelas duas: ${m.provas.join("; ")}.`,
+        pergunta: "Em qual instituição a inscrição fica?",
+        aplicar: ops[0].aplicar, feito: ops[0].feito });
     }
 
     const propostas = estado.propostas || [];
@@ -4415,13 +4495,13 @@
     return { removidas: new Set(a.removidas), nomes: Object.assign({}, a.nomes), aceitos: new Set(a.aceitos),
              jaVistos: new Set(a.jaVistos), ultimosItens: Object.assign({}, a.ultimosItens),
              tempos: Object.assign({}, a.tempos), classes: JSON.parse(JSON.stringify(a.classes || {})),
-             decisoes: JSON.parse(JSON.stringify(a.decisoes || {})) };
+             decisoes: JSON.parse(JSON.stringify(a.decisoes || {})), duasPessoas: new Set(a.duasPessoas || []) };
   }
   function restaurarAjustes(f) {
     Object.assign(estado.ajustes, { removidas: new Set(f.removidas), nomes: Object.assign({}, f.nomes),
       aceitos: new Set(f.aceitos), jaVistos: new Set(f.jaVistos), ultimosItens: Object.assign({}, f.ultimosItens),
       tempos: Object.assign({}, f.tempos), classes: JSON.parse(JSON.stringify(f.classes)),
-      decisoes: JSON.parse(JSON.stringify(f.decisoes)) });
+      decisoes: JSON.parse(JSON.stringify(f.decisoes)), duasPessoas: new Set(f.duasPessoas || []) });
     montar();
   }
 

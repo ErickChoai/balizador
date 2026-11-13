@@ -1410,8 +1410,22 @@ html.noite{font-size:15px}
   font-family:var(--texto);font-size:.85rem;color:var(--tinta);padding-left:0}
 .fala .quem b{font-weight:700}
 .fala .quem em{font-style:normal;color:var(--suave);font-size:.78rem}
-.selo-ia{width:1.6rem;height:1.6rem;border-radius:50%;display:grid;place-items:center;flex:none;
-  background:var(--agua);color:var(--papel);font-family:var(--mono);font-size:.68rem;font-weight:700}
+/* o símbolo do Mars: a touca e os óculos na água; boia enquanto ele pensa */
+.selo-mars{width:1.95rem;height:1.95rem;flex:none;display:block;overflow:visible}
+.selo-mars .sm-fundo{fill:#0B5466;stroke:#F2C14E;stroke-width:1.2}
+.selo-mars .sm-onda{fill:none;stroke:#45B8C6;stroke-width:1.4;stroke-linecap:round}
+.selo-mars .sm-touca{fill:#F2C14E}
+.selo-mars .sm-dobra{fill:none;stroke:#FFE7A3;stroke-width:1.2;stroke-linecap:round}
+.selo-mars .sm-elastico{stroke:#C99A2E;stroke-width:1.1}
+.selo-mars .sm-lente{fill:#0A2A33;stroke:#E9F4F6;stroke-width:1}
+.selo-mars .sm-ponte{stroke:#E9F4F6;stroke-width:1.1}
+.selo-mars .sm-brilho{fill:#FFFFFF}
+.selo-mars .sm-sorriso{fill:none;stroke:#E9F4F6;stroke-width:1.4;stroke-linecap:round}
+.fala.pensando .selo-mars .sm-cabeca{animation:boiaMars 1.8s ease-in-out infinite}
+.fala.pensando .selo-mars .sm-brilho{animation:brilhoMars 1.8s ease-in-out infinite}
+@keyframes boiaMars{50%{transform:translateY(1.3px)}}
+@keyframes brilhoMars{0%,100%{opacity:1}45%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){.fala.pensando .selo-mars *{animation:none}}
 .noite .fala.eu .texto{font-size:.98rem;padding:.55rem .9rem}
 .noite .guia b{font-size:1.12rem}
 .noite .guia p{font-size:.95rem}
@@ -2162,6 +2176,31 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
    (no teste grande, "Não entra assim" aparecia com ✓) */
 .cm-bom.cm-fora{background:#FBEDEB;color:#1A2B31;border-color:#E5675B}
 .cm-bom.cm-fora i{color:#C2433A}
+
+/* o cronômetro na trilha, no jeito da placa eletrônica da piscina (escura nos dois temas) */
+.cronometro{display:inline-flex;align-items:center;gap:.35rem;margin-left:.15rem;padding:.24rem .6rem;border-radius:6px;
+  background:#05141A;border:1px solid #1E4B58;color:#F2C14E;font-family:var(--mono);font-size:.88rem;
+  font-variant-numeric:tabular-nums;letter-spacing:.04em;flex:none}
+.cronometro .relogio{width:.95rem;height:.95rem;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
+.cronometro.parado{color:#3FBF8F;border-color:#3FBF8F}
+/* o placar do fim: o tempo na placa e as decisões da pessoa */
+.placar-final{display:flex;align-items:center;gap:.9rem;padding:.6rem .75rem;border-radius:6px;
+  background:var(--papel2);border:1px solid var(--linha);margin:.15rem 0 .45rem}
+.pf-placa{display:flex;flex-direction:column;align-items:center;padding:.3rem .75rem .35rem;border-radius:4px;background:#05141A;flex:none}
+.pf-placa span{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:#9DBCC5}
+.pf-placa b{font-family:var(--mono);font-size:1.75rem;line-height:1.1;color:#F2C14E;font-variant-numeric:tabular-nums}
+.placar-final p{margin:0;font-size:1rem;line-height:1.4;min-width:0}
+.decisoes-conv{margin:.3rem 0 0;padding-left:1.5rem;display:flex;flex-direction:column;gap:.2rem;font-size:.92rem}
+.dc-hora{font-family:var(--mono);font-size:.78rem;color:var(--suave);margin-right:.35rem;font-variant-numeric:tabular-nums}
+/* aceitar as sugestões do Mars de uma vez, vendo antes o que cada uma faz */
+.lote-org{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem .8rem;margin-top:.55rem}
+.lote-org details{flex-basis:100%}
+@media (max-width:520px){
+  .placar-final{gap:.6rem;padding:.5rem .55rem}
+  .pf-placa b{font-size:1.45rem}
+}
+/* o tempo de cada linha repetida não quebra no meio (no painel estreito, "46.30" virava "46.3" e "0") */
+.cr-linha b{flex:none;font-weight:700}
 
 </style>
 </head>
@@ -3686,15 +3725,20 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       const equipes = new Map();
       for (const i of lista) {
         const k = normalizar(i.equipe);
-        if (!equipes.has(k)) equipes.set(k, { rotulo: i.equipe, provas: [] });
+        if (!equipes.has(k)) equipes.set(k, { rotulo: i.equipe, provas: [], datas: new Set() });
         equipes.get(k).provas.push(i.tituloProva);
+        const d = String(i.nascimento == null ? "" : i.nascimento).replace(/\s+/g, "");
+        if (d) equipes.get(k).datas.add(d);
       }
       if (equipes.size < 2) continue;
       const v = [...equipes.values()];
+      // a mesma data completa nas duas instituições: quase certo que é a mesma pessoa
+      const datas = new Set(v.flatMap((x) => [...x.datas]));
+      const mesmaData = datas.size === 1 && v.every((x) => x.datas.size === 1);
       achados.push({
-        tipo: "MESMO NOME EM DUAS EQUIPES", gravidade: "aviso",
+        tipo: "MESMO NOME EM DUAS EQUIPES", gravidade: mesmaData ? "critico" : "aviso",
         nome: lista[0].nome, equipe: v.map((x) => x.rotulo).join(" e "),
-        quantidade: v.length,
+        quantidade: v.length, mesmaData, data: mesmaData ? [...datas][0] : "",
         provas: v.map((x) => x.rotulo + ": " + x.provas.join(", ")),
       });
     }
@@ -4474,6 +4518,22 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const grade = XLSX.utils.sheet_to_json(ws, {
       header: 1, raw: false, defval: null, blankrows: true });
     const ref = ws && ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : null;
+    /* A data guardada como data do Excel sai no formato americano (m/d/yy):
+       09/05/2014 virava "5/9/14", lido como 5 de setembro (no teste gigante,
+       ainda um dia antes, pelo fuso). Aqui ela volta a dd/mm/aaaa a partir do
+       número da data. Tempo guardado como hora fica de fora: é menor que 1. */
+    if (ref) {
+      for (const k of Object.keys(ws)) {
+        if (k[0] === "!") continue;
+        const c = ws[k];
+        if (!c || c.t !== "n" || !(c.v >= 1 && c.v < 80000)) continue;
+        if (!/^\d{1,4}[/.-]\d{1,2}[/.-]\d{1,4}$/.test(String(c.w || "").trim())) continue;
+        const p = XLSX.SSF.parse_date_code(Math.round(c.v));
+        if (!p || !p.y) continue;
+        const pos = XLSX.utils.decode_cell(k), row = grade[pos.r - ref.s.r];
+        if (row) row[pos.c - ref.s.c] = `${String(p.d).padStart(2, "0")}/${String(p.m).padStart(2, "0")}/${p.y}`;
+      }
+    }
     return { grade, linha0: ref ? ref.s.r : 0, coluna0: ref ? ref.s.c : 0 };
   }
 
@@ -4573,7 +4633,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
 
     const revezamento = /^\d+X/.test(distancia);
-    let nome = c.nome, atletas = null, semLista = false;
+    // o nome todo em minúsculas entra em maiúsculas, como os outros da lista (no teste gigante,
+    // "maria eduarda pires" saía assim no PDF); quem escreveu com maiúscula e minúscula fica como escreveu
+    let nome = c.nome && c.nome === c.nome.toLowerCase() ? c.nome.toUpperCase() : c.nome, atletas = null, semLista = false;
     if (revezamento) {
       // no revezamento quem ocupa a raia é a equipe; nomes escritos são rascunho
       atletas = c.nome.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
@@ -5118,8 +5180,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
 
   const ESCRITAS_NAIPE = {
     MISTO: ["MISTO", "MISTA", "MISTOS", "MIX", "X"],
-    MASC: ["MASCULINO", "MASCULINA", "MASC", "M", "H", "HOMENS", "HOMEM"],
-    FEM: ["FEMININO", "FEMININA", "FEM", "F", "MULHERES", "MULHER"],
+    MASC: ["MASCULINO", "MASCULINA", "MASC", "M", "H", "HOMENS", "HOMEM", "MENINO", "MENINOS", "RAPAZ", "RAPAZES"],
+    FEM: ["FEMININO", "FEMININA", "FEM", "F", "MULHERES", "MULHER", "MENINA", "MENINAS", "MOCA", "MOCAS"],
   };
 
   function normalizarNaipe(texto) {
@@ -5191,10 +5253,31 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     return m ? parseInt(m[0], 10) : null;
   }
 
+  /* Um título de etapa no meio da lista ("1ª ETAPA, SÁBADO DE MANHÃ"): não é
+     prova, e diz a etapa das provas que vêm embaixo. No teste gigante, a lista
+     tinha 4 etapas assim e o app mostrava "0 etapas". */
+  function etapaDoTitulo(t) {
+    const n = norm(String(t || "")).replace(/\s+/g, " ").trim();
+    const m = n.match(/^(\d{1,2}) ?[ªºAO°]?\.? ?ETAPA\b(.*)$/) || n.match(/^ETAPA (\d{1,2})\b(.*)$/);
+    if (!m) return null;
+    const resto = m[2] || "";
+    if (/\d+ ?M\b|LIVRE|COSTAS|PEITO|BORBOLETA|MEDLEY/.test(resto)) return null;
+    return { nome: Number(m[1]) + "ª ETAPA",
+             periodo: /MANHA/.test(resto) ? "MANHÃ" : /TARDE/.test(resto) ? "TARDE" : /NOITE/.test(resto) ? "NOITE" : "" };
+  }
+
   function lerProgramaColunas(grade, inicio, mapa, porColunas, saida) {
+    let etapaAtual = null;
+    // o cabeçalho copiado de novo no meio da lista (quem colou duas folhas) fica de fora sozinho
+    const textoDaLinha = (l) => (l || []).map((v) => norm(String(v == null ? "" : v)).replace(/\s+/g, " ").trim()).filter(Boolean).join("|");
+    const cabecalho = textoDaLinha(grade[inicio - 1]);
     for (let r = inicio; r < grade.length; r++) {
       const linha = grade[r] || [];
       if (linhaVaziaPrograma(linha)) continue;
+      if (cabecalho && textoDaLinha(linha) === cabecalho) {
+        (saida.cabecalhosRepetidos = saida.cabecalhosRepetidos || []).push(r + 1);
+        continue;
+      }
       const cel = (campo) => mapa[campo] == null ? ""
         : String(linha[mapa[campo]] == null ? "" : linha[mapa[campo]]).trim();
 
@@ -5226,13 +5309,37 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       // linha em que nada foi entendido quase nunca é uma prova: é um recado,
       // um total, um resto de outra planilha. Dizer isso é mais útil que listar
       // os quatro campos que faltam.
-      if (faltas.length === 4) {
-        saida.linhas.push({ linha: r + 1, texto: visto, ok: false,
-          motivo: "esta linha não parece uma prova; se for um recado, um total " +
-                  "ou uma sobra, apague-a da planilha" });
-        continue;
-      }
       if (faltas.length) {
+        // a prova inteira numa célula só ("50m peito infantil feminino"): o app lê por extenso.
+        // No teste gigante ela era tratada como recado, e o Não na correção jogava fora uma prova de verdade.
+        const fora = new Set(["numero", "etapa", "dia", "periodo"].map((k) => mapa[k]).filter((c) => c != null));
+        const cheias = linha.map((v, c) => (fora.has(c) || v == null ? "" : String(v).trim())).filter(Boolean);
+        const resto = cheias.join(" ");
+        // só a prova que está toda numa célula; "50m peito" com a categoria ao lado é correção do Mars
+        const inteira = cheias.length === 1 ? lerLinhaPrograma(resto) : null;
+        if (inteira && inteira.distancia && inteira.estilo && inteira.categoria && inteira.naipe) {
+          const cat = String(inteira.categoria).toUpperCase();
+          saida.linhas.push({ linha: r + 1, texto: visto, ok: true, prova: {
+            distancia: inteira.distancia, estilo: inteira.estilo, categoria: cat, naipe: inteira.naipe,
+            rotulo: String(inteira.rotulo || cat).toUpperCase(), numero: numeroDeclarado(cel("numero")),
+            etapa: cel("etapa") || (etapaAtual ? etapaAtual.nome : ""), dia: cel("dia"),
+            periodo: cel("periodo") || (etapaAtual ? etapaAtual.periodo : ""),
+          } });
+          continue;
+        }
+        const tudo = linha.map((v) => (v == null ? "" : String(v).trim())).filter(Boolean).join(" ");
+        const titulo = faltas.length === 4 ? etapaDoTitulo(tudo) : null;
+        if (titulo) {
+          etapaAtual = titulo;
+          (saida.titulosDeEtapa = saida.titulosDeEtapa || []).push({ linha: r + 1, texto: tudo, etapa: titulo.nome });
+          continue;
+        }
+        if (faltas.length === 4) {
+          saida.linhas.push({ linha: r + 1, texto: visto, ok: false,
+            motivo: "esta linha não parece uma prova; se for um recado, um total " +
+                    "ou uma sobra, apague-a da planilha" });
+          continue;
+        }
         saida.linhas.push({ linha: r + 1, texto: visto, ok: false,
                             motivo: faltas.join("; ") });
         continue;
@@ -5240,7 +5347,8 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       saida.linhas.push({ linha: r + 1, texto: visto, ok: true, prova: {
         distancia, estilo, categoria, naipe, rotulo: categoria,
         numero: numeroDeclarado(cel("numero")),
-        etapa: cel("etapa"), dia: cel("dia"), periodo: cel("periodo"),
+        etapa: cel("etapa") || (etapaAtual ? etapaAtual.nome : ""), dia: cel("dia"),
+        periodo: cel("periodo") || (etapaAtual ? etapaAtual.periodo : ""),
       } });
     }
   }
@@ -5279,6 +5387,18 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
     const cab = acharCabecalhoPrograma(grade);
     const mapa = cab ? cab.mapa : {};
+    // o título em cima do cabeçalho ("PROGRAMA DE PROVAS: JOGOS DA ESTAÇÃO 2026") dá o nome da competição
+    if (cab) {
+      for (let r = 0; r < cab.linha; r++) {
+        const cheias = (grade[r] || []).map((v) => String(v == null ? "" : v).trim()).filter(Boolean);
+        if (cheias.length !== 1) continue;
+        const nome = cheias[0].replace(/^\s*programa(\s+de\s+provas)?\s*[:\-–—]?\s*/i, "").trim();
+        if (nome.length >= 6 && nome.length <= 80 && /[a-zà-ú]{3}/i.test(nome) && !/^(n[ºo°]|prova|etapa)\b/i.test(nome)) {
+          saida.titulo = nome;
+          break;
+        }
+      }
+    }
     const porColunas = mapa.distancia != null && mapa.estilo != null;
     const porProvaCurta = !porColunas && mapa.prova != null &&
                           mapa.categoria != null && mapa.naipe != null;
@@ -7475,6 +7595,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO", "ESCOLAR",
     "MODALIDADE", "MODALIDADES", "JEPB", "JASC", "PARAJASC", "JESC", "OLESC",
     "JEBS", "JUBS", "CBDA",
+    // o sexo escrito por extenso e as abreviações de prova (no teste gigante, "menino" virou PESSOA 72)
+    "MENINO", "MENINA", "MENINOS", "MENINAS", "HOMEM", "MULHER", "RAPAZ", "MOCA",
+    "LIVR", "BORB", "BORBO", "COST", "PEIT", "JUV", "INF", "MIR", "PMB",
+    // o recado de quem não vai nadar
+    "DESISTIU", "DESISTENTE", "CANCELADO", "CANCELADA", "RETIRADO", "RETIRADA",
+    "SUBSTITUIDO", "SUBSTITUIDA", "AUSENTE",
+    "REVEZAMENTOS", "PROVAS", "INSCRITAS", "EQUIPES", "RESUMO", "LEIA",
     // palavras de instrução e de recado, que nome de gente não tem
     "OU", "ESCREVA", "ESCREVER", "INFORME", "INFORMAR", "AQUI", "ATE",
     "ENVIAR", "ENVIE", "TODAS", "TODOS", "TODA", "TODO", "UNICA", "UNICO",
@@ -7607,6 +7734,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       return /\d{5,}/.test(t.replace(/\s/g, "")) && !/[:.,'"’”]/.test(t)
         ? p.replace(t, codigoPara(m, "NUMERO", t)) : p;
     }
+    // prova abreviada ("50L", "100LV", "4x50M"): número com até três letras não é nome de ninguém
+    // (no teste gigante, "50L" foi como PESSOA, e o Mars falou de "código de pessoa" na tela)
+    if (/^\d{1,3}(x\d{2,3})?\s?[a-z]{1,3}\.?$/i.test(t)) return p;
     if (D.lerProvaPorExtenso(t)) return p;
     const palavras = N(t).split(/\s+/).map(chavePalavra);
     if (palavras.some((w) => voc.instituicao.has(w))) return p;
@@ -7918,7 +8048,7 @@ Para cada aba, devolva:
 - provas_em_colunas: só no layout provas_em_colunas. Para cada coluna de prova, a letra, a prova escrita por extenso como está no cabeçalho (junte as partes quando o cabeçalho ocupar duas linhas, como "50M" em cima e "LIVRE" embaixo) e a letra da coluna de tempo daquela prova, quando houver uma separada. Nos outros layouts, lista vazia.
 - prova_da_aba, categoria_da_aba, naipe_da_aba, equipe_da_aba: quando a aba inteira é de uma prova, de uma categoria, de um naipe ou de uma equipe, dito no nome da aba ou num título. Copie como está escrito, inclusive os códigos. null quando não for o caso.
 - textos_de_lixo: textos que marcam linhas que não são inscrição nem título, como TOTAL, assinatura do responsável, observações. Copie como aparecem na amostra.
-- incertezas: tudo de que você não tem certeza, com a linha e a coluna quando fizer sentido e o motivo numa frase curta, em português.
+- incertezas: tudo de que você não tem certeza, com a linha e a coluna quando fizer sentido e o motivo numa frase curta, em português. A coluna diz de qual prova é a dúvida, numa ficha com uma coluna por prova. O motivo aparece na tela para a pessoa: escreva para ela, sem falar de código, de PESSOA, de máscara nem de texto escondido. Não ponha em incertezas o que o app lê sozinho: o sexo escrito por extenso ou abreviado (Fem, Masc, menina, menino), o tempo com ponto, vírgula ou unidade (38.5, 41 seg), a data em outro formato (2014-05-12) e o nome todo em minúsculas.
 
 Não chute. Na dúvida, deixe null e explique em incertezas.`;
 
@@ -8086,24 +8216,32 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
                      (a.linha_cabecalho ? a.linha_cabecalho + 1 : 1);
 
       // as incertezas com linha vão para a linha; as outras ficam na aba
+      // com a coluna: numa ficha com uma coluna por prova, a dúvida de uma coluna fica só
+      // na inscrição dela (no teste grande, a dúvida do tempo de NICOLAS aparecia nas duas provas)
       const incertasPorLinha = new Map();
+      const letra = (c) => String(c || "").trim().toUpperCase();
+      const colunasDeProva = new Set((a.provas_em_colunas || [])
+        .flatMap((pc) => [pc.coluna, pc.coluna_tempo]).filter(Boolean).map(letra));
       for (const inc of a.incertezas) {
         const motivo = desmascarar(inc.motivo, m);
         if (inc.linha != null) {
           if (!incertasPorLinha.has(inc.linha)) incertasPorLinha.set(inc.linha, []);
-          incertasPorLinha.get(inc.linha).push(motivo);
+          incertasPorLinha.get(inc.linha).push({ motivo, coluna: letra(inc.coluna) });
         } else resumo.notas.push(motivo);
       }
+      const incertezasDa = (n, suas) => (incertasPorLinha.get(n) || [])
+        .filter((x) => !suas || !x.coluna || !colunasDeProva.has(x.coluna) || suas.includes(x.coluna))
+        .map((x) => x.motivo);
 
       let tituloAtual = "", contexto = "";
       const ignora = (l, motivo, tipo) => ignoradas.push({
         aba: a.aba, linha: l.n, motivo, tipo: tipo || "ignorada", original: l.cel });
-      const novaLinha = (l, campos, sub) => {
+      const novaLinha = (l, campos, sub, suas) => {
         linhas.push({
           id: a.aba + "|" + l.n + (sub != null ? "|" + sub : ""),
           origem: { aba: a.aba, linha: l.n, sub: sub != null ? sub : undefined },
           original: l.cel, campos,
-          incertezas: (incertasPorLinha.get(l.n) || []).slice(),
+          incertezas: incertezasDa(l.n, suas),
           via: "mapa", excluida: false,
         });
         resumo.inscricoes++;
@@ -8179,7 +8317,8 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
             const tempoSep = pc.coluna_tempo ? texto(l.cel[col(pc.coluna_tempo)]) : "";
             // a célula da prova com um número dentro é o próprio tempo
             const tempo = tempoSep || (/\d/.test(marca) && B.lerTempo(marca) != null ? marca : "");
-            novaLinha(l, Object.assign({}, c, { prova: fixo(pc.prova), tempo: tempo || c.tempo }), k);
+            novaLinha(l, Object.assign({}, c, { prova: fixo(pc.prova), tempo: tempo || c.tempo }), k,
+              [pc.coluna, pc.coluna_tempo].filter(Boolean).map(letra));
             achou++;
           });
           if (!achou) ignora(l, "atleta sem nenhuma prova marcada");
@@ -8247,6 +8386,7 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
    * Como a linha vai entrar no balizamento.
    * Devolve { inscricao, estado: "ok" | "incerto" | "erro", motivos, numero }.
    */
+  const RE_DESISTIU = /\b(DESISTIU|DESISTENTE|DESISTENCIA|CANCELAD[OA]|CANCELOU|NAO VAI|RETIRAD[OA]|SUBSTITUID[OA])\b/;
   function interpretar(l, programa) {
     programa = programa || [];
     const campos = camposInterpretados(l, programa);
@@ -8254,6 +8394,10 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
     // linha que a pessoa conferiu ou corrigiu já não carrega a dúvida da IA;
     // o que o app mesmo aponta (tempo ilegível, prova fora do programa) fica
     const motivos = (l.conferida ? [] : l.incertezas.slice()).concat(lida.avisos);
+    // "DESISTIU" ou "CANCELADO" escrito na linha: o app pergunta, mesmo que o Mars não tenha visto
+    const desistiu = l.conferida ? null : (l.original || []).map((x) => String(x == null ? "" : x).trim())
+      .find((x) => RE_DESISTIU.test(N(x)));
+    if (desistiu && !motivos.some((m) => RE_DESISTIU.test(N(m)))) motivos.push(`a planilha diz "${desistiu}" nesta linha`);
     if (l.resolvida && l.resolvida.incerto && l.escolhida == null && !l.conferida) {
       motivos.push("a prova: " + (l.resolvida.motivo || "a IA não teve certeza"));
     }
@@ -8318,7 +8462,7 @@ Para cada descrição, devolva:
 - categoria: como está escrita no programa. Quando a prova do programa junta categorias com +, devolva só a parte que corresponde a esta descrição, como PARALÍMPICO "A".
 - naipe: FEM, MASC ou MISTO.
 - numero_programa: o número da prova do programa que corresponde, ou null quando não houver programa ou nenhuma prova bater.
-- incerto e motivo: marque incerto quando a descrição permitir mais de uma leitura, e explique numa frase curta, em português.
+- incerto e motivo: marque incerto quando a descrição permitir mais de uma leitura, e explique numa frase curta, em português. O motivo aparece na tela para a pessoa: escreva para ela, sem falar de código, de PESSOA, de máscara nem de texto escondido.
 
 Não invente o que a descrição não diz. Sem naipe na descrição, naipe null e incerto true, mesmo que o programa só tenha uma prova parecida.`;
 
@@ -8372,7 +8516,7 @@ Devolva uma inscrição para cada atleta em cada prova:
 - nome, equipe, tempo, nascimento, classe, segmento: como estão escritos, ou null.
 - prova: a prova por extenso, juntando o que a planilha diz em títulos, cabeçalhos ou colunas, como "50M LIVRE".
 - categoria e naipe: como estão escritos, venham da linha, de um título ou do nome da aba, ou null.
-- incerto e motivo: marque incerto quando tiver dúvida e explique numa frase curta, em português.
+- incerto e motivo: marque incerto quando tiver dúvida e explique numa frase curta, em português. O motivo aparece na tela para a pessoa: escreva para ela, sem falar de código, de PESSOA, de máscara nem de texto escondido.
 
 Em linhas_ignoradas, liste as linhas com conteúdo que não viraram inscrição (títulos, cabeçalhos, totais, assinaturas), com o motivo.`;
 
@@ -8708,7 +8852,9 @@ Para cada linha recebida, devolva:
              jaVistos: new Set(), ultimosItens: {}, tempos: {}, classes: {},
              // atletas cujas provas o árbitro já escolheu na mão. Se o que
              // ele escolheu continua furando a regra, é exceção autorizada.
-             decisoes: {} };
+             decisoes: {},
+             // nomes que o árbitro disse serem de duas pessoas diferentes, não de uma inscrita duas vezes
+             duasPessoas: new Set() };
   }
 
   /* ---------------- perfil ---------------- */
@@ -8939,6 +9085,9 @@ Para cada linha recebida, devolva:
     if (prog && prog.provas && prog.provas.length) {
       const et = etapasDoPrograma(prog.provas);
       if (et.length) estado.perfil.etapas = et;
+      // o nome escrito no título da lista de provas entra no campo, para a pessoa conferir
+      const campoNome = $("#nomeComp");
+      if (prog.titulo && campoNome && !campoNome.value.trim()) campoNome.value = prog.titulo;
       // as datas já estavam na planilha: não faz sentido pedir de novo
       const datas = datasDoPrograma(prog.provas);
       if (datas && !estado.perfil.dataInicio && !estado.perfil.dataFim) {
@@ -9070,7 +9219,7 @@ Para cada linha recebida, devolva:
     }
 
     const voltas = etapasForaDeOrdem(r.provas);
-    const trocadas = r.provas.filter((p, i) => p.numero != null && p.numero !== i + 1);
+    const trocadas = r.provas.filter((p, i) => !numeroBate(r.provas, i));
     const juncoes = juncoesDoPrograma(r.provas);
     const juntar = estado.perfil.juntarPrograma !== false;
 
@@ -10841,6 +10990,10 @@ Para cada linha recebida, devolva:
     estado.categorias = B.conferirCategorias(planas);
 
     estado.mesmoNome = B.conferirMesmoNome(planas);
+    // o árbitro disse que são duas pessoas: vira só aviso
+    for (const m of estado.mesmoNome) {
+      if (m.mesmaData && (estado.ajustes.duasPessoas || new Set()).has(B.normalizar(m.nome))) m.mesmaData = false;
+    }
     estado.classes = B.conferirClasses(planas);
     estado.naipes = B.conferirNaipes(planas);
     estado.parecidos = B.conferirParecidos(planas);
@@ -11090,6 +11243,19 @@ Para cada linha recebida, devolva:
         resolver: () => resolverClasses(estado.classes),
       },
       {
+        id: "mesmaPessoa", titulo: "A mesma pessoa em duas instituições",
+        nivel: "critico", itens: estado.mesmoNome.filter((a) => a.mesmaData).map((a) => ({
+          prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
+          detalhe: "nascimento em " + a.data + " nas duas · " + a.provas.join(" · "),
+        })),
+        explica: `O mesmo nome e a mesma data de nascimento, inscritos por duas
+          instituições. Quase sempre é a mesma pessoa inscrita duas vezes, e aí
+          <b>o limite de provas não a alcança</b>: o app conta as provas por nome
+          mais instituição.
+          <br><br>Tire as inscrições de uma das instituições na planilha. Se forem
+          duas pessoas, siga assim.`,
+      },
+      {
         id: "nascimentos", titulo: "Atleta com duas datas de nascimento",
         nivel: "critico", itens: estado.nascimentos.map((a) => ({
           prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
@@ -11222,7 +11388,7 @@ Para cada linha recebida, devolva:
       {
         rotuloVer: "ver os nomes",
         id: "mesmoNome", titulo: "Mesmo nome em duas instituições",
-        nivel: "info", itens: estado.mesmoNome.map((a) => ({
+        nivel: "info", itens: estado.mesmoNome.filter((a) => !a.mesmaData).map((a) => ({
           prova: "", titulo: "", nome: a.nome, equipe: a.equipe,
           detalhe: a.provas.join(" · "),
         })),
@@ -11600,11 +11766,24 @@ Para cada linha recebida, devolva:
   /* A coluna Nº do programa contra a posição da linha. Quem manda é a ordem
      das linhas; este bloco existe para o árbitro conferir contra o programa
      oficial impresso, onde uma prova a menos desloca todas as seguintes. */
+  /* O número da coluna Nº bate com a ordem das linhas, ou com a posição
+     dentro da etapa: muita lista recomeça em 1 a cada etapa (no teste
+     gigante, a prova 3 existia quatro vezes, uma em cada etapa). */
+  function numeroBate(provas, i) {
+    const p = provas[i];
+    if (p.numero == null || p.numero === i + 1) return true;
+    const et = String(p.etapa || "").trim();
+    if (!et) return false;
+    let k = i;
+    while (k > 0 && String(provas[k - 1].etapa || "").trim() === et) k--;
+    return p.numero === i - k + 1;
+  }
+
   function numeracaoTrocada() {
     const prog = (estado.perfil.programa || []);
     const saida = [];
     prog.forEach((p, i) => {
-      if (p.numero == null || p.numero === i + 1) return;
+      if (numeroBate(prog, i)) return;
       saida.push({
         prova: i + 1,
         titulo: D.tituloProva(p.distancia, p.estilo, p.rotulo || p.categoria, p.naipe),
@@ -12847,6 +13026,27 @@ Para cada linha recebida, devolva:
 
     for (const p of estado.provas) {
       for (const r of (p.repetidos || [])) {
+        /* Com tempos diferentes, o app não escolhe qual fica: a pessoa escolhe
+           (no teste gigante, LETÍCIA tinha 46,30 numa linha e 44,90 na outra,
+           e o cartão propunha tirar a segunda sem mostrar os tempos). */
+        const outra = p.series.flatMap((s) => s.linhas.map((l) => l.item))
+          .find((it) => it !== r && B.normalizar(it.nome || "") === B.normalizar(r.nome || "") &&
+                        B.normalizar(it.equipe || "") === B.normalizar(r.equipe || "") && chaveDaLinha(it) !== chaveDaLinha(r));
+        const fmt = (t) => (t == null ? "sem tempo" : B.formatarTempo(t));
+        if (outra && fmt(outra.tempo) !== fmt(r.tempo)) {
+          const fica = (manter, sai) => ({ rotulo: `Ficar com ${fmt(manter.tempo)} (linha ${manter.linha})`,
+            aplicar: () => { estado.ajustes.removidas.add(chaveDaLinha(sai)); fim(); },
+            feito: `${CX(r.nome)} ficou com ${fmt(manter.tempo)}; a linha ${sai.linha} saiu.` });
+          const ops = [fica(outra, r), fica(r, outra)];
+          P.push({ id: "rep|" + chaveDaLinha(r), bloco: "duplicados", opcoes: ops,
+            caso: `${CX(r.nome)} (${CX(r.equipe)}) aparece duas vezes na ${nomeProva(p)}, com tempos diferentes: ` +
+                  `${fmt(outra.tempo)} na linha ${outra.linha} e ${fmt(r.tempo)} na linha ${r.linha}.`,
+            pergunta: "Os tempos são diferentes. Qual inscrição fica?",
+            aplicar: ops[0].aplicar, feito: ops[0].feito,
+            rep: { nome: CX(r.nome), equipe: CX(r.equipe), prova: nomeProva(p), motivo: "os tempos são diferentes",
+                   tempos: [fmt(outra.tempo), fmt(r.tempo)] } });
+          continue;
+        }
         P.push({ id: "rep|" + chaveDaLinha(r), bloco: "duplicados",
           caso: `${CX(r.nome)} (${CX(r.equipe)}) aparece duas vezes na ${nomeProva(p)}, ${r.motivo}.`,
           pergunta: `Posso tirar a inscrição repetida, da linha ${r.linha}?`,
@@ -12872,6 +13072,30 @@ Para cada linha recebida, devolva:
                  lido: B.formatarTempo(t.tempo), metros: t.metros,
                  opcoes: t.alternativas.map((a) => ({ segundos: a.segundos, como: a.como })),
                  definir: (seg) => { estado.ajustes.tempos[chaveDaLinha(t.item)] = seg; fim(); } } });
+    }
+
+    /* A mesma pessoa (nome e data de nascimento) inscrita por duas
+       instituições: a pessoa escolhe onde a inscrição fica, ou diz que são
+       duas pessoas. Antes, o cartão só mandava para a tela completa. */
+    for (const m of estado.mesmoNome.filter((x) => x.mesmaData)) {
+      const chave = B.normalizar(m.nome);
+      const dela = estado.inscricoes.filter((i) => !i.revezamento && B.normalizar(i.nome || "") === chave &&
+        !estado.ajustes.removidas.has(chaveDaLinha(i)));
+      const equipes = [...new Map(dela.map((i) => [B.normalizar(i.equipe || ""), i.equipe])).values()];
+      if (equipes.length < 2) continue;
+      const ficaEm = (eq) => ({ rotulo: `Fica só em ${CX(eq)}`,
+        aplicar: () => {
+          for (const i of dela) if (B.normalizar(i.equipe || "") !== B.normalizar(eq)) estado.ajustes.removidas.add(chaveDaLinha(i));
+          fim();
+        },
+        feito: `${CX(m.nome)} ficou só em ${CX(eq)}.` });
+      const ops = equipes.map(ficaEm).concat([{ rotulo: "São duas pessoas",
+        aplicar: () => { estado.ajustes.duasPessoas.add(chave); fim(); },
+        feito: `Certo: são duas pessoas chamadas ${CX(m.nome)}.` }]);
+      P.push({ id: "pessoa|" + chave, bloco: "mesmaPessoa", opcoes: ops,
+        caso: `${CX(m.nome)}, nascimento em ${m.data}, tem inscrição pelas duas: ${m.provas.join("; ")}.`,
+        pergunta: "Em qual instituição a inscrição fica?",
+        aplicar: ops[0].aplicar, feito: ops[0].feito });
     }
 
     const propostas = estado.propostas || [];
@@ -13042,13 +13266,13 @@ Para cada linha recebida, devolva:
     return { removidas: new Set(a.removidas), nomes: Object.assign({}, a.nomes), aceitos: new Set(a.aceitos),
              jaVistos: new Set(a.jaVistos), ultimosItens: Object.assign({}, a.ultimosItens),
              tempos: Object.assign({}, a.tempos), classes: JSON.parse(JSON.stringify(a.classes || {})),
-             decisoes: JSON.parse(JSON.stringify(a.decisoes || {})) };
+             decisoes: JSON.parse(JSON.stringify(a.decisoes || {})), duasPessoas: new Set(a.duasPessoas || []) };
   }
   function restaurarAjustes(f) {
     Object.assign(estado.ajustes, { removidas: new Set(f.removidas), nomes: Object.assign({}, f.nomes),
       aceitos: new Set(f.aceitos), jaVistos: new Set(f.jaVistos), ultimosItens: Object.assign({}, f.ultimosItens),
       tempos: Object.assign({}, f.tempos), classes: JSON.parse(JSON.stringify(f.classes)),
-      decisoes: JSON.parse(JSON.stringify(f.decisoes)) });
+      decisoes: JSON.parse(JSON.stringify(f.decisoes)), duasPessoas: new Set(f.duasPessoas || []) });
     montar();
   }
 
@@ -13114,6 +13338,8 @@ Para cada linha recebida, devolva:
     categoriaCerta: new Set(),
     // cada resposta da pessoa, com o jeito de voltar atrás
     historico: [],
+    // o cronômetro, do toque no caminho até os arquivos prontos, e as decisões da pessoa no caminho
+    inicio: 0, fim: 0, decisoes: [],
   };
 
   /* ---------------- o fio da conversa ----------------
@@ -13306,10 +13532,27 @@ Para cada linha recebida, devolva:
       : ""}</div>`;
   }
 
+  /* O símbolo do Mars: uma touca de natação com os óculos e um sorriso, na
+     água. Enquanto ele pensa, a touca boia e o brilho passa pelos óculos. */
+  const SELO_MARS = `<svg class="selo-mars" viewBox="0 0 32 32" aria-hidden="true">
+    <circle class="sm-fundo" cx="16" cy="16" r="16"/>
+    <path class="sm-onda" d="M3.4 27.6c2.1-1.3 4.3-1.3 6.4 0s4.3 1.3 6.4 0 4.3-1.3 6.4 0 4.3 1.3 6.4 0"/>
+    <g class="sm-cabeca">
+      <path class="sm-touca" d="M5.6 18.6a10.4 10.4 0 0 1 20.8 0z"/>
+      <path class="sm-dobra" d="M9.5 11.6c1.9-1.5 4-2.2 6.5-2.2"/>
+      <path class="sm-elastico" d="M5.4 18.3h21.2"/>
+      <rect class="sm-lente" x="8" y="16.1" width="6.6" height="4.7" rx="2.3"/>
+      <rect class="sm-lente" x="17.4" y="16.1" width="6.6" height="4.7" rx="2.3"/>
+      <path class="sm-ponte" d="M14.6 18.3h2.8"/>
+      <circle class="sm-brilho" cx="10.3" cy="17.7" r=".95"/>
+      <circle class="sm-brilho" cx="19.7" cy="17.7" r=".95"/>
+      <path class="sm-sorriso" d="M13.1 22.9q2.9 2.1 5.8 0"/>
+    </g></svg>`;
+
   function bolha(quem, html) {
     const div = document.createElement("div");
     div.className = "fala " + quem;
-    div.innerHTML = (quem.startsWith("claude") ? '<span class="quem"><span class="selo-ia" aria-hidden="true">IA</span>' +
+    div.innerHTML = (quem.startsWith("claude") ? '<span class="quem">' + SELO_MARS +
       '<b>Mars</b><em>assistente de balizamento</em></span>' : "") +
       `<div class="texto">${html}</div>`;
     return adicionar(div);
@@ -13432,8 +13675,35 @@ Para cada linha recebida, devolva:
     alvo.innerHTML = ETAPAS.map(([k, rot], i) => `
       <button type="button" class="degrau ${feito[k] ? "feito" : ""} ${k === atual ? "atual" : ""}"
         data-degrau="${k}" ${feito[k] || k === atual ? "" : "disabled"}>
-        <span class="bolinha">${feito[k] ? "✓" : i + 1}</span><span>${rot}</span></button>`).join("");
+        <span class="bolinha">${feito[k] ? "✓" : i + 1}</span><span>${rot}</span></button>`).join("") + cronometroHTML();
     $$("[data-degrau]", alvo).forEach((b) => (b.onclick = () => mostrarEtapa(b.dataset.degrau)));
+  }
+
+  /* O cronômetro, no jeito da placa da piscina: corre do toque no caminho até
+     os arquivos prontos. A ideia é a pessoa ver que o balizamento inteiro sai
+     em poucos minutos, sem pressa e sem erro. */
+  const RELOGIO = '<svg class="relogio" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="9.2" r="5.6"/>' +
+    '<path d="M8 9.2V6.1M6.4 1.6h3.2M8 1.6v2"/></svg>';
+  const tempoCorrido = (ms) => { const s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  function cronometroHTML() {
+    if (!conv.inicio) return "";
+    const ms = (conv.fim || Date.now()) - conv.inicio;
+    return `<span class="cronometro ${conv.fim ? "parado" : ""}" id="cronometro" role="timer"
+      aria-label="${conv.fim ? "Pronto em" : "Tempo desde o começo:"} ${tempoCorrido(ms)}">${RELOGIO}<b>${tempoCorrido(ms)}</b></span>`;
+  }
+  function ligarCronometro() {
+    if (conv.relogio) return;
+    conv.relogio = setInterval(() => {
+      const el = $("#cronometro b");
+      if (!el || !conv.inicio) return;
+      el.textContent = tempoCorrido((conv.fim || Date.now()) - conv.inicio);
+      if (conv.fim) { clearInterval(conv.relogio); conv.relogio = null; renderTrilha(); }
+    }, 1000);
+  }
+  // uma decisão da pessoa: entra no placar do fim, com a hora no cronômetro
+  function decidir(texto) {
+    if (!texto) return;
+    conv.decisoes.push({ texto: String(texto), ms: conv.inicio ? (conv.fim || Date.now()) - conv.inicio : 0 });
   }
 
   // clicar numa etapa da trilha traz de volta o cartão dela
@@ -14013,6 +14283,12 @@ Para cada linha recebida, devolva:
   // o atleta repetido: as duas linhas, a de baixo marcada
   function cenaRepetidoNoCartao(rep) {
     const t = `${AT(rep.nome)} · ${AT(rep.prova)}`;
+    // com tempos diferentes, cada linha mostra o seu, e nenhuma é marcada como a repetida: a pessoa escolhe
+    if (rep.tempos) {
+      return `<div class="cena-cartao cena-rep" role="img" aria-label="${AT(rep.nome)} aparece duas vezes na ${AT(rep.prova)}, com tempos diferentes">
+        <span class="cr-linha">${t} · <b>${AT(rep.tempos[0])}</b></span><span class="cr-linha">${t} · <b>${AT(rep.tempos[1])}</b></span>
+        <p class="cr-motivo">${AT(rep.motivo)}</p></div>`;
+    }
     return `<div class="cena-cartao cena-rep" role="img" aria-label="${AT(rep.nome)} aparece duas vezes na ${AT(rep.prova)}">
       <span class="cr-linha">${t}</span><span class="cr-linha cr-repetida">${t}<em>repetida</em></span>
       <p class="cr-motivo">${AT(rep.motivo)}</p></div>`;
@@ -14454,6 +14730,8 @@ Para cada linha recebida, devolva:
 
   function comecar(caminho) {
     conv.comecou = true;
+    conv.inicio = Date.now();
+    ligarCronometro();
     document.body.classList.remove("na-abertura");
     novaVez();
     renderTrilha();
@@ -14533,7 +14811,8 @@ Para cada linha recebida, devolva:
         fazer: conv.sample ? "Clique em <b>Corrigir estas linhas com o Mars</b>." : "Corrija a planilha ou ignore as linhas que não são provas.",
       } : {
         porque: "Com a lista certa, cada atleta cai na prova certa.",
-        fazer: "Confira os números e clique em <b>Está certo, seguir</b>.",
+        fazer: parecidas.length ? "Responda a pergunta da categoria, ou troque tudo e siga com o botão de baixo."
+                                : "Confira os números e clique em <b>Está certo, seguir</b>.",
       })}
       ${trilhoDoPrograma(r.provas, etapas.length, revez)}
       ${travado ? `<div class="alerta-conv">
@@ -14564,7 +14843,11 @@ Para cada linha recebida, devolva:
           <button type="button" class="${juntar ? "mini claro" : "botao"}" data-acao="juntar_nao">Prefiro conferir uma por uma</button>
         </div></div>` : ""}
       ${r.ok || !ruins.length ? `<div class="acoes-cartao">
-        <button type="button" class="botao" data-acao="programa_ok">Está certo, seguir</button>
+        ${parecidas.length && !travado
+          // a troca e o seguir num toque só; seguir sem trocar fica como a outra escolha, nunca como o botão grande
+          ? `<button type="button" class="botao" data-acao="categoria_todas">Trocar para ${parecidas.map((x) => AT(x.para)).join(" e ")}, e seguir</button>
+             <button type="button" class="mini claro" data-acao="programa_ok">Seguir sem trocar</button>`
+          : `<button type="button" class="botao" data-acao="programa_ok">Está certo, seguir</button>`}
         ${(r.linhas || []).some((l) => l.corrigida) ? `<button type="button" class="mini claro"
           data-acao="baixar_programa">Baixar o programa no modelo do app</button>` : ""}
       </div>` : ""}`, `Programa: ${r.provas.length} provas`, (el) => {
@@ -14736,7 +15019,8 @@ Para cada linha recebida, devolva:
   const CHECAGENS = [["duplicados", "Atleta repetido na prova"], ["limites", "Atleta em provas demais"],
     ["tempos", "Tempo impossível"], ["categorias", "Atleta em duas idades"],
     ["naipes", "Meninos e meninas juntos"], ["foraPrograma", "Prova que não está na lista"],
-    ["regulamento", "Inscrição contra as regras"], ["nascimentos", "Duas datas de nascimento"]];
+    ["regulamento", "Inscrição contra as regras"], ["nascimentos", "Duas datas de nascimento"],
+    ["mesmaPessoa", "A mesma pessoa em duas escolas"]];
 
   // por que cada problema importa, numa frase, para quem decide entender o Sim
   const PORQUE = {
@@ -14749,6 +15033,7 @@ Para cada linha recebida, devolva:
     juntarPrograma: "A lista de provas junta essas idades numa prova só.",
     classesDivergentes: "No paradesporto, a classe diz contra quem o atleta nada. Precisa ser a mesma em todas as provas.",
     nascimentos: "A data de nascimento decide a faixa de idade do atleta.",
+    mesmaPessoa: "Inscrita por duas instituições, a mesma pessoa conta como duas: o limite de provas não a alcança.",
     porEquipe: "As regras limitam quantos atletas de cada equipe nadam a mesma prova.",
     regulamento: "Inscrição contra as regras do campeonato não pode ir para a piscina.",
     semNome: "Linha sem nome ou sem prova não entra na competição.",
@@ -14832,20 +15117,22 @@ Para cada linha recebida, devolva:
     const conta = `<span class="conta-problema">${k} de ${total}</span>`;
     if (x.tipo === "correcao" && x.p.tempo) return cartaoProblemaDeTempo(x, k, total, porque);
     if (x.tipo === "correcao") {
-      const props = lista.filter((y) => y.tipo === "correcao").length;
+      const props = lista.filter((y) => y.tipo === "correcao" && !y.p.opcoes).length;
       const elc = cartao("problema", "Conferência", `${conta} ${AT(s ? s.titulo : "Correção proposta")}`, `
         ${orienta({
           porque,
-          fazer: "<b>Sim</b> aplica a correção. <b>Não</b> deixa como está, e você decide depois.",
+          fazer: x.p.opcoes ? "Escolha uma das opções: o app faz só o que o botão diz."
+                            : "<b>Sim</b> aplica a correção. <b>Não</b> deixa como está, e você decide depois.",
         })}
         <div class="correcao-unica" data-correcao="${AT(x.p.id)}">
           <span class="rot">CORREÇÃO PROPOSTA</span>
           ${x.p.rep ? cenaRepetidoNoCartao(x.p.rep) : `<p class="caso">${AT(x.p.caso)}</p>`}
           ${x.p.quem ? `<p class="nota">Nela: ${AT(x.p.quem)}.</p>` : ""}
           <p class="pergunta"><b>${AT(x.p.pergunta)}</b></p>
-          <div class="acoes-cartao">
-            <button type="button" class="botao" data-acao="correcao_sim">Sim, corrigir</button>
-            <button type="button" class="mini claro" data-acao="correcao_nao">${x.p.escolha ? "Não, escolho eu" : "Não"}</button>
+          <div class="acoes-cartao">${x.p.opcoes
+            ? x.p.opcoes.map((op, k) => `<button type="button" class="${k ? "mini claro" : "botao"}" data-acao="correcao_opcao" data-k="${k}">${AT(op.rotulo)}</button>`).join("")
+            : `<button type="button" class="botao" data-acao="correcao_sim">Sim, corrigir</button>
+            <button type="button" class="mini claro" data-acao="correcao_nao">${x.p.escolha ? "Não, escolho eu" : "Não"}</button>`}
           </div></div>
         ${props > 1 ? `<p class="nota"><button type="button" class="link" data-acao="correcao_todas">
           Sim para todas as ${props} correções</button></p>` : ""}
@@ -14854,7 +15141,7 @@ Para cada linha recebida, devolva:
       if (x.p.rep) elc._cena = { cena: "repetido", texto: `${x.p.rep.nome} · ${x.p.rep.prova}`, legenda: x.p.rep.motivo };
       conv.cartaoDaVez = () => `conferência, problema ${k} de ${total}: ${trocarNomesConhecidos(x.p.caso)}` +
         (x.p.quem ? ` Quem está nela: ${trocarNomesConhecidos(x.p.quem)}.` : "") +
-        ` Pergunta do cartão: ${trocarNomesConhecidos(x.p.pergunta)} Botões: Sim, corrigir; Não.` + (x.p.dica ? " " + x.p.dica : "");
+        ` Pergunta do cartão: ${trocarNomesConhecidos(x.p.pergunta)} Botões: ${x.p.opcoes ? x.p.opcoes.map((op) => op.rotulo).join("; ") : "Sim, corrigir; Não"}.` + (x.p.dica ? " " + x.p.dica : "");
       return elc;
     }
     const elb = cartao("problema", "Conferência", `${conta} ${AT(s.titulo)}`, `
@@ -15060,6 +15347,8 @@ Para cada linha recebida, devolva:
         <div class="acoes-cartao"><button type="button" class="botao" data-acao="ver_conferencia">
           Ver a conferência</button></div>`, "Arquivos trancados", ligarAcoes);
     }
+    // o balizamento ficou pronto: o cronômetro para aqui
+    if (conv.inicio && !conv.fim) { conv.fim = Date.now(); renderTrilha(); }
     const ICONE = { pdf: "PDF", papeletas: "RAIA", xlsx: "XLSX" };
     const item = (q, titulo, desc) => `<div class="saida-conv">
       <i class="arq-icone arq-${q}" aria-hidden="true">${ICONE[q]}</i>
@@ -15080,6 +15369,7 @@ Para cada linha recebida, devolva:
         porque: "São os papéis da mesa de controle e da beira da piscina.",
         fazer: "Clique em <b>Baixar</b> em cada um, ou veja a prévia antes.",
       })}
+      ${placarFinal()}
       <div class="saidas-conv">
         ${item("pdf", "Lista de séries e raias", "Quem nada com quem, em PDF.")}
         ${item("papeletas", "Papeletas de raia", "O papel do cronometrista de cada raia.")}
@@ -15097,6 +15387,21 @@ Para cada linha recebida, devolva:
           window.location.reload();
         }));
       });
+  }
+
+  /* O placar do fim, como a placa eletrônica da piscina: o tempo do começo
+     aos arquivos e as decisões da pessoa, uma por uma, com a hora em que cada
+     uma foi tomada. É a prova de que nada mudou sem o toque dela. */
+  function placarFinal() {
+    if (!conv.inicio) return "";
+    const ms = (conv.fim || Date.now()) - conv.inicio, n = conv.decisoes.length;
+    const decisoes = n === 1 ? "uma decisão sua" : `${n} decisões suas`;
+    return `<div class="placar-final">
+      <div class="pf-placa" aria-hidden="true"><span>TEMPO</span><b>${tempoCorrido(ms)}</b></div>
+      <p>Do primeiro toque até aqui. Foram ${decisoes}, e nada mudou sem o seu toque.</p>
+    </div>
+    ${n ? `<details class="mais"><summary>ver as ${decisoes}</summary><div class="rola-tabela"><ol class="decisoes-conv">${
+      conv.decisoes.map((d) => `<li><span class="dc-hora">${tempoCorrido(d.ms)}</span> ${AT(d.texto)}</li>`).join("")}</ol></div></details>` : ""}`;
   }
 
   /* ---------------- a IA reescrevendo a planilha no modelo do app ----------
@@ -15186,7 +15491,7 @@ Para cada linha recebida, devolva:
 
   // um cartão com os passos do trabalho da IA acendendo um a um
   function cartaoProgresso(tipo, titulo, passos) {
-    return cartao(tipo, "IA trabalhando", titulo, `<ol class="passos-ia">${passos.map((p, k) =>
+    return cartao(tipo, "Mars trabalhando", titulo, `<ol class="passos-ia">${passos.map((p, k) =>
       `<li data-k="${k}"><span class="marca-passo"></span><span>${AT(p)}</span><em></em></li>`).join("")}</ol>`,
       titulo);
   }
@@ -15233,7 +15538,7 @@ Para cada linha recebida, devolva:
 
   function cartaoErroIA(err, tentar) {
     const x = IA.explicarErro(err);
-    return cartao("erro-ia", "IA", AT(x.titulo), `
+    return cartao("erro-ia", "Mars", AT(x.titulo), `
       ${x.detalhes.length ? `<ul class="motivos-conv">${x.detalhes.map((d) => `<li>${AT(d)}</li>`).join("")}</ul>` : ""}
       <div class="acoes-cartao"><button type="button" class="botao" data-acao="${tentar}">Tentar de novo</button></div>`,
       "Erro do Mars", ligarAcoes);
@@ -15379,9 +15684,75 @@ Para cada linha recebida, devolva:
           : `O tempo "${textoTempo}" pode ser lido de mais de um jeito. Qual é o certo?`,
         opcoes };
     }
+    /* A prova que não está na lista: perguntar "está certa assim?" só levava o
+       mesmo caso para a conferência, que perguntava de novo. Aqui a pergunta
+       é a de verdade, e a resposta vale para todas as linhas da mesma prova. */
+    if (i && r.motivos.some((m) => /n[aã]o est[aá] no programa/i.test(m)) &&
+        !r.motivos.some((m) => /desist|cancel|retirad|substitu|n[aã]o vai/i.test(m))) {
+      const titulo = D.tituloProva(i.distancia, i.estilo, i.categoria, i.naipe);
+      return { tipo: "fora", prova: titulo,
+        pergunta: `A prova ${titulo} não está na lista de provas. O que fazer?`,
+        opcoes: [{ id: "tirar", rotulo: "Tirar esta linha", sugerida: true,
+                   explica: i.categoria ? "sem lugar na lista, ela não nada" : "falta a categoria: em Outro, você escolhe a prova certa" },
+                 { id: "manter", rotulo: "Deixar para a conferência" }] };
+    }
+    // a planilha diz que o atleta desistiu: a sugestão é tirar, nunca entrar calado
+    const desistiu = r.motivos.find((m) => /desist|cancel|retirad|substitu|n[aã]o vai/i.test(m));
+    if (desistiu) {
+      const palavra = (l.original || []).find((v) => /desist|cancel|retirad|substitu|n[aã]o vai/i.test(String(v || "")));
+      return { tipo: "geral", pergunta: palavra ? `A planilha diz "${palavra}" nesta linha. O que fazer?`
+                                                 : "A planilha diz que esta inscrição não vai nadar. O que fazer?",
+        opcoes: [{ id: "tirar", rotulo: "Tirar esta linha", explica: "a raia fica livre", sugerida: true },
+                 { id: "manter", rotulo: "Nada sim, entra assim" }] };
+    }
     return { tipo: "geral", pergunta: "O Mars ficou em dúvida nesta linha. Ela está certa assim?",
       opcoes: [{ id: "manter", rotulo: "Está certa, entra assim", sugerida: true },
                { id: "tirar", rotulo: "Tirar esta linha" }] };
+  }
+
+  /* As linhas em que a mesma resposta vale, para a pessoa não responder duas
+     vezes a mesma coisa: o mesmo atleta com a mesma pergunta e as mesmas
+     dúvidas ("entra assim" e o tempo), ou a mesma linha da planilha repetida
+     (tirar). Tirar nunca passa para outra linha só por ser do mesmo atleta:
+     ele pode estar certo numa prova e errado na outra. */
+  function linhasGemeas(atual, pendentes, id) {
+    if (!atual || !(id === "manter" || id === "tirar" || id.startsWith("tempo:"))) return [];
+    const p0 = perguntaDaLinha(atual), quem = B.normalizar(quemDaLinha(atual));
+    return pendentes.filter((y) => {
+      if (y === atual || y.l === atual.l || y.l.excluida) return false;
+      const p = perguntaDaLinha(y);
+      if (p.tipo !== p0.tipo || !p.opcoes.some((op) => op.id === id)) return false;
+      // a prova fora da lista: a mesma resposta vale para todos os inscritos nela
+      if (p0.tipo === "fora") return p.prova === p0.prova;
+      if (id === "tirar") {
+        return p.tipo === "repetida" && y.l.origem.aba === atual.l.origem.aba && y.l.origem.linha === atual.l.origem.linha;
+      }
+      return B.normalizar(quemDaLinha(y)) === quem && p.pergunta === p0.pergunta &&
+        y.r.motivos.join("|") === atual.r.motivos.join("|");
+    });
+  }
+  /* O motivo que abre a linha que não entra. "falta o naipe" era verdade, mas o
+     motivo de fato (no teste gigante: a prova diz feminino e a coluna sexo diz M)
+     vinha na explicação do Mars sobre a prova; ela passa à frente. */
+  const motivoPrincipalBruto = (r) => r.motivos.find((m) => /^a prova: /.test(m)) || r.motivos[0] || "";
+  const motivoPrincipal = (r) => {
+    const m = motivoPrincipalBruto(r).replace(/^a prova: /, "");
+    return m ? m.charAt(0).toLowerCase() + m.slice(1).replace(/[.\s]+$/, "") : "";
+  };
+  // quem está na linha, mesmo na que não virou inscrição (a lista mostrava "linha 18, ESC SOL linha 18")
+  function quemNaLista(x) {
+    const i = x.r.inscricao;
+    if (i) return i.revezamento ? i.equipe : i.nome;
+    const nome = x.l.campos && x.l.campos.nome;
+    return nome || (x.l.original || []).find((v) => v && /[a-zà-ú]{3}/i.test(v)) || "linha sem nome";
+  }
+  // o que a sugestão do Mars faz numa linha, em poucas palavras
+  function oQueASugestaoFaz(x) {
+    const s = perguntaDaLinha(x).opcoes.find((op) => op.sugerida);
+    if (!s) return "fica para você responder";
+    if (s.id === "tirar") return "tirar a linha";
+    if (s.id === "manter") return "entra como está";
+    return s.id === "tempo:" ? "entra sem tempo" : "tempo " + s.rotulo;
   }
 
   // "50M" vira "50 m" e "4X50M" vira "4x50 m", para ler na tela
@@ -15424,6 +15795,7 @@ Para cada linha recebida, devolva:
      o jeito de voltar atrás. "Desfazer a última resposta", no cartão ou
      pedido na conversa, devolve a pergunta para a tela. */
   function registrar(descricao, paraIA, desfazer, etapa) {
+    decidir(descricao);
     conv.historico.push({ descricao, paraIA, desfazer, etapa });
     if (conv.historico.length > 40) conv.historico.shift();
   }
@@ -15533,6 +15905,14 @@ Para cada linha recebida, devolva:
       atual = pendentes[0];
       const { l, r } = atual, i = r.inscricao;
       perg = perguntaDaLinha(atual);
+      // a opção que vale para mais linhas diz isso antes do toque
+      for (const op of perg.opcoes) {
+        const g = linhasGemeas(atual, pendentes, op.id).length;
+        if (!g) continue;
+        const quantas = g === 1 ? "mais 1 linha" : `mais ${g} linhas`;
+        op.explica = (op.explica ? op.explica + "; " : "") +
+          (perg.tipo === "fora" ? `vale também para ${quantas} desta prova` : `vale também para ${quantas} com a mesma pergunta`);
+      }
       const ruim = (campo) => perg.campo === campo ? " cl-ruim" : "";
       const original = (l.original || []).filter(Boolean);
       const provaAtual = r.numero ? r.numero - 1 : -1;
@@ -15548,13 +15928,13 @@ Para cada linha recebida, devolva:
             <p class="cl-campo">${r.numero ? `<span class="num-prova">prova ${r.numero}</span> ` : ""}${AT(tituloDa(atual))}</p>
             <p class="cl-campo${ruim("tempo")}">Tempo: <b>${i.tempo != null ? B.formatarTempo(i.tempo) : "sem tempo"}</b></p>`
               // o motivo de verdade, não um genérico (no teste grande: "a prova diz FEM e a coluna sexo diz M")
-              : `<p class="cl-campo cl-ruim">Não entra assim: ${AT(r.motivos[0] || "falta dado para virar inscrição")}.</p>`}
+              : `<p class="cl-campo cl-ruim">Não entra assim: ${AT(motivoPrincipal(r) || "falta dado para virar inscrição")}.</p>`}
           </div>
           ${perg.tipo === "geral" && r.motivos.length ? `<ul class="cl-duvida">${r.motivos.map((m) => `<li>${AT(m)}</li>`).join("")}</ul>` : ""}
           ${perg.tipo === "erro" && r.motivos.length > 1
             // os outros motivos da linha que não entra (no teste da versão 24, o primeiro era "falta o naipe",
             // e o de verdade, o sexo M numa prova feminina, só aparecia na dúvida do Mars)
-            ? `<ul class="cl-duvida">${r.motivos.slice(1).map((m) => `<li>${AT(m)}</li>`).join("")}</ul>` : ""}
+            ? `<ul class="cl-duvida">${r.motivos.filter((m) => m !== motivoPrincipalBruto(r)).map((m) => `<li>${AT(m)}</li>`).join("")}</ul>` : ""}
           <p class="cl-pergunta">${AT(perg.pergunta)}</p>
           ${opcoesHTML(perg.opcoes, "Outro: eu corrijo", i && i.revezamento ? "o tempo ou a prova" : "o nome, o tempo ou a prova")}
           <div class="editor-linha" hidden>
@@ -15574,8 +15954,11 @@ Para cada linha recebida, devolva:
           ${conv.historico.length ? `<p class="nota desfazer-linha"><button type="button" class="link" data-acao="desfazer_ultima">desfazer a última resposta</button></p>` : ""}
           <div class="cl-feito" aria-live="polite"></div>
         </article></div>
-        ${pendentes.length > 1 ? `<p class="nota"><button type="button" class="link" data-org-sugestoes>
-          Aceitar as ${pendentes.length} sugestões do Mars de uma vez</button></p>` : ""}`;
+        ${pendentes.length > 1 ? `<div class="lote-org">
+          <button type="button" class="mini claro" data-org-sugestoes>Aceitar as ${pendentes.length} sugestões do Mars</button>
+          <details class="mais"><summary>ver o que cada uma faz</summary><div class="rola-tabela"><ul class="motivos-conv">${
+            pendentes.map((x) => `<li><b>${AT(quemNaLista(x))}</b>, ${AT(x.l.origem.aba)} linha ${x.l.origem.linha}: ${AT(oQueASugestaoFaz(x))}</li>`).join("")}</ul></div></details>
+        </div>` : ""}`;
 
       // o que o Mars precisa saber do cartão da vez, com os nomes trocados por código
       const nomeDe = (troca) => i ? troca(i.revezamento ? i.equipe : i.nome) + (i.equipe && !i.revezamento ? " (" + troca(i.equipe) + ")" : "") : "sem atleta";
@@ -15652,11 +16035,28 @@ Para cada linha recebida, devolva:
       $$("[data-opcao]", card).forEach((b) => (b.onclick = () => {
         if (card.classList.contains("decidida")) return;
         novaVez();
-        const l = achar(card.dataset.id), antes = fotoDaLinha(l);
-        const feito = aplicarOpcaoDaLinha(l, b.dataset.opcao), texto = feito.replace("✓ ", "");
-        registrar(`${quemDaLinha(atual)}: ${texto}`, () => `${mascarar(quemDaLinha(atual))}, linha ${l.origem.linha}: ${texto}`,
-          () => voltarLinha(o, l, antes), "reescrita");
-        responder(feito);
+        const l = achar(card.dataset.id), antes = fotoDaLinha(l), id = b.dataset.opcao;
+        // a mesma pergunta em outra linha do mesmo atleta: a resposta vale para as duas, e a
+        // pessoa não responde de novo (no teste grande, a dúvida de NICOLAS voltou na outra prova)
+        const gemeas = linhasGemeas(atual, pendentes, id);
+        /* A cópia que sobra de uma linha repetida fica, sem pergunta: com uma
+           das duas tirada, a outra já não repete nada (e a pessoa não corre o
+           risco de tirar as duas). */
+        const pares = id === "tirar" && perg.tipo === "repetida"
+          ? pendentes.filter((y) => y !== atual && !gemeas.includes(y) && !y.l.excluida &&
+              perguntaDaLinha(y).tipo === "repetida" && y.r.numero === atual.r.numero &&
+              B.normalizar(quemDaLinha(y)) === B.normalizar(quemDaLinha(atual)))
+          : [];
+        const fotos = gemeas.concat(pares).map((y) => [y.l, fotoDaLinha(y.l)]);
+        const feito = aplicarOpcaoDaLinha(l, id), texto = feito.replace("✓ ", "");
+        gemeas.forEach((y) => aplicarOpcaoDaLinha(y.l, id));
+        pares.forEach((y) => aplicarOpcaoDaLinha(y.l, "manter"));
+        o.respondidas = (o.respondidas || 0) + gemeas.length + pares.length;
+        const mais = gemeas.length ? ` (valeu também para mais ${gemeas.length === 1 ? "1 linha" : gemeas.length + " linhas"})` : "";
+        registrar(`${quemNaLista(atual)}: ${texto}${mais}`, () => `${mascarar(quemNaLista(atual))}, linha ${l.origem.linha}: ${texto}${mais}`,
+          () => { voltarLinha(o, l, antes); fotos.forEach(([y, f]) => voltarLinha(o, y, f)); }, "reescrita");
+        responder(feito + (gemeas.length ? ` · a mesma resposta valeu para mais ${gemeas.length === 1 ? "1 linha" : gemeas.length + " linhas"}` : "") +
+          (pares.length ? " · a outra cópia fica" : ""));
       }));
       const editor = $(".editor-linha", card);
       $("[data-outro]", card).onclick = () => {
@@ -15804,6 +16204,20 @@ Para cada linha recebida, devolva:
       const r = await pedirIA(c.pedido, el);
       marcar(el, 0, "feito");
       c.itens = IA.correcoesDoPrograma(r.dados, c.ruins);
+      /* A correção que repete uma prova que já está no programa sai, em vez de
+         entrar duas vezes (no teste gigante, a prova repetida da 3ª etapa virava
+         prova de novo, e o Sim para todas a punha duas vezes na lista). */
+      const chave = (p) => D.chaveProva(p.distancia, p.estilo, p.categoria, p.naipe);
+      const ja = new Map((c.r.linhas || []).filter((l) => l.ok && l.prova).map((l) => [chave(l.prova), l.linha]));
+      for (const x of c.itens) {
+        if (!x.prova) continue;
+        const k = chave(x.prova);
+        if (ja.has(k)) {
+          Object.assign(x, { naoEProva: true, incerto: false, repetida: true,
+            motivo: `repete a prova da linha ${ja.get(k)}: com o Sim, ela sai e fica só a da linha ${ja.get(k)}` });
+          x.prova = null;
+        } else ja.set(k, x.linha);
+      }
       marcar(el, 1, "feito", `${c.itens.filter((x) => x.prova || x.naoEProva).length} correção(ões)`);
     } catch (err) {
       $$("li.fazendo", el).forEach((li) => (li.className = "falhou"));
@@ -15813,7 +16227,9 @@ Para cada linha recebida, devolva:
       : x.prova ? "vira " + D.tituloProva(x.prova.distancia, x.prova.estilo, x.prova.categoria, x.prova.naipe)
       : "fica sem correção: " + x.problema}`).join("; ");
     // a primeira correção vira cena: o que estava escrito virando a prova certa
-    const exemplo = c.itens.find((x) => x.prova) || c.itens.find((x) => x.naoEProva);
+    // de preferência uma correção sem dúvida: a cena mostra o que o Mars sabe fazer, não o caso duvidoso
+    const exemplo = c.itens.find((x) => x.prova && !x.incerto) || c.itens.find((x) => x.prova) ||
+      c.itens.find((x) => x.naoEProva && !x.repetida) || c.itens.find((x) => x.naoEProva);
     const original = exemplo && (c.ruins.find((l) => l.linha === exemplo.linha) || {}).texto;
     /* O Mars já explicou estas linhas antes do Sim. Uma segunda fala repetia
        a mesma coisa com outras palavras (o dono, em 12/11/2026: "não entendi
@@ -15842,7 +16258,8 @@ Para cada linha recebida, devolva:
     const aceitas = util.filter((x) => c.decisao[x.linha] === true).length;
     const linha = (x) => {
       const d = c.decisao[x.linha];
-      const vira = x.naoEProva ? "<i>não é prova: sai do programa</i>"
+      const vira = x.repetida ? "<i>prova repetida: sai do programa</i>"
+        : x.naoEProva ? "<i>não é prova: sai do programa</i>"
         : x.prova ? AT(D.tituloProva(x.prova.distancia, x.prova.estilo, x.prova.categoria, x.prova.naipe))
         : `<span class="exigida">${AT(x.problema)}</span>`;
       const pode = x.prova || x.naoEProva;
@@ -15850,7 +16267,7 @@ Para cada linha recebida, devolva:
         <div class="org-origem">programa<b>linha ${x.linha}</b></div>
         <div class="org-de">${AT(x.original)}</div>
         <div class="org-para"><div class="org-vai">${vira}</div>
-          ${x.motivo && (x.incerto || !pode) ? `<ul class="motivos"><li>${AT(x.motivo)}</li></ul>` : ""}
+          ${x.motivo && (x.incerto || !pode || x.repetida) ? `<ul class="motivos"><li>${AT(x.motivo)}</li></ul>` : ""}
           ${pode ? `<div class="acoes-cartao">${d == null
             ? `<button type="button" class="botao" data-sim-prog="${x.linha}">Sim</button>
                <button type="button" class="mini claro" data-nao-prog="${x.linha}">Não</button>`
@@ -15861,16 +16278,18 @@ Para cada linha recebida, devolva:
     const corpo = `
       ${orienta({
         que: "À esquerda, como estava. À direita, como o Mars sugere.",
-        fazer: pendentes ? "Responda <b>Sim</b> ou <b>Não</b> em cada linha." : "Clique em <b>Aplicar</b>.",
+        fazer: pendentes > 1 ? "Clique em <b>Sim para todas</b>, ou responda linha por linha." : pendentes ? "Responda <b>Sim</b> ou <b>Não</b> na linha que falta." : "Clique em <b>Aplicar</b>.",
       })}
       <div class="tabela-org${primeira ? " primeira" : ""}">
         <div class="linha-org cabeca"><div>ONDE</div><div>ESTAVA ESCRITO</div><div>VAI FICAR</div></div>
         ${c.itens.map(linha).join("")}
       </div>
       <div class="acoes-cartao">
-        <button type="button" class="botao" data-acao="prog_aplicar" ${aceitas && !pendentes ? "" : "disabled"}>
-          Aplicar as ${aceitas} correção(ões) aceitas</button>
-        ${pendentes > 1 ? `<button type="button" class="botao claro" data-acao="prog_todas">Sim para todas</button>` : ""}
+        ${pendentes > 1
+          // o caminho rápido é o botão grande; responder uma a uma continua nas linhas
+          ? `<button type="button" class="botao" data-acao="prog_todas">Sim para todas as ${pendentes}</button>`
+          : `<button type="button" class="botao" data-acao="prog_aplicar" ${aceitas && !pendentes ? "" : "disabled"}>
+          Aplicar as ${aceitas} correção(ões) aceitas</button>`}
       </div>`;
     const ligar = (el) => {
       ligarAcoes(el);
@@ -15944,16 +16363,36 @@ Para cada linha recebida, devolva:
         return contar("A pessoa escolheu seguir sem o programa de provas. Sem ele, o app numera só as provas que têm inscritos, na ordem que deduzir. O cartão da competição aparece logo abaixo da sua fala.",
           () => cartaoCompeticao());
       case "ignorar_linhas":
+        decidir("as linhas que não eram provas ficam de fora");
         e.programa.ok = true;
         a.liberarCompeticao(true);
         nota("As linhas que não eram provas ficaram de fora.");
         renderTrilha();
         return cartaoPrograma();
       // a categoria escrita quase igual a outra: troca só no toque
+      // todas as categorias quase iguais trocadas de uma vez, e o programa confirmado
+      case "categoria_todas": {
+        if (!e.programa) return cartaoPrograma();
+        const lista = D.categoriasParecidas(e.programa.provas).filter((x) => !conv.categoriaCerta.has(x.de));
+        let r2 = e.programa;
+        for (const x of lista) {
+          const troca = (p) => (String(p.categoria || "").trim() === x.de
+            ? Object.assign({}, p, { categoria: x.para, rotulo: String(p.rotulo || "").trim() === x.de ? x.para : p.rotulo }) : p);
+          r2 = Object.assign({}, r2, { provas: r2.provas.map(troca),
+            linhas: (r2.linhas || []).map((l) => (l.ok && l.prova ? Object.assign({}, l, { prova: troca(l.prova), corrigida: l.corrigida || String(l.prova.categoria || "").trim() === x.de }) : l)) });
+          decidir(`${x.de} vira ${x.para}`);
+        }
+        a.aplicarPrograma(r2);
+        fecharCartao(cartaoAtual);
+        nota(lista.map((x) => `${x.de} virou ${x.para}`).join("; ") + " no programa.");
+        return acao("programa_ok");
+      }
       case "categoria_sim": case "categoria_nao": {
         const caixa = botao && botao.closest("[data-de]");
         if (!caixa || !e.programa) return cartaoPrograma();
         const de = caixa.dataset.de, para = caixa.dataset.para;
+        decidir(nome === "categoria_nao" ? `${de} fica como está` : `${de} vira ${para}`);
+        if (cartaoAtual) cartaoAtual.remove();
         if (nome === "categoria_nao") {
           conv.categoriaCerta.add(de);
           nota(`Certo: ${de} fica como está.`);
@@ -15971,17 +16410,23 @@ Para cada linha recebida, devolva:
         return cartaoPrograma();
       }
       case "juntar_sim": case "juntar_nao":
+        decidir(nome === "juntar_sim" ? "as categorias entram na prova que junta" : "cada caso de juntar é perguntado");
         e.perfil.juntarPrograma = nome === "juntar_sim";
         a.renderGrupos();
         nota(nome === "juntar_sim" ? "Certo: os inscritos de cada categoria entram direto na prova que junta."
                                    : "Certo: cada caso vai ser perguntado na conferência.");
         return;
       case "programa_ok":
+        decidir("programa de provas confirmado");
+        // seguir sem trocar é a resposta às categorias quase iguais: elas não voltam a ser perguntadas
+        if (e.programa) D.categoriasParecidas(e.programa.provas).forEach((x) => conv.categoriaCerta.add(x.de));
         if (conv.demo) return demoCompeticao();
         renderTrilha();
         return contar("A pessoa confirmou o programa. O cartão da competição aparece logo abaixo da sua fala: proponha os valores com base no programa (preencher_competicao) e pergunte o que só ela sabe.",
           () => cartaoCompeticao());
       case "etapa_unica":
+        decidir("uma etapa só, com todas as provas");
+        if (cartaoAtual) cartaoAtual.remove();
         a.etapaUnica();
         return cartaoCompeticao();
       case "tela_competicao": return irParaTela("competicao");
@@ -15989,6 +16434,7 @@ Para cada linha recebida, devolva:
         const r = a.confirmarCompeticao();
         if (!r.ok) return cartaoCompeticao(r.falta);
         fecharCartao(cartaoAtual);
+        decidir("competição confirmada");
         nota("Competição confirmada.");
         renderTrilha();
         if (conv.demo) return demoInscritos();
@@ -15996,26 +16442,28 @@ Para cada linha recebida, devolva:
           () => cartaoArquivo("inscritos"));
       }
       case "organizar_ia": return cartaoPropostaOrganizar();
-      case "org_sim": fechar("organizar"); fechar("erro-ia"); return organizar();
+      case "org_sim": decidir("o Mars pode reescrever a ficha"); fechar("organizar"); fechar("erro-ia"); return organizar();
       case "org_nao":
         fechar("organizar");
         nota("Certo, a planilha fica como está.");
         return cartaoInscritos();
       case "aba_sim": {
+        decidir("o Mars pode ver uma aba inteira");
         const aba = botao.closest("[data-aba]").dataset.aba;
         fechar("aba-inteira"); fechar("erro-ia");
         return transcreverAba(aba);
       }
       case "aba_nao":
+        decidir("uma aba ficou de fora");
         org.planoB[botao.closest("[data-aba]").dataset.aba] = "fora";
         fechar("aba-inteira");
         return seguirOrganizacao();
-      case "provas_sim": fechar("provas-ia"); fechar("erro-ia"); return casarProvas();
+      case "provas_sim": decidir("o Mars pode ligar as provas"); fechar("provas-ia"); fechar("erro-ia"); return casarProvas();
       case "provas_nao": fechar("provas-ia"); org.provasFeitas = true; return seguirOrganizacao();
       case "org_todas_certas":
         for (const l of org.linhas) l.conferida = true;
         return cartaoOrganizada();
-      case "org_usar": return usarOrganizadas();
+      case "org_usar": decidir("as inscrições reescritas entram"); return usarOrganizadas();
       case "org_baixar": {
         const nomeBase = String(org.arquivo || "INSCRITOS").replace(/\.(xlsx|xlsm|xls|csv)$/i, "");
         a.baixarPlanilha(IA.planilhaOrganizada(org.linhas, a.lerConfig().programa || []),
@@ -16026,8 +16474,8 @@ Para cada linha recebida, devolva:
         a.revisarOrganizacao(org);
         return definirModo("tela");
       // o botão do cartão do programa já é o pedido: a correção começa sem outro Sim
-      case "corrigir_programa": return prepararCorrecaoPrograma() ? corrigirPrograma() : cartaoPrograma();
-      case "prog_sim": fechar("proposta-programa"); fechar("erro-ia"); return corrigirPrograma();
+      case "corrigir_programa": decidir("o Mars pode corrigir o programa"); return prepararCorrecaoPrograma() ? corrigirPrograma() : cartaoPrograma();
+      case "prog_sim": decidir("o Mars pode corrigir o programa"); fechar("proposta-programa"); fechar("erro-ia"); return corrigirPrograma();
       case "prog_nao":
         fechar("proposta-programa");
         nota("Certo, o programa fica como está.");
@@ -16035,8 +16483,9 @@ Para cada linha recebida, devolva:
       case "prog_todas":
         // Sim para todas já é a decisão inteira: aceita e aplica de uma vez
         for (const x of corrProg.itens) if (x.prova || x.naoEProva) corrProg.decisao[x.linha] = true;
+        decidir("Sim para todas as correções do programa");
         return aplicarCorrecoesPrograma();
-      case "prog_aplicar": return aplicarCorrecoesPrograma();
+      case "prog_aplicar": decidir("as correções do programa que você aprovou"); return aplicarCorrecoesPrograma();
       case "baixar_programa":
         return a.baixarPlanilha(IA.planilhaDoPrograma(e.programa.provas), "PROGRAMA NO MODELO DO APP.xlsx");
       case "correcao_sim": case "correcao_nao": {
@@ -16058,10 +16507,24 @@ Para cada linha recebida, devolva:
         await pausa(1100);
         return aplicarCorrecoes([p], cartaoAtual);
       }
+      // a correção em que a pessoa escolhe entre duas (qual inscrição fica)
+      case "correcao_opcao": {
+        const id = botao.closest("[data-correcao]").dataset.correcao;
+        const p = a.propostasDeCorrecao().find((x) => x.id === id);
+        const op = p && p.opcoes && p.opcoes[Number(botao.dataset.k)];
+        if (!op) return cartaoProblema();
+        registrar(op.feito, () => trocarNomesConhecidos(op.feito),
+          ((foto) => () => voltarConferencia(foto))(fotoDaConferencia()), "conferencia");
+        const box = botao.closest(".correcao-unica");
+        box.classList.add("feita");
+        $(".acoes-cartao", box).innerHTML = `<p class="feito-ok">${AT(op.feito)}</p>`;
+        await pausa(1100);
+        return aplicarCorrecoes([{ aplicar: op.aplicar, feito: op.feito }], cartaoAtual);
+      }
       case "desfazer_ultima": return desfazerUltimas(1);
       case "correcao_todas":
         registrar("Sim para todas as correções", null, ((foto) => () => voltarConferencia(foto))(fotoDaConferencia()), "conferencia");
-        return aplicarCorrecoes(a.propostasDeCorrecao().filter((x) => !conv.recusadas.has(x.id)), cartaoAtual);
+        return aplicarCorrecoes(a.propostasDeCorrecao().filter((x) => !conv.recusadas.has(x.id) && !x.opcoes), cartaoAtual);
       case "ver_conferencia": return cartaoConferencia();
       case "abrir_conferencia": return falarDaConferencia("A pessoa abriu a conferência dos inscritos.");
       case "ver_problema": return cartaoProblema();
@@ -16078,6 +16541,9 @@ Para cada linha recebida, devolva:
           os arquivos e não sai em vermelho no balizamento.</p>
           <button type="button" class="botao" data-sim="1">Sim, seguir assim</button>
           <button type="button" class="mini claro" data-nao="1">Não</button>`;
+        // no teste gigante, o "Sim, seguir assim" ficou escondido atrás da caixa de mensagem
+        encaixar(cartaoAtual);
+        garantirVisivel(cartaoAtual, "[data-sim]");
         $("[data-nao]", bloco).onclick = () => { novaVez(); cartaoProblema(); };
         $("[data-sim]", bloco).onclick = () => {
           novaVez();
@@ -16330,6 +16796,10 @@ Para cada linha recebida, devolva:
       L.push(`Seu cartão aberto, criado por você: "${doMars.dataset.titulo}". ` + (doMars._botoes.length
         ? "Botões: " + doMars._botoes.map((b) => b.rotulo + (b.pegos.length ? ` (faz no toque: ${trocarNomesConhecidos(b.faz)})` : " (volta para você como a resposta)")).join("; ") + "."
         : "Sem botões."));
+    }
+    if (conv.inicio) {
+      L.push(`Cronômetro na tela: ${tempoCorrido((conv.fim || Date.now()) - conv.inicio)} ${conv.fim ? "do começo até os arquivos prontos" : "desde que a pessoa começou"}; ` +
+        `${conv.decisoes.length} decisão(ões) dela até agora, e nada mudou sem um toque dela.`);
     }
     if ($('#fio > .cartao-conversa[data-tipo="confirmar"]:not(.antigo)')) {
       L.push("Há um pedido com Sim e Não esperando a pessoa responder: nada dele mudou ainda.");
@@ -16894,6 +17364,7 @@ Para cada linha recebida, devolva:
         $("[data-sim]", el).onclick = async () => {
           novaVez();
           fecharCartao(el);
+          decidir(c.resumo || c.titulo);
           // a resposta acontece à vista: o cartão da vez desce antes
           descerCartao();
           try { await c.fazer(); }
@@ -17146,7 +17617,8 @@ Regras:
      teste grande de 12/11/2026, uma resposta teve seis frases, descreveu os
      botões e repetiu a oferta no fim. Repetida no fim de cada mensagem, pesa. */
   const LEMBRETE = "\n\n---\nLembrete: se a pessoa perguntou, a primeira frase já responde, com o motivo concreto. No máximo duas frases curtas. " +
-    "Não anuncie o que vai mostrar (\"vou abrir\", \"o cartão abaixo mostra\"), não descreva os botões nem repita o que o cartão mostra. Uma fala só: depois de uma ferramenta, não escreva de novo.";
+    "Não anuncie o que vai mostrar (\"vou abrir\", \"o cartão abaixo mostra\"), não descreva os botões nem repita o que o cartão mostra. Uma fala só: depois de uma ferramenta, não escreva de novo. " +
+    "Não repita o que você já disse antes nesta conversa: se a pessoa perguntar de novo, responda com outro exemplo ou com uma cena.";
 
   // o app contando ao Claude o que aconteceu na tela
   function evento(texto, extra) {
@@ -17160,7 +17632,8 @@ Regras:
   /* A IA fala primeiro, em poucas palavras, e só então o cartão aparece logo
      abaixo da fala. Se a fala não vier a tempo, o cartão aparece assim mesmo. */
   async function contar(texto, depois, extra) {
-    if (conv.sample) await evento(texto, Object.assign({ limite: 25000, silencioso: true, appMostra: !!depois }, extra));
+    // nas planilhas da pessoa, o cartão não espera mais que 12 segundos pela fala (a demonstração tem a sua reserva)
+    if (conv.sample) await evento(texto, Object.assign({ limite: conv.demo ? 25000 : 12000, silencioso: true, appMostra: !!depois }, extra));
     // a fala foi lida enquanto chegava: agora quem manda na tela é o cartão,
     // que aparece inteiro, mesmo que a fala precise subir um pouco
     if (seguindo) ancora = null;
@@ -17199,6 +17672,8 @@ Regras:
     trancarCompositor(true);
     let parcial = "";
     let trocada = false;
+    // o que o Mars disse nas últimas respostas: a fala nova não repete
+    const jaDito = conv.turnos.filter((t) => t.role === "assistant").slice(-6).map((t) => t.content);
     const escrever = (t, fim) => {
       if (trocada || vazou(t)) { trocada = true; t = SOBRE_MIM_RESPOSTA; fim = ""; }
       // o texto tem um bloco só dele: as cenas, ao lado, não são apagadas pela escrita
@@ -17210,7 +17685,7 @@ Regras:
         corpo.className = "corpo-fala";
         caixa.prepend(corpo);
       }
-      corpo.innerHTML = formatarCurto(t, !!$(".mais-mars[open]", fala)) + (fim || "");
+      corpo.innerHTML = formatarCurto(t, !!$(".mais-mars[open]", fala), jaDito) + (fim || "");
       rolar(fala, true);
     };
     try {
@@ -17235,7 +17710,7 @@ Regras:
       cenaApareceu();
       escrever(r.text, (r.truncated ? '<p class="apagado">A resposta foi cortada. Peça uma parte de cada vez.</p>' : "") +
         (r.recusa && naPrevia() ? detalheDoErro(r.recusa) : ""));
-      conv.turnos.push({ role: "assistant", content: trocada ? SOBRE_MIM_RESPOSTA : semRepeticao(r.text) });
+      conv.turnos.push({ role: "assistant", content: trocada ? SOBRE_MIM_RESPOSTA : semRepeticao(r.text, jaDito) });
       // uma pergunta sem cena na resposta: o app mostra a cena do cartão da vez, junto do texto
       // (no iPhone do dono, o Mars respondeu "o que são as linhas piscando" só com texto)
       // (a recusa de assunto fora do balizamento não ganha cena)
@@ -17327,30 +17802,27 @@ Regras:
      conte"). A frase quase igual a uma anterior sai antes de ir para a tela.
      Frases com números diferentes nunca contam como iguais: "linha 12" e
      "linha 17" são coisas distintas. */
-  function semRepeticao(t) {
-    // o texto de antes e o de depois de uma ferramenta chegam colados: "seguro.Se ela"
-    const s = String(t || "").replace(/([a-zà-ú][.!?])([A-ZÀ-Ú])/g, "$1 $2");
-    // frase acaba em ponto seguido de espaço ou no fim da linha: ".xlsx" no meio não corta
-    const pedacos = [];
-    let ini = 0;
-    for (let k = 0; k < s.length; k++) {
-      const fim = (/[.!?]/.test(s[k]) && (k + 1 === s.length || /\s/.test(s[k + 1]))) || s[k] === "\n";
-      if (!fim) continue;
-      let j = k + 1;
-      while (j < s.length && /\s/.test(s[j])) j++;
-      pedacos.push(s.slice(ini, j));
-      ini = j;
-      k = j - 1;
-    }
-    if (ini < s.length) pedacos.push(s.slice(ini));
-    if (pedacos.length < 2) return s;
+  /* A frase que o Mars já disse numa das últimas respostas também sai (o
+     dono, 12/11/2026: o que já foi respondido não se repete). Se a resposta
+     inteira for repetição, fica só a primeira frase. */
+  function semRepeticao(t, jaDito) {
+    const pedacos = frasesDaFala(t);
     const palavras = (p) => p.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "")
       .split(/[^a-z0-9]+/).filter((w) => w.length > 2 || /\d/.test(w));
-    const vistos = [];
-    const fica = pedacos.filter((p) => {
+    const marca = (p) => {
       const w = new Set(palavras(p));
-      if (w.size < 5) return true;
-      const num = [...w].filter((x) => /\d/.test(x)).sort().join(",");
+      return { w, num: [...w].filter((x) => /\d/.test(x)).sort().join(",") };
+    };
+    const antigas = (jaDito || []).flatMap(frasesDaFala).map(marca).filter((v) => v.w.size >= 5);
+    if (pedacos.length < 2 && !antigas.length) return pedacos.join("").trim();
+    const vistos = antigas.slice();
+    let apontou = false;
+    const fica = pedacos.filter((p) => {
+      if (/\ba pessoa (ainda )?(precisa |tem de |deve )?(responder|tocar|clicar|confirmar|decidir|escolher)/i.test(p)) return false;
+      if (/\b(pedido|cart[aã]o|bot[aã]o)\b[^.]*\babaixo\b/i.test(p)) { if (apontou) return false; apontou = true; }
+      const { w, num } = marca(p);
+      // a frase curta que só repete palavras já ditas ("Os arquivos estão liberados." no fim da fala) sai
+      if (w.size < 5) return !(w.size >= 3 && vistos.some((v) => v.num === num && [...w].every((x) => v.w.has(x))));
       // igual: quase as mesmas palavras, ou quase todas já ditas numa frase anterior
       const igual = vistos.some((v) => {
         if (v.num !== num) return false;
@@ -17363,18 +17835,37 @@ Regras:
       if (!igual) vistos.push({ w, num });
       return !igual;
     });
-    return fica.join("").trim();
+    return (fica.some((p) => p.trim()) ? fica : pedacos.slice(0, 1)).join("").trim();
   }
 
-  function formatarCurto(t, aberto) {
-    const [vis, resto] = cortarFala(semRepeticao(t));
+  // as frases de uma fala: ponto seguido de espaço, ou o fim da linha (".xlsx" no meio não corta)
+  function frasesDaFala(t) {
+    // o texto de antes e o de depois de uma ferramenta chegam colados: "seguro.Se ela"
+    const s = String(t || "").replace(/([a-zà-ú][.!?])([A-ZÀ-Ú])/g, "$1 $2");
+    const pedacos = [];
+    let ini = 0;
+    for (let k = 0; k < s.length; k++) {
+      const fim = (/[.!?]/.test(s[k]) && (k + 1 === s.length || /\s/.test(s[k + 1]))) || s[k] === "\n";
+      if (!fim) continue;
+      let j = k + 1;
+      while (j < s.length && /\s/.test(s[j])) j++;
+      pedacos.push(s.slice(ini, j));
+      ini = j;
+      k = j - 1;
+    }
+    if (ini < s.length) pedacos.push(s.slice(ini));
+    return pedacos;
+  }
+
+  function formatarCurto(t, aberto, jaDito) {
+    const [vis, resto] = cortarFala(semRepeticao(t, jaDito));
     return formatar(vis) + (resto ? `<details class="mais-mars"${aberto ? " open" : ""}><summary>ver mais</summary>${formatar(resto)}</details>` : "");
   }
 
   // só na prévia privada: o detalhe técnico de uma falha, fechado, para o dono mandar
   const naPrevia = () => /prévia/i.test(document.title);
   // o número da prévia, à vista só nela: o celular às vezes abre uma versão guardada
-  const VERSAO_PREVIA = "25";
+  const VERSAO_PREVIA = "29";
   const detalheDoErro = (t) => `<details class="detalhe-erro"><summary>detalhe</summary><p>${AT(t)}</p></details>`;
 
   const RAIA_PENSANDO = `<div class="raia-ia"><span class="nadador-ia">${NADADOR}</span></div>

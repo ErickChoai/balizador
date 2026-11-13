@@ -1400,8 +1400,22 @@ html.noite{font-size:15px}
   font-family:var(--texto);font-size:.85rem;color:var(--tinta);padding-left:0}
 .fala .quem b{font-weight:700}
 .fala .quem em{font-style:normal;color:var(--suave);font-size:.78rem}
-.selo-ia{width:1.6rem;height:1.6rem;border-radius:50%;display:grid;place-items:center;flex:none;
-  background:var(--agua);color:var(--papel);font-family:var(--mono);font-size:.68rem;font-weight:700}
+/* o símbolo do Mars: a touca e os óculos na água; boia enquanto ele pensa */
+.selo-mars{width:1.95rem;height:1.95rem;flex:none;display:block;overflow:visible}
+.selo-mars .sm-fundo{fill:#0B5466;stroke:#F2C14E;stroke-width:1.2}
+.selo-mars .sm-onda{fill:none;stroke:#45B8C6;stroke-width:1.4;stroke-linecap:round}
+.selo-mars .sm-touca{fill:#F2C14E}
+.selo-mars .sm-dobra{fill:none;stroke:#FFE7A3;stroke-width:1.2;stroke-linecap:round}
+.selo-mars .sm-elastico{stroke:#C99A2E;stroke-width:1.1}
+.selo-mars .sm-lente{fill:#0A2A33;stroke:#E9F4F6;stroke-width:1}
+.selo-mars .sm-ponte{stroke:#E9F4F6;stroke-width:1.1}
+.selo-mars .sm-brilho{fill:#FFFFFF}
+.selo-mars .sm-sorriso{fill:none;stroke:#E9F4F6;stroke-width:1.4;stroke-linecap:round}
+.fala.pensando .selo-mars .sm-cabeca{animation:boiaMars 1.8s ease-in-out infinite}
+.fala.pensando .selo-mars .sm-brilho{animation:brilhoMars 1.8s ease-in-out infinite}
+@keyframes boiaMars{50%{transform:translateY(1.3px)}}
+@keyframes brilhoMars{0%,100%{opacity:1}45%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){.fala.pensando .selo-mars *{animation:none}}
 .noite .fala.eu .texto{font-size:.98rem;padding:.55rem .9rem}
 .noite .guia b{font-size:1.12rem}
 .noite .guia p{font-size:.95rem}
@@ -2152,3 +2166,28 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
    (no teste grande, "Não entra assim" aparecia com ✓) */
 .cm-bom.cm-fora{background:#FBEDEB;color:#1A2B31;border-color:#E5675B}
 .cm-bom.cm-fora i{color:#C2433A}
+
+/* o cronômetro na trilha, no jeito da placa eletrônica da piscina (escura nos dois temas) */
+.cronometro{display:inline-flex;align-items:center;gap:.35rem;margin-left:.15rem;padding:.24rem .6rem;border-radius:6px;
+  background:#05141A;border:1px solid #1E4B58;color:#F2C14E;font-family:var(--mono);font-size:.88rem;
+  font-variant-numeric:tabular-nums;letter-spacing:.04em;flex:none}
+.cronometro .relogio{width:.95rem;height:.95rem;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round}
+.cronometro.parado{color:#3FBF8F;border-color:#3FBF8F}
+/* o placar do fim: o tempo na placa e as decisões da pessoa */
+.placar-final{display:flex;align-items:center;gap:.9rem;padding:.6rem .75rem;border-radius:6px;
+  background:var(--papel2);border:1px solid var(--linha);margin:.15rem 0 .45rem}
+.pf-placa{display:flex;flex-direction:column;align-items:center;padding:.3rem .75rem .35rem;border-radius:4px;background:#05141A;flex:none}
+.pf-placa span{font-family:var(--mono);font-size:.6rem;letter-spacing:.16em;color:#9DBCC5}
+.pf-placa b{font-family:var(--mono);font-size:1.75rem;line-height:1.1;color:#F2C14E;font-variant-numeric:tabular-nums}
+.placar-final p{margin:0;font-size:1rem;line-height:1.4;min-width:0}
+.decisoes-conv{margin:.3rem 0 0;padding-left:1.5rem;display:flex;flex-direction:column;gap:.2rem;font-size:.92rem}
+.dc-hora{font-family:var(--mono);font-size:.78rem;color:var(--suave);margin-right:.35rem;font-variant-numeric:tabular-nums}
+/* aceitar as sugestões do Mars de uma vez, vendo antes o que cada uma faz */
+.lote-org{display:flex;flex-wrap:wrap;align-items:center;gap:.35rem .8rem;margin-top:.55rem}
+.lote-org details{flex-basis:100%}
+@media (max-width:520px){
+  .placar-final{gap:.6rem;padding:.5rem .55rem}
+  .pf-placa b{font-size:1.45rem}
+}
+/* o tempo de cada linha repetida não quebra no meio (no painel estreito, "46.30" virava "46.3" e "0") */
+.cr-linha b{flex:none;font-weight:700}

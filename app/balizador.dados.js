@@ -382,6 +382,22 @@
     const grade = XLSX.utils.sheet_to_json(ws, {
       header: 1, raw: false, defval: null, blankrows: true });
     const ref = ws && ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : null;
+    /* A data guardada como data do Excel sai no formato americano (m/d/yy):
+       09/05/2014 virava "5/9/14", lido como 5 de setembro (no teste gigante,
+       ainda um dia antes, pelo fuso). Aqui ela volta a dd/mm/aaaa a partir do
+       número da data. Tempo guardado como hora fica de fora: é menor que 1. */
+    if (ref) {
+      for (const k of Object.keys(ws)) {
+        if (k[0] === "!") continue;
+        const c = ws[k];
+        if (!c || c.t !== "n" || !(c.v >= 1 && c.v < 80000)) continue;
+        if (!/^\d{1,4}[/.-]\d{1,2}[/.-]\d{1,4}$/.test(String(c.w || "").trim())) continue;
+        const p = XLSX.SSF.parse_date_code(Math.round(c.v));
+        if (!p || !p.y) continue;
+        const pos = XLSX.utils.decode_cell(k), row = grade[pos.r - ref.s.r];
+        if (row) row[pos.c - ref.s.c] = `${String(p.d).padStart(2, "0")}/${String(p.m).padStart(2, "0")}/${p.y}`;
+      }
+    }
     return { grade, linha0: ref ? ref.s.r : 0, coluna0: ref ? ref.s.c : 0 };
   }
 
@@ -481,7 +497,9 @@
     }
 
     const revezamento = /^\d+X/.test(distancia);
-    let nome = c.nome, atletas = null, semLista = false;
+    // o nome todo em minúsculas entra em maiúsculas, como os outros da lista (no teste gigante,
+    // "maria eduarda pires" saía assim no PDF); quem escreveu com maiúscula e minúscula fica como escreveu
+    let nome = c.nome && c.nome === c.nome.toLowerCase() ? c.nome.toUpperCase() : c.nome, atletas = null, semLista = false;
     if (revezamento) {
       // no revezamento quem ocupa a raia é a equipe; nomes escritos são rascunho
       atletas = c.nome.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
@@ -1026,8 +1044,8 @@
 
   const ESCRITAS_NAIPE = {
     MISTO: ["MISTO", "MISTA", "MISTOS", "MIX", "X"],
-    MASC: ["MASCULINO", "MASCULINA", "MASC", "M", "H", "HOMENS", "HOMEM"],
-    FEM: ["FEMININO", "FEMININA", "FEM", "F", "MULHERES", "MULHER"],
+    MASC: ["MASCULINO", "MASCULINA", "MASC", "M", "H", "HOMENS", "HOMEM", "MENINO", "MENINOS", "RAPAZ", "RAPAZES"],
+    FEM: ["FEMININO", "FEMININA", "FEM", "F", "MULHERES", "MULHER", "MENINA", "MENINAS", "MOCA", "MOCAS"],
   };
 
   function normalizarNaipe(texto) {
@@ -1099,10 +1117,31 @@
     return m ? parseInt(m[0], 10) : null;
   }
 
+  /* Um título de etapa no meio da lista ("1ª ETAPA, SÁBADO DE MANHÃ"): não é
+     prova, e diz a etapa das provas que vêm embaixo. No teste gigante, a lista
+     tinha 4 etapas assim e o app mostrava "0 etapas". */
+  function etapaDoTitulo(t) {
+    const n = norm(String(t || "")).replace(/\s+/g, " ").trim();
+    const m = n.match(/^(\d{1,2}) ?[ªºAO°]?\.? ?ETAPA\b(.*)$/) || n.match(/^ETAPA (\d{1,2})\b(.*)$/);
+    if (!m) return null;
+    const resto = m[2] || "";
+    if (/\d+ ?M\b|LIVRE|COSTAS|PEITO|BORBOLETA|MEDLEY/.test(resto)) return null;
+    return { nome: Number(m[1]) + "ª ETAPA",
+             periodo: /MANHA/.test(resto) ? "MANHÃ" : /TARDE/.test(resto) ? "TARDE" : /NOITE/.test(resto) ? "NOITE" : "" };
+  }
+
   function lerProgramaColunas(grade, inicio, mapa, porColunas, saida) {
+    let etapaAtual = null;
+    // o cabeçalho copiado de novo no meio da lista (quem colou duas folhas) fica de fora sozinho
+    const textoDaLinha = (l) => (l || []).map((v) => norm(String(v == null ? "" : v)).replace(/\s+/g, " ").trim()).filter(Boolean).join("|");
+    const cabecalho = textoDaLinha(grade[inicio - 1]);
     for (let r = inicio; r < grade.length; r++) {
       const linha = grade[r] || [];
       if (linhaVaziaPrograma(linha)) continue;
+      if (cabecalho && textoDaLinha(linha) === cabecalho) {
+        (saida.cabecalhosRepetidos = saida.cabecalhosRepetidos || []).push(r + 1);
+        continue;
+      }
       const cel = (campo) => mapa[campo] == null ? ""
         : String(linha[mapa[campo]] == null ? "" : linha[mapa[campo]]).trim();
 
@@ -1134,13 +1173,37 @@
       // linha em que nada foi entendido quase nunca é uma prova: é um recado,
       // um total, um resto de outra planilha. Dizer isso é mais útil que listar
       // os quatro campos que faltam.
-      if (faltas.length === 4) {
-        saida.linhas.push({ linha: r + 1, texto: visto, ok: false,
-          motivo: "esta linha não parece uma prova; se for um recado, um total " +
-                  "ou uma sobra, apague-a da planilha" });
-        continue;
-      }
       if (faltas.length) {
+        // a prova inteira numa célula só ("50m peito infantil feminino"): o app lê por extenso.
+        // No teste gigante ela era tratada como recado, e o Não na correção jogava fora uma prova de verdade.
+        const fora = new Set(["numero", "etapa", "dia", "periodo"].map((k) => mapa[k]).filter((c) => c != null));
+        const cheias = linha.map((v, c) => (fora.has(c) || v == null ? "" : String(v).trim())).filter(Boolean);
+        const resto = cheias.join(" ");
+        // só a prova que está toda numa célula; "50m peito" com a categoria ao lado é correção do Mars
+        const inteira = cheias.length === 1 ? lerLinhaPrograma(resto) : null;
+        if (inteira && inteira.distancia && inteira.estilo && inteira.categoria && inteira.naipe) {
+          const cat = String(inteira.categoria).toUpperCase();
+          saida.linhas.push({ linha: r + 1, texto: visto, ok: true, prova: {
+            distancia: inteira.distancia, estilo: inteira.estilo, categoria: cat, naipe: inteira.naipe,
+            rotulo: String(inteira.rotulo || cat).toUpperCase(), numero: numeroDeclarado(cel("numero")),
+            etapa: cel("etapa") || (etapaAtual ? etapaAtual.nome : ""), dia: cel("dia"),
+            periodo: cel("periodo") || (etapaAtual ? etapaAtual.periodo : ""),
+          } });
+          continue;
+        }
+        const tudo = linha.map((v) => (v == null ? "" : String(v).trim())).filter(Boolean).join(" ");
+        const titulo = faltas.length === 4 ? etapaDoTitulo(tudo) : null;
+        if (titulo) {
+          etapaAtual = titulo;
+          (saida.titulosDeEtapa = saida.titulosDeEtapa || []).push({ linha: r + 1, texto: tudo, etapa: titulo.nome });
+          continue;
+        }
+        if (faltas.length === 4) {
+          saida.linhas.push({ linha: r + 1, texto: visto, ok: false,
+            motivo: "esta linha não parece uma prova; se for um recado, um total " +
+                    "ou uma sobra, apague-a da planilha" });
+          continue;
+        }
         saida.linhas.push({ linha: r + 1, texto: visto, ok: false,
                             motivo: faltas.join("; ") });
         continue;
@@ -1148,7 +1211,8 @@
       saida.linhas.push({ linha: r + 1, texto: visto, ok: true, prova: {
         distancia, estilo, categoria, naipe, rotulo: categoria,
         numero: numeroDeclarado(cel("numero")),
-        etapa: cel("etapa"), dia: cel("dia"), periodo: cel("periodo"),
+        etapa: cel("etapa") || (etapaAtual ? etapaAtual.nome : ""), dia: cel("dia"),
+        periodo: cel("periodo") || (etapaAtual ? etapaAtual.periodo : ""),
       } });
     }
   }
@@ -1187,6 +1251,18 @@
     }
     const cab = acharCabecalhoPrograma(grade);
     const mapa = cab ? cab.mapa : {};
+    // o título em cima do cabeçalho ("PROGRAMA DE PROVAS: JOGOS DA ESTAÇÃO 2026") dá o nome da competição
+    if (cab) {
+      for (let r = 0; r < cab.linha; r++) {
+        const cheias = (grade[r] || []).map((v) => String(v == null ? "" : v).trim()).filter(Boolean);
+        if (cheias.length !== 1) continue;
+        const nome = cheias[0].replace(/^\s*programa(\s+de\s+provas)?\s*[:\-–—]?\s*/i, "").trim();
+        if (nome.length >= 6 && nome.length <= 80 && /[a-zà-ú]{3}/i.test(nome) && !/^(n[ºo°]|prova|etapa)\b/i.test(nome)) {
+          saida.titulo = nome;
+          break;
+        }
+      }
+    }
     const porColunas = mapa.distancia != null && mapa.estilo != null;
     const porProvaCurta = !porColunas && mapa.prova != null &&
                           mapa.categoria != null && mapa.naipe != null;
