@@ -2279,6 +2279,32 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
 /* a prévia, ao lado do cartão de duplicar, fica do tamanho do próprio texto */
 .sem-mars .abertura-conv .caminhos{align-items:start}
 
+/* o cartão de duplicar da largura toda, em duas colunas: o convite e os passos
+   à esquerda, o filme à direita, a prévia dentro dele (13/11/2026: lado a lado
+   com a prévia, as alturas não batiam e as letras ficavam pequenas) */
+.sem-mars .abertura-conv .caminhos{grid-template-columns:minmax(0,1fr);align-items:stretch}
+.abertura-conv .caminho.duplicar{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
+  gap:1.6em;align-items:center;padding:1.3em 1.4em}
+.dup-texto{display:flex;flex-direction:column;gap:.6em;min-width:0}
+.abertura-conv .caminho.duplicar .dup-texto > b{font-size:1.6em;line-height:1.1}
+.abertura-conv .caminho.duplicar .dup-texto > span{font-size:1em;color:var(--suave);line-height:1.45}
+.caminho.duplicar .passos-dup{list-style:none;padding:0;margin:.15em 0 .2em;counter-reset:pd;display:grid;gap:.45em;font-size:1em}
+.caminho.duplicar .passos-dup li{display:flex;gap:.6em;align-items:baseline;line-height:1.4}
+.caminho.duplicar .passos-dup li::before{counter-increment:pd;content:counter(pd);display:inline-grid;place-items:center;flex:none;
+  width:1.55em;height:1.55em;border-radius:50%;background:var(--amarelo);color:#0F2027;font-size:.85em;font-weight:700;transform:translateY(-.05em)}
+.dup-previa .caminho{width:100%;padding:.75em 1em;gap:.15em;border-radius:.8em;background:transparent;box-shadow:none}
+.abertura-conv .dup-previa .caminho b{font-size:1.1em}
+.abertura-conv .dup-previa .caminho > span:last-child{font-size:.9em}
+.caminho.duplicar .cena-dup{margin:0;min-width:0}
+.caminho.duplicar .cd-tela{font-size:.9em}
+@media (max-width:759px){
+  .abertura-conv .caminho.duplicar{grid-template-columns:minmax(0,1fr);gap:1em}
+}
+/* o nome do botão dentro dos passos fica no corpo do texto, só em negrito */
+.abertura-conv .caminho.duplicar .passos-dup b,.fim-dup .passos-dup b{font-family:inherit;font-size:1em;line-height:inherit;font-weight:700;color:var(--tinta)}
+.abertura-conv .caminho.duplicar .dup-texto > span{font-size:1.08em}
+.caminho.duplicar .passos-dup{font-size:1.06em}
+
 </style>
 </head>
 <body>
@@ -18567,12 +18593,19 @@ Regras:
   const PASSOS_DUPLICAR = `<ol class="passos-dup"><li>No alto da página, toque em <b>Balizador</b>.</li>
       <li>No menu, toque em <b>Duplicar</b>.</li><li>Na sua cópia, o Mars conversa com você e lê as suas planilhas.</li></ol>`;
 
+  /* O cartão ocupa a largura toda: à esquerda o convite, os passos e a
+     prévia; à direita o filme. Na primeira versão, o cartão e a prévia
+     ficavam lado a lado, com alturas diferentes e as letras pequenas (o dono,
+     13/11/2026). */
   function cartaoDuplicar() {
     return `<div class="caminho principal duplicar" id="duplicarMars">
-      <b>Use o Balizador completo na sua conta</b>
-      <span>A versão completa roda na sua própria conta do claude.ai. Assim o Mars conversa com você, e as suas planilhas ficam só com você.</span>
+      <div class="dup-texto">
+        <b>Use o Balizador completo na sua conta</b>
+        <span>A versão completa roda na sua própria conta do claude.ai. Assim o Mars conversa com você, e as suas planilhas ficam só com você.</span>
+        ${PASSOS_DUPLICAR}
+        <div class="dup-previa"></div>
+      </div>
       ${CENA_DUPLICAR}
-      <details class="mais"><summary>ver o passo a passo</summary>${PASSOS_DUPLICAR}</details>
     </div>`;
   }
 
@@ -18600,12 +18633,15 @@ Regras:
     if (caminhos && !$("#duplicarMars")) caminhos.insertAdjacentHTML("afterbegin", cartaoDuplicar());
     const minhas = $('[data-caminho="minhas"]');
     if (minhas) minhas.style.display = "none";
+    // a prévia entra no próprio cartão, embaixo dos passos, como o caminho de quem quer ver antes
     const demo = $('[data-caminho="demo"]');
+    const lugar = $("#duplicarMars .dup-previa");
     if (demo) {
       demo.classList.remove("principal");
       const b = $("b", demo), s = $("span", demo);
-      if (b) b.textContent = "Ver uma prévia";
-      if (s) s.textContent = "A demonstração com as respostas já preparadas do Mars. Leva uns 3 minutos.";
+      if (b) b.textContent = "Antes, ver uma prévia";
+      if (s) s.textContent = "Com respostas já preparadas do Mars. Leva uns 3 minutos.";
+      if (lugar) lugar.appendChild(demo);
     }
     const caixa = $("#mensagem");
     if (caixa) { caixa.disabled = true; caixa.placeholder = "Na sua cópia do Balizador, o Mars conversa com você."; }

@@ -353,21 +353,24 @@ p{margin:0}
    vê uma prévia e duplica o Balizador para a própria conta: o filme abaixo
    mostra o toque em "Balizador", o "Duplicar" e a cópia pronta, para a
    pessoa não ter surpresa ao chegar no claude.ai. */
-.usar{padding-block:clamp(3rem,7vw,4.5rem);background:var(--agua2)}
-.usar h2{font-size:clamp(2rem,5vw,3.1rem);line-height:1;max-width:22ch}
-.usar .texto-curto{color:var(--suave);max-width:40rem;margin-top:.9rem;font-size:1.08rem}
-.usar-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:2rem;align-items:center;margin-top:2rem}
-.usar-passos{list-style:none;margin:0;padding:0;display:grid;gap:1rem;counter-reset:passo}
-.usar-passos li{display:grid;grid-template-columns:2.4rem minmax(0,1fr);gap:.8rem;align-items:start}
-.usar-passos li::before{counter-increment:passo;content:counter(passo);display:grid;place-items:center;width:2.4rem;height:2.4rem;
-  border-radius:50%;background:var(--amarelo);color:var(--agua);font-family:var(--display);font-size:1.3rem;font-weight:800}
-.usar-passos b{display:block;font-family:var(--display);font-size:1.35rem;line-height:1.1;margin-bottom:.15rem}
-.usar-passos span{color:var(--suave)}
-.usar-nota{margin-top:1.4rem;color:var(--suave);font-size:.95rem;max-width:40rem}
-.usar .chamadas{margin-top:1.6rem}
+/* tudo cabe numa tela: título curto, passos em letra de leitura e o filme do
+   tamanho do texto (13/11/2026: grande demais, cortava os passos) */
+.usar{padding-block:clamp(2.2rem,5vw,3.2rem);background:var(--agua2)}
+.usar h2{font-size:clamp(1.7rem,3.4vw,2.4rem);line-height:1.05;max-width:none}
+.usar .texto-curto{color:var(--suave);max-width:46rem;margin-top:.6rem;font-size:1rem;line-height:1.5}
+.usar-grade{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(1.2rem,3vw,2.4rem);align-items:center;margin-top:1.4rem}
+.usar-passos{list-style:none;margin:0;padding:0;display:grid;gap:.75rem;counter-reset:passo}
+.usar-passos li{display:grid;grid-template-columns:1.9rem minmax(0,1fr);gap:.7rem;align-items:start}
+.usar-passos li::before{counter-increment:passo;content:counter(passo);display:grid;place-items:center;width:1.9rem;height:1.9rem;
+  border-radius:50%;background:var(--amarelo);color:var(--agua);font-family:var(--display);font-size:1.05rem;font-weight:800}
+.usar-passos b{display:block;font-family:var(--display);font-size:1.15rem;line-height:1.15;margin-bottom:.1rem}
+.usar-passos span{color:var(--suave);font-size:.95rem;line-height:1.45}
+.usar-nota{margin-top:1.1rem;color:var(--suave);font-size:.9rem;max-width:46rem}
+.usar .chamadas{margin-top:1.1rem}
+.usar-grade > div{max-width:34rem;width:100%;justify-self:end}
 
-.ud-tela{position:relative;aspect-ratio:16/10;border-radius:14px;overflow:hidden;background:#0B2A33;
-  border:1px solid var(--linha);box-shadow:0 1.2rem 2.4rem rgba(0,0,0,.35);font-size:clamp(.72rem,1.4vw,.95rem)}
+.ud-tela{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:#0B2A33;
+  border:1px solid var(--linha);box-shadow:0 1rem 2rem rgba(0,0,0,.35);font-size:clamp(.62rem,1vw,.8rem)}
 .ud-url{position:absolute;inset:0 0 auto 0;height:9%;display:flex;align-items:center;gap:.5em;padding:0 3%;
   background:#04161C;color:var(--suave);font-family:var(--mono);font-size:.85em}
 .ud-url i{width:.6em;height:.6em;border-radius:50%;background:var(--linha)}
@@ -377,7 +380,7 @@ p{margin:0}
 .ud-nome i{width:.45em;height:.45em;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translateY(-.15em)}
 .ud-bola{width:1.5em;height:1.5em;border-radius:50%;background:var(--verde)}
 .ud-pagina{position:absolute;inset:26% 6% 6% 6%;display:grid;gap:.7em;align-content:start}
-.ud-pagina b{font-family:var(--display);font-size:1.9em;line-height:1;color:var(--espuma)}
+.ud-pagina b{font-family:var(--display);font-size:1.6em;line-height:1;color:var(--espuma)}
 .ud-pagina span{height:.7em;border-radius:.35em;background:var(--linha)}
 .ud-pagina .ud-cartao{height:auto;display:block;padding:.7em .9em;border-radius:.7em;border:1px solid var(--amarelo);
   background:rgba(242,193,78,.12);color:var(--espuma);font-weight:700;width:70%}
@@ -403,14 +406,14 @@ p{margin:0}
 @keyframes udMenu{0%,23%{opacity:0;transform:translateY(-.4em)} 26%,46%{opacity:1;transform:none} 50%,100%{opacity:0;transform:translateY(-.4em)}}
 @keyframes udDup{0%,36%{background:transparent;color:inherit} 39%,47%{background:var(--amarelo);color:#06222B} 50%,100%{background:transparent}}
 @keyframes udPronto{0%,50%{opacity:0;transform:scale(.92)} 55%,94%{opacity:1;transform:none} 100%{opacity:0}}
-.ud-legenda{display:grid;margin-top:.9rem;min-height:1.8rem}
-.ud-legenda > span{grid-area:1/1;display:flex;align-items:center;gap:.6rem;opacity:0;color:var(--espuma)}
-.ud-legenda b{display:inline-grid;place-items:center;width:1.7rem;height:1.7rem;border-radius:50%;background:var(--amarelo);color:#06222B;flex:none}
+.ud-legenda{display:grid;margin-top:.7rem;min-height:1.6rem;font-size:.95rem}
+.ud-legenda > span{grid-area:1/1;display:flex;align-items:center;gap:.55rem;opacity:0;color:var(--espuma)}
+.ud-legenda b{display:inline-grid;place-items:center;width:1.5rem;height:1.5rem;border-radius:50%;background:var(--amarelo);color:#06222B;flex:none;font-size:.85rem}
 .ud-p1{animation:udP1 8s infinite} .ud-p2{animation:udP2 8s infinite} .ud-p3{animation:udP3 8s infinite}
 @keyframes udP1{0%,34%{opacity:1} 37%,100%{opacity:0}}
 @keyframes udP2{0%,35%{opacity:0} 38%,49%{opacity:1} 52%,100%{opacity:0}}
 @keyframes udP3{0%,50%{opacity:0} 54%,97%{opacity:1} 100%{opacity:0}}
-@media (max-width:760px){.usar-grade{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:760px){.usar-grade{grid-template-columns:minmax(0,1fr)} .usar-grade > div{justify-self:stretch;max-width:none}}
 @media (prefers-reduced-motion:reduce){
   .ud-nome,.ud-menu,.ud-dup,.ud-pronto,.ud-cursor,.ud-p1,.ud-p2,.ud-p3{animation:none!important}
   .ud-menu{opacity:1;transform:none} .ud-dup{background:var(--amarelo);color:#06222B}

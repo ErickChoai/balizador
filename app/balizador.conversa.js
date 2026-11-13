@@ -4919,12 +4919,19 @@ Regras:
   const PASSOS_DUPLICAR = `<ol class="passos-dup"><li>No alto da página, toque em <b>Balizador</b>.</li>
       <li>No menu, toque em <b>Duplicar</b>.</li><li>Na sua cópia, o Mars conversa com você e lê as suas planilhas.</li></ol>`;
 
+  /* O cartão ocupa a largura toda: à esquerda o convite, os passos e a
+     prévia; à direita o filme. Na primeira versão, o cartão e a prévia
+     ficavam lado a lado, com alturas diferentes e as letras pequenas (o dono,
+     13/11/2026). */
   function cartaoDuplicar() {
     return `<div class="caminho principal duplicar" id="duplicarMars">
-      <b>Use o Balizador completo na sua conta</b>
-      <span>A versão completa roda na sua própria conta do claude.ai. Assim o Mars conversa com você, e as suas planilhas ficam só com você.</span>
+      <div class="dup-texto">
+        <b>Use o Balizador completo na sua conta</b>
+        <span>A versão completa roda na sua própria conta do claude.ai. Assim o Mars conversa com você, e as suas planilhas ficam só com você.</span>
+        ${PASSOS_DUPLICAR}
+        <div class="dup-previa"></div>
+      </div>
       ${CENA_DUPLICAR}
-      <details class="mais"><summary>ver o passo a passo</summary>${PASSOS_DUPLICAR}</details>
     </div>`;
   }
 
@@ -4952,12 +4959,15 @@ Regras:
     if (caminhos && !$("#duplicarMars")) caminhos.insertAdjacentHTML("afterbegin", cartaoDuplicar());
     const minhas = $('[data-caminho="minhas"]');
     if (minhas) minhas.style.display = "none";
+    // a prévia entra no próprio cartão, embaixo dos passos, como o caminho de quem quer ver antes
     const demo = $('[data-caminho="demo"]');
+    const lugar = $("#duplicarMars .dup-previa");
     if (demo) {
       demo.classList.remove("principal");
       const b = $("b", demo), s = $("span", demo);
-      if (b) b.textContent = "Ver uma prévia";
-      if (s) s.textContent = "A demonstração com as respostas já preparadas do Mars. Leva uns 3 minutos.";
+      if (b) b.textContent = "Antes, ver uma prévia";
+      if (s) s.textContent = "Com respostas já preparadas do Mars. Leva uns 3 minutos.";
+      if (lugar) lugar.appendChild(demo);
     }
     const caixa = $("#mensagem");
     if (caixa) { caixa.disabled = true; caixa.placeholder = "Na sua cópia do Balizador, o Mars conversa com você."; }
