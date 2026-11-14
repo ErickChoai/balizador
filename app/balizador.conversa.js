@@ -2625,6 +2625,47 @@
     return i ? (i.revezamento ? i.equipe : i.nome) : "linha " + x.l.origem.linha;
   };
 
+  /* A mesma categoria escrita de um jeito que não está na lista ("INF" em 15
+     inscrições): uma pergunta só para todas, em vez de 15 cartões iguais
+     (pedido do dono, 13/11/2026). Vale quando o app já sabe qual categoria da
+     lista é, e para duas linhas ou mais. */
+  function grupoDeCategoria(pendentes, prog, vistos) {
+    const grupos = new Map();
+    for (const x of pendentes) {
+      if (!x.r.inscricao || !x.r.numero || x.l.excluida) continue;
+      const escrita = String((x.l.campos || {}).categoria || "").replace(/\s+/g, " ").trim();
+      const k = D.chaveCategoria(escrita);
+      if (!k) continue;
+      const p = prog[x.r.numero - 1];
+      const partes = D.partesDaCategoria(p.categoria);
+      if (partes.some((parte) => D.casaCategoria(k, parte) === "exato")) continue;
+      const parte = partes.find((pt) => D.casaCategoria(k, pt));
+      if (!parte) continue;
+      const certa = partes.length === 1 ? (p.rotulo || p.categoria) : parte;
+      const chave = k + ">" + D.chaveCategoria(certa);
+      if (vistos.has(chave)) continue;
+      if (!grupos.has(chave)) grupos.set(chave, { chave, escrita, certa, itens: [] });
+      grupos.get(chave).itens.push(x);
+    }
+    return [...grupos.values()].filter((g) => g.itens.length >= 2)
+      .sort((a, b) => b.itens.length - a.itens.length)[0] || null;
+  }
+  // muda a categoria das linhas do grupo e tira a dúvida do Mars sobre ela; dúvida de outra coisa fica
+  function mudarCategoriaDoGrupo(g) {
+    const palavra = B.normalizar(g.escrita);
+    const fotos = g.itens.map((x) => [x.l, { categoria: (x.l.campos || {}).categoria, incertezas: x.l.incertezas.slice(), resolvida: x.l.resolvida }]);
+    for (const x of g.itens) {
+      const l = x.l;
+      l.campos = Object.assign({}, l.campos, { categoria: g.certa });
+      if (l.resolvida) l.resolvida = Object.assign({}, l.resolvida, { categoria: g.certa, incerto: false });
+      l.incertezas = l.incertezas.filter((m) => !/categ/i.test(m) && !B.normalizar(m).split(/[^A-Z0-9]+/).includes(palavra));
+    }
+    return () => fotos.forEach(([l, f]) => {
+      l.campos = Object.assign({}, l.campos, { categoria: f.categoria });
+      l.incertezas = f.incertezas; l.resolvida = f.resolvida;
+    });
+  }
+
   function cartaoOrganizada(primeira, chegou) {
     const o = org, prog = app().lerConfig().programa || [];
     const itens = o.linhas.map((l) => ({ l, r: IA.interpretar(l, prog) }));
@@ -2767,6 +2808,28 @@
           } };
       }
     }
+    // a mesma categoria fora da lista em várias linhas: uma pergunta para todas, antes dos cartões de uma linha
+    o.gruposVistos = o.gruposVistos || new Set();
+    const grupo = pendentes.length ? grupoDeCategoria(pendentes, prog, o.gruposVistos) : null;
+    if (grupo) {
+      const n = grupo.itens.length, lote = pilha.indexOf('<div class="lote-org">');
+      pilha = `<div class="pilha-org">
+        <article class="cartao-linha cartao-grupo ${chegou ? "chega" : ""}" data-grupo="${AT(grupo.chave)}">
+          <div class="cl-cabeca"><span class="conta-problema">${n} inscrições</span><b>Categoria ${AT(grupo.escrita)}</b></div>
+          <p class="cl-pergunta">O Mars encontrou a categoria ${AT(grupo.escrita)} em ${n} inscrições. Provavelmente é ${AT(grupo.certa)}. Posso mudar nas ${n}?</p>
+          <details class="mais"><summary>ver as ${n} inscrições</summary><div class="rola-tabela"><ul class="motivos-conv">${
+            grupo.itens.map((x) => `<li><b>${AT(quemDaLinha(x))}</b>, ${AT(x.l.origem.aba)} linha ${x.l.origem.linha}: ${AT(tituloDa(x))}</li>`).join("")}</ul></div></details>
+          <div class="acoes-cartao"><button type="button" class="botao" data-grupo-sim>Sim, mudar as ${n}</button>
+            <button type="button" class="link" data-grupo-nao>Não, ver uma por uma</button></div>
+          ${conv.historico.length ? `<p class="nota desfazer-linha"><button type="button" class="link" data-acao="desfazer_ultima">desfazer a última resposta</button></p>` : ""}
+          <div class="cl-feito" aria-live="polite"></div>
+        </article></div>${lote >= 0 ? pilha.slice(lote) : ""}`;
+      conv.cartaoDaVez = (troca) => `revisão da planilha reescrita: a categoria ${troca(grupo.escrita)} está escrita em ${n} inscrições ` +
+        `e não está na lista; o app acha que é ${grupo.certa}. Pergunta do cartão: posso mudar nas ${n}? ` +
+        `Botões: Sim, mudar as ${n}; Não, ver uma por uma.`;
+      conv.alvoTempo = null;
+      atual = null;
+    }
     // sem nada para responder: três prontas de amostra
     const vista = pendentes.length ? [] : prontas.slice(0, 3);
     const resto = ordem.filter((x) => !vista.includes(x) && x !== atual);
@@ -2805,8 +2868,33 @@
       ligarAcoes(el);
       const achar = (id) => o.linhas.find((l) => l.id === id);
       $$("[data-linha-volta]", el).forEach((b) => (b.onclick = () => { achar(b.dataset.linhaVolta).excluida = false; cartaoOrganizada(); }));
-      const card = $(".cartao-linha", el);
-      if (!card) return;
+      const cartaoGrupo = $(".cartao-grupo", el);
+      if (cartaoGrupo && grupo) {
+        const fechar = (texto) => {
+          $$("button", cartaoGrupo).forEach((x) => (x.disabled = true));
+          $(".cl-feito", cartaoGrupo).textContent = texto;
+          cartaoGrupo.classList.add("decidida");
+          setTimeout(() => cartaoOrganizada(false, true), calmo ? 200 : 950);
+        };
+        $("[data-grupo-sim]", cartaoGrupo).onclick = () => {
+          if (cartaoGrupo.classList.contains("decidida")) return;
+          novaVez();
+          const n = grupo.itens.length, volta = mudarCategoriaDoGrupo(grupo);
+          // conta como respondidas só as que ficaram sem dúvida nenhuma
+          const feitas = grupo.itens.filter((x) => IA.interpretar(x.l, prog).estado === "ok").length;
+          o.respondidas = (o.respondidas || 0) + feitas;
+          registrar(`categoria ${grupo.escrita} virou ${grupo.certa} em ${n} inscrições`, null,
+            () => { volta(); o.respondidas = Math.max(0, (o.respondidas || 0) - feitas); }, "reescrita");
+          fechar(`✓ Categoria ${grupo.certa} nas ${n} inscrições`);
+        };
+        $("[data-grupo-nao]", cartaoGrupo).onclick = () => {
+          if (cartaoGrupo.classList.contains("decidida")) return;
+          o.gruposVistos.add(grupo.chave);
+          fechar("✓ Uma por uma");
+        };
+      }
+      const card = $(".cartao-linha:not(.cartao-grupo)", el);
+      if (!card) return ligarTodas();
       // a resposta: o cartão fica verde, sai para a direita, e o próximo entra
       const responder = (texto) => {
         o.respondidas = (o.respondidas || 0) + 1;
@@ -2877,6 +2965,9 @@
         l.conferida = true;
         responder("✓ Corrigido: " + (mudouNome ? nomeNovo + ", " : "") + (t.segundos == null ? "sem tempo" : B.formatarTempo(t.segundos)));
       };
+      ligarTodas();
+      // "Aceitar as sugestões" também vale com o cartão do grupo na tela
+      function ligarTodas() {
       const todas = $("[data-org-sugestoes]", el);
       if (todas) todas.onclick = () => {
         const fotos = pendentes.map((x) => [x.l, fotoDaLinha(x.l)]);
@@ -2898,10 +2989,11 @@
         nota(`As ${pendentes.length} sugestões do Mars foram aceitas.`);
         cartaoOrganizada(false, true);
       };
+      }
     };
     // o botão do cartão da vez fica à vista: a tela rola o mínimo para isso
     const decisaoAVista = (el) => {
-      const b = $(".cartao-linha .opcao-linha.outro", el) || $('[data-acao="org_usar"]', el);
+      const b = $(".cartao-linha .opcao-linha.outro", el) || $("[data-grupo-nao]", el) || $('[data-acao="org_usar"]', el);
       if (!b) return;
       setTimeout(() => {
         const topo = ($(".topo") ? $(".topo").getBoundingClientRect().bottom : 0) + 8;
