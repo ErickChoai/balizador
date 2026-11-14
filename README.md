@@ -86,7 +86,6 @@ O que ele não faz:
 | `app/balizador.conversa.js` | a conversa com o Mars |
 | `app/corpo.html` e `app/estilo.css` | a estrutura e a aparência |
 | `app/montar.js` | junta tudo num arquivo só |
-| `anterior/` | a versão de antes da IA |
 
 ## Como montar
 
