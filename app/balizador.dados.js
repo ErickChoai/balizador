@@ -434,7 +434,11 @@
       .replace(/^\s*(REVEZAMENTO|REV\.?)\s+/i, "");
     // maiúsculas sem tirar o acento: a categoria sai como foi escrita,
     // PRÉ-MIRIM e não PRE-MIRIM
-    const u = t.toUpperCase().replace(/\s+/g, " ").trim();
+    // "50L", "50 C", "100P": a letra do estilo colada na distância, como muita ficha abrevia
+    // (no teste das 10 equipes, "50L MIR MASC" saía); o M fica de fora, que é de metros
+    const ESTILO_LETRA = { L: "LIVRE", C: "COSTAS", P: "PEITO", B: "BORBOLETA" };
+    const u = t.toUpperCase().replace(/\s+/g, " ").trim()
+      .replace(/^(\d+)\s*([LCPB])(?=\s|$)/, (x, d, e) => d + "M " + ESTILO_LETRA[e]);
     const m = u.match(/^(\d+\s*X\s*\d+|\d+)\s*M?(?:ETROS?)?\s+(?:NADO\s+)?(LIVRE|CRAWL|COSTAS?|DORSO|PEITO|BORBOLETA|GOLFINHO|MEDLEY)\b(.*)$/);
     if (!m) return null;
     // o hífen dentro da palavra fica (PRÉ-MIRIM); o que separa pedaços sai
@@ -1450,20 +1454,25 @@
         const k = chaveProva(i.distancia, i.estilo, i.categoriaProva, i.naipe);
         if (noPrograma.has(k)) continue;
         const ki = chaveCategoria(i.categoriaProva);
-        let achada = null, como = "";
+        let achada = null, como = "", outra = false;
         for (const p of (candidatas.get([i.distancia, i.estilo, i.naipe].join("|")) || [])) {
           for (const parte of partesDaCategoria(p.categoria)) {
             const tipo = casaCategoria(ki, parte);
             if (!tipo) continue;
             if (tipo === "exato") { achada = p; como = tipo; break; }
             if (!achada) { achada = p; como = tipo; }
+            else if (chaveCategoria(achada.categoria) !== chaveCategoria(p.categoria)) outra = true;
           }
           if (como === "exato") break;
         }
-        if (!achada) continue;
+        // semelhante a duas categorias do programa é palpite demais: fica como está
+        if (!achada || (como !== "exato" && outra)) continue;
         i.categoriaOriginal = i.categoriaProva;
         i.categoriaProva = achada.rotulo || achada.categoria;
         i.juntadaPeloPrograma = como;
+        // a categoria escrita de outro jeito (MIR., INFANTL) é a mesma do programa: a
+        // conferência não acusa o atleta em duas categorias por causa da escrita
+        if (partesDaCategoria(achada.categoria).length === 1) i.categoriaCorrigida = achada.rotulo || achada.categoria;
       }
     }
 
@@ -1708,6 +1717,9 @@
     const curto = x.base.length <= y.base.length ? x.base : y.base;
     const longo = x.base.length <= y.base.length ? y.base : x.base;
     if (curto.length >= 4 && longo.indexOf(curto) === 0) return "semelhante";
+    // abreviada com três letras (MIR., INF.) ou com uma letra a menos ou trocada (INFANTL,
+    // INFATIL): no teste das 10 equipes, essas provas saíam do balizamento com os atletas
+    if (B.pareceOMesmo(x.base, y.base)) return "semelhante";
     return "";
   }
 
@@ -1781,7 +1793,7 @@
             ? it.atletas : [it.nome];
           for (const nome of nomes) {
             saida.push({
-              nome, equipe: it.equipe, categoria: it.categoria,
+              nome, equipe: it.equipe, categoria: it.categoria, categoriaCorrigida: it.categoriaCorrigida || "",
               classe: it.classe, tituloProva: p.titulo, prova: p.numero,
               serie: s.numero, raia: l.raia, revezamento: p.revezamento,
               naipe: p.naipe, distancia: p.distancia,

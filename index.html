@@ -455,7 +455,12 @@ body{font-size:16px}
 .rodape{padding-block:2rem 2.4rem}
 .rodape .dentro{align-items:center;text-align:center}
 .contatos,.rodape .links{justify-content:center}
-@media (max-width:820px){.retrato{position:static}}
+/* no celular, a foto em cima e o texto embaixo: a regra das duas colunas acima
+   passava por cima da de uma coluna, e o texto ficava numa tira estreita (o dono, 13/11/2026) */
+@media (max-width:820px){
+  .autor{grid-template-columns:minmax(0,1fr)}
+  .retrato{position:static;width:100%;max-width:15rem;justify-self:center}
+}
 </style>
 </head>
 <body>

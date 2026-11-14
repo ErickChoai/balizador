@@ -2309,3 +2309,15 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
 /* fundo liso: as raias diagonais correndo para o lado e o brilho que se movia
    atrás saíram (o dono, 13/11/2026); fica só a cor do fundo */
 body::before,body::after{content:none;animation:none}
+
+/* os avisos que não travam, numa caixa com rolagem: cada um com a altura dele
+   (no teste das 10 equipes, a caixa espremia as linhas e cortava os títulos) */
+.blocos-conv > *{flex-shrink:0}
+/* o topo da conversa não muda quando o cronômetro passa de 9:59: o número já
+   tem a largura de 10:00 desde o começo (antes, o Início pulava para baixo), e
+   na tela estreita os espaços entre as peças diminuem para caber */
+.cronometro b{display:inline-block;min-width:5ch;text-align:center}
+@media (max-width:900px){
+  body.modo-conversa .topo{column-gap:.6rem}
+  body.modo-conversa .trilha{gap:.25rem}
+}

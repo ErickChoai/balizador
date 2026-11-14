@@ -2285,10 +2285,25 @@
       "Erro do Mars", ligarAcoes);
   }
 
+  /* As abas que o mapa não leu. No teste das 10 equipes eram quatro, e cada
+     uma pedia um Sim e uns 35 segundos. Agora: a aba pequena, que já foi
+     inteira na amostra, é transcrita sem outro pedido (nada novo sai); as
+     outras vêm num cartão só, com um Sim para todas. */
   function seguirOrganizacao() {
     const o = org;
-    const semConta = o.resumoAbas.find((x) => x.usada && !x.deuConta && !o.planoB[x.aba]);
-    if (semConta) return cartaoAbaInteira(semConta.aba);
+    if (o.filaAbas && o.filaAbas.length) return transcreverAba(o.filaAbas.shift());
+    const semConta = o.resumoAbas.filter((x) => x.usada && !x.deuConta && !o.planoB[x.aba]).map((x) => x.aba);
+    if (semConta.length) {
+      const jaFoi = (aba) => (o.amostra || []).some((a) => a.aba === aba && a.inteira);
+      const direto = semConta.filter(jaFoi), pedir = semConta.filter((aba) => !jaFoi(aba));
+      if (direto.length) {
+        nota(direto.length === 1 ? `A aba ${direto[0]} já tinha ido inteira para o Mars: ele transcreve linha por linha, sem pedir de novo.`
+          : `As abas ${direto.join(", ")} já tinham ido inteiras para o Mars: ele transcreve linha por linha, sem pedir de novo.`);
+        o.filaAbas = direto.slice(1);
+        return transcreverAba(direto[0]);
+      }
+      return cartaoAbaInteira(pedir);
+    }
     if (o.pendentes.length && !o.provasFeitas) return cartaoProvasIA();
     const prog = app().lerConfig().programa || [];
     const conta = { ok: 0, incerto: 0, erro: 0 };
@@ -2299,24 +2314,33 @@
       () => cartaoOrganizada(true));
   }
 
-  function cartaoAbaInteira(aba) {
-    const o = org, g = o.grades.find((x) => x.aba === aba);
-    if (!o.pedidosAba[aba]) o.pedidosAba[aba] = IA.pedidoDaAbaInteira(g, o.mascara, o.voc, app().lerConfig());
-    const p = o.pedidosAba[aba];
-    return cartao("aba-inteira", "Inscritos", `O Mars precisa ver a aba ${AT(aba)} inteira`, `
-      <p>O mapa não deu conta desta aba. Com ela inteira, ${g.linhas.length} linhas com os nomes e as
-        datas trocados por código, eu transcrevo inscrição por inscrição. Tudo volta para a mesma
-        tabela, para você conferir.</p>
+  function cartaoAbaInteira(abas) {
+    const o = org;
+    abas = [].concat(abas);
+    const grades = abas.map((aba) => o.grades.find((x) => x.aba === aba));
+    abas.forEach((aba, k) => {
+      if (!o.pedidosAba[aba]) o.pedidosAba[aba] = IA.pedidoDaAbaInteira(grades[k], o.mascara, o.voc, app().lerConfig());
+    });
+    const linhas = grades.reduce((s, g) => s + g.linhas.length, 0);
+    const uma = abas.length === 1;
+    return cartao("aba-inteira", "Inscritos", uma ? `O Mars precisa ver a aba ${AT(abas[0])} inteira`
+      : `O Mars precisa ver ${abas.length} abas inteiras`, `
+      <p>O mapa não deu conta ${uma ? "desta aba" : "destas abas: " + AT(abas.join(", "))}. Com ${uma ? "ela inteira" : "elas inteiras"},
+        ${linhas} linhas com os nomes e as datas trocados por código, eu transcrevo inscrição por inscrição.
+        Tudo volta para a mesma tabela, para você conferir.</p>
       <details class="mais texto-exato"><summary>ver exatamente o que vai</summary>
-        ${tabelaAmostra(p.amostra[0])}<pre>${AT(textoExato(p))}</pre></details>
-      <div class="acoes-cartao" data-aba="${AT(aba)}">
+        ${abas.map((aba) => tabelaAmostra(o.pedidosAba[aba].amostra[0])).join("")}<pre>${AT(textoExato(o.pedidosAba[abas[0]]))}</pre></details>
+      <div class="acoes-cartao" data-abas="${AT(JSON.stringify(abas))}">
         <button type="button" class="botao" data-acao="aba_sim">Sim, pode mandar</button>
-        <button type="button" class="mini claro" data-acao="aba_nao">Não, deixar esta aba de fora</button>
-      </div>`, "Pedido da aba inteira", ligarAcoes);
+        <button type="button" class="mini claro" data-acao="aba_nao">Não, deixar ${uma ? "esta aba" : "estas abas"} de fora</button>
+      </div>`, uma ? "Pedido da aba inteira" : "Pedido das abas inteiras", ligarAcoes);
   }
 
   async function transcreverAba(aba) {
     const o = org;
+    o.abaAtual = aba;   // o "Tentar de novo" de uma aba que falhou volta para ela
+    // a aba que vai direto (já foi inteira na amostra) ainda não tem o pedido montado
+    if (!o.pedidosAba[aba]) o.pedidosAba[aba] = IA.pedidoDaAbaInteira(o.grades.find((x) => x.aba === aba), o.mascara, o.voc, app().lerConfig());
     const el = cartaoProgresso("progresso-aba", `Transcrevendo a aba ${aba}`,
       ["Aba enviada, sem os nomes", "O app conferiu o que o Mars copiou"]);
     try {
@@ -2403,7 +2427,8 @@
       return { tipo: "erro", pergunta: "Do jeito que veio, esta linha não entra no balizamento. O que fazer?",
         opcoes: [{ id: "tirar", rotulo: "Tirar esta linha", sugerida: true }] };
     }
-    if (r.motivos.some((m) => REPETIDA.test(m))) {
+    // só é repetida quando o app acha outra linha com a mesma pessoa na mesma prova
+    if (r.motivos.some((m) => REPETIDA.test(m)) && !(x.copias != null && x.copias < 2)) {
       return { tipo: "repetida", pergunta: "Esta linha parece repetir outra da ficha. O que fazer?",
         opcoes: [{ id: "tirar", rotulo: "Tirar esta linha", explica: "duas iguais ocupariam duas raias", sugerida: true },
                  { id: "manter", rotulo: "Manter as duas" }] };
@@ -2466,6 +2491,9 @@
       // a prova fora da lista: a mesma resposta vale para todos os inscritos nela
       if (p0.tipo === "fora") return p.prova === p0.prova;
       if (id === "tirar") {
+        // a outra cópia da mesma prova não é gêmea, é o par: ela fica (no teste das 10 equipes,
+        // as duas cópias do 50 PEITO de NICOLAS estavam na mesma linha da ficha, e as duas saíam)
+        if (y.r.numero === atual.r.numero && B.normalizar(quemDaLinha(y)) === quem) return false;
         return p.tipo === "repetida" && y.l.origem.aba === atual.l.origem.aba && y.l.origem.linha === atual.l.origem.linha;
       }
       return B.normalizar(quemDaLinha(y)) === quem && p.pergunta === p0.pergunta &&
@@ -2600,6 +2628,12 @@
   function cartaoOrganizada(primeira, chegou) {
     const o = org, prog = app().lerConfig().programa || [];
     const itens = o.linhas.map((l) => ({ l, r: IA.interpretar(l, prog) }));
+    // quantas linhas trazem a mesma pessoa na mesma prova: é o app quem confirma a repetição,
+    // não a frase do Mars (no teste das 10 equipes, "a mesma atleta aparece em MIRIM e INFANTIL"
+    // virava linha repetida, com a sugestão de tirar)
+    const copias = new Map(), chaveCopia = (x) => B.normalizar(quemDaLinha(x)) + "|" + x.r.numero;
+    for (const x of itens) if (!x.l.excluida && x.r.inscricao && x.r.numero) copias.set(chaveCopia(x), (copias.get(chaveCopia(x)) || 0) + 1);
+    for (const x of itens) x.copias = x.r.inscricao && x.r.numero ? copias.get(chaveCopia(x)) || 0 : null;
     let ordemDeEntrada = 0;
     const conta = { ok: 0, incerto: 0, erro: 0, fora: 0 };
     for (const x of itens) conta[x.l.excluida ? "fora" : x.r.estado]++;
@@ -2698,7 +2732,15 @@
         ${pendentes.length > 1 ? `<div class="lote-org">
           <button type="button" class="mini claro" data-org-sugestoes>Aceitar as ${pendentes.length} sugestões do Mars</button>
           <details class="mais"><summary>ver o que cada uma faz</summary><div class="rola-tabela"><ul class="motivos-conv">${
-            pendentes.map((x) => `<li><b>${AT(quemNaLista(x))}</b>, ${AT(x.l.origem.aba)} linha ${x.l.origem.linha}: ${AT(oQueASugestaoFaz(x))}</li>`).join("")}</ul></div></details>
+            ((vistos) => pendentes.map((x) => {
+              const perg = perguntaDaLinha(x), s = perg.opcoes.find((op) => op.sugerida);
+              let faz = oQueASugestaoFaz(x);
+              if (s && s.id === "tirar" && perg.tipo === "repetida") {
+                const k = B.normalizar(quemDaLinha(x)) + "|" + x.r.numero;
+                if (vistos.has(k)) faz = "a outra cópia fica"; else vistos.add(k);
+              }
+              return `<li><b>${AT(quemNaLista(x))}</b>, ${AT(x.l.origem.aba)} linha ${x.l.origem.linha}: ${AT(faz)}</li>`;
+            }).join(""))(new Set())}</ul></div></details>
         </div>` : ""}`;
 
       // o que o Mars precisa saber do cartão da vez, com os nomes trocados por código
@@ -2840,9 +2882,17 @@
         const fotos = pendentes.map((x) => [x.l, fotoDaLinha(x.l)]);
         registrar(`as ${pendentes.length} sugestões do Mars`, null,
           () => fotos.forEach(([l, f]) => voltarLinha(o, l, f)), "reescrita");
+        // de cada inscrição repetida, sai uma cópia só: a outra fica (antes, as duas saíam)
+        const tiradas = new Set();
         for (const x of pendentes) {
-          const s = perguntaDaLinha(x).opcoes.find((op) => op.sugerida);
-          if (s) aplicarOpcaoDaLinha(x.l, s.id);
+          const perg = perguntaDaLinha(x);
+          const s = perg.opcoes.find((op) => op.sugerida);
+          let id = s && s.id;
+          if (id === "tirar" && perg.tipo === "repetida") {
+            const k = B.normalizar(quemDaLinha(x)) + "|" + x.r.numero;
+            if (tiradas.has(k)) id = "manter"; else tiradas.add(k);
+          }
+          if (id) aplicarOpcaoDaLinha(x.l, id);
           o.respondidas = (o.respondidas || 0) + 1;
         }
         nota(`As ${pendentes.length} sugestões do Mars foram aceitas.`);
@@ -3202,16 +3252,24 @@
         nota("Certo, a planilha fica como está.");
         return cartaoInscritos();
       case "aba_sim": {
-        decidir("o Mars pode ver uma aba inteira");
-        const aba = botao.closest("[data-aba]").dataset.aba;
+        // do cartão das abas inteiras (uma ou várias) ou do "Tentar de novo" de uma que falhou
+        const lugar = (botao && botao.closest && botao.closest("[data-abas]")) ||
+          (!(botao && botao.closest && botao.closest('[data-tipo="erro-ia"]')) && $('.cartao-conversa[data-tipo="aba-inteira"]:not(.antigo) [data-abas]'));
+        const abas = lugar ? JSON.parse(lugar.dataset.abas) : [org.abaAtual].filter(Boolean);
+        decidir(abas.length > 1 ? `o Mars pode ver ${abas.length} abas inteiras` : "o Mars pode ver uma aba inteira");
         fechar("aba-inteira"); fechar("erro-ia");
-        return transcreverAba(aba);
+        org.filaAbas = abas.slice(1);
+        return transcreverAba(abas[0]);
       }
-      case "aba_nao":
-        decidir("uma aba ficou de fora");
-        org.planoB[botao.closest("[data-aba]").dataset.aba] = "fora";
+      case "aba_nao": {
+        const lugar = (botao && botao.closest && botao.closest("[data-abas]")) ||
+          $('.cartao-conversa[data-tipo="aba-inteira"]:not(.antigo) [data-abas]');
+        const abas = lugar ? JSON.parse(lugar.dataset.abas) : [];
+        decidir(abas.length > 1 ? `${abas.length} abas ficaram de fora` : "uma aba ficou de fora");
+        abas.forEach((aba) => (org.planoB[aba] = "fora"));
         fechar("aba-inteira");
         return seguirOrganizacao();
+      }
       case "provas_sim": decidir("o Mars pode ligar as provas"); fechar("provas-ia"); fechar("erro-ia"); return casarProvas();
       case "provas_nao": fechar("provas-ia"); org.provasFeitas = true; return seguirOrganizacao();
       case "org_todas_certas":
@@ -4738,7 +4796,7 @@ Regras:
   // só na prévia privada: o detalhe técnico de uma falha, fechado, para o dono mandar
   const naPrevia = () => /prévia/i.test(document.title);
   // o número da prévia, à vista só nela: o celular às vezes abre uma versão guardada
-  const VERSAO_PREVIA = "34";
+  const VERSAO_PREVIA = "36";
   const detalheDoErro = (t) => `<details class="detalhe-erro"><summary>detalhe</summary><p>${AT(t)}</p></details>`;
 
   const RAIA_PENSANDO = `<div class="raia-ia"><span class="nadador-ia">${NADADOR}</span></div>

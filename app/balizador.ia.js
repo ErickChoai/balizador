@@ -224,6 +224,13 @@
       /^(PRE ?)?(MIRIM|PETIZ|INFANTIL|JUVENIL|JUNIOR|SENIOR|MASTER|ABSOLUTO|PARAL(IMPICO)?|ESCOLAR)( (I{1,3}|[A-D]|\d))?$/.test(chave);
   }
 
+  // a palavra de categoria com erro de digitação (seis letras ou mais, para MIRIM
+  // não puxar MIRIAM, que é nome)
+  const CATEGORIAS_ESCRITAS = ["INFANTIL", "JUVENIL", "ABSOLUTO", "ESCOLAR", "PARALIMPICO", "JUNIOR", "SENIOR", "MASTER"];
+  function categoriaComErro(w) {
+    return w.length >= 6 && CATEGORIAS_ESCRITAS.some((c) => /^diferen/.test(B.pareceOMesmo(w, c)));
+  }
+
   function pareceClasse(chave) {
     return /^(S|SB|SM)\d{1,2}$/.test(chave.replace(/\s/g, ""));
   }
@@ -277,6 +284,10 @@
     if (palavras.some((w) => voc.instituicao.has(w))) return p;
     const chave = D.chaveCategoria(t);
     if (voc.valores.has(chave) || pareceCategoria(chave) || pareceClasse(chave)) return p;
+    // categoria com uma letra errada ("INFATIL") não é nome de ninguém: escondida como
+    // PESSOA, o Mars não sabia a categoria, e as quatro provas da atleta saíam
+    // (teste das 10 equipes). Só quando a célula não tem mais nada além dela e do naipe.
+    if (palavras.some(categoriaComErro) && palavras.every((w) => voc.ficam.has(w) || categoriaComErro(w))) return p;
     return mascararPorPalavras(p, m, voc);
   }
 
@@ -896,7 +907,7 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
   function provaNoPrograma(i, programa) {
     const kc = D.chaveCategoria(i.categoria);
     const naipe = i.misto ? "MISTO" : i.naipe;
-    let semelhante = 0;
+    let semelhante = 0, outra = false;
     for (let k = 0; k < programa.length; k++) {
       const p = programa[k];
       if (p.distancia !== i.distancia || p.estilo !== i.estilo || p.naipe !== naipe) continue;
@@ -905,9 +916,11 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
         const tipo = D.casaCategoria(kc, parte);
         if (tipo === "exato") return k + 1;
         if (tipo && !semelhante) semelhante = k + 1;
+        else if (tipo && D.chaveCategoria(programa[semelhante - 1].categoria) !== D.chaveCategoria(p.categoria)) outra = true;
       }
     }
-    return semelhante;
+    // parecida com duas categorias do programa: não escolhe, a pessoa decide
+    return outra ? 0 : semelhante;
   }
 
   function camposInterpretados(l, programa) {
@@ -934,6 +947,20 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
   function interpretar(l, programa) {
     programa = programa || [];
     const campos = camposInterpretados(l, programa);
+    /* Revezamento sem o naipe ("4X50 LIVRE" e MIRIM, sem MISTO): com um naipe só
+       para aquele revezamento no programa, é ele. No teste das 10 equipes, a
+       linha saía, e com ela o revezamento da escola. */
+    if (programa.length && !D.normalizarNaipe(campos.naipe)) {
+      const ext = D.lerProvaPorExtenso(campos.prova || "") || {};
+      const dist = D.normalizarDistancia(campos.distancia) || ext.distancia || "";
+      if (/^\d+X/.test(dist) && !ext.naipe) {
+        const est = D.normalizarEstilo(campos.estilo) || ext.estilo || "";
+        const kc = D.chaveCategoria(campos.categoria || ext.categoria || "");
+        const naipes = new Set(programa.filter((p) => p.distancia === dist && (!est || p.estilo === est) &&
+          (!kc || D.partesDaCategoria(p.categoria).some((parte) => D.casaCategoria(kc, parte)))).map((p) => p.naipe));
+        if (naipes.size === 1) campos.naipe = [...naipes][0];
+      }
+    }
     const lida = D.inscricaoCanonica(campos, l.origem);
     // linha que a pessoa conferiu ou corrigiu já não carrega a dúvida da IA;
     // o que o app mesmo aponta (tempo ilegível, prova fora do programa) fica

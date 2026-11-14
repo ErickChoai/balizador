@@ -2320,6 +2320,18 @@ ul.cl-duvida{margin:0;padding-left:1.1rem;color:var(--ambar);font-size:.93rem;li
    atrás saíram (o dono, 13/11/2026); fica só a cor do fundo */
 body::before,body::after{content:none;animation:none}
 
+/* os avisos que não travam, numa caixa com rolagem: cada um com a altura dele
+   (no teste das 10 equipes, a caixa espremia as linhas e cortava os títulos) */
+.blocos-conv > *{flex-shrink:0}
+/* o topo da conversa não muda quando o cronômetro passa de 9:59: o número já
+   tem a largura de 10:00 desde o começo (antes, o Início pulava para baixo), e
+   na tela estreita os espaços entre as peças diminuem para caber */
+.cronometro b{display:inline-block;min-width:5ch;text-align:center}
+@media (max-width:900px){
+  body.modo-conversa .topo{column-gap:.6rem}
+  body.modo-conversa .trilha{gap:.25rem}
+}
+
 </style>
 </head>
 <body>
@@ -3720,12 +3732,14 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       // nadador. Contá-la faria todo mundo que nada o revezamento da escola
       // ser acusado de estar em duas categorias de idade ao mesmo tempo.
       if (i.revezamento) continue;
-      const cat = chaveDeCategoria(i.categoria);
+      // a categoria escrita de outro jeito e já ligada à do programa conta como a do programa
+      const categoria = i.categoriaCorrigida || i.categoria;
+      const cat = chaveDeCategoria(categoria);
       if (!cat) continue;
       const k = normalizar(i.nome) + "|" + normalizar(i.equipe);
       if (!porAtleta.has(k)) porAtleta.set(k, { ref: i, cats: new Map() });
       const v = porAtleta.get(k);
-      if (!v.cats.has(cat)) v.cats.set(cat, { rotulo: i.categoria, provas: [] });
+      if (!v.cats.has(cat)) v.cats.set(cat, { rotulo: categoria, provas: [] });
       v.cats.get(cat).provas.push(i.tituloProva);
     }
     const achados = [];
@@ -3944,7 +3958,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
      JOÃO DA SILVA e JOÃO DA SILVA JUNIOR, e o erro de digitação de uma ou
      duas letras em nome comprido. */
   function pareceOMesmo(a, b) {
-    const x = normalizar(a), y = normalizar(b);
+    // o ponto da abreviação não separa nada: INST. ESTUÁRIO é INST ESTUÁRIO (no teste
+    // das 10 equipes, com o ponto o app não via que era o INSTITUTO ESTUÁRIO)
+    const limpa = (s) => normalizar(s).replace(/\./g, " ").replace(/\s+/g, " ").trim();
+    const x = limpa(a), y = limpa(b);
     if (!x || !y || x === y) return "";
     const px = x.split(" "), py = y.split(" ");
     const menor = Math.min(px.length, py.length);
@@ -3985,8 +4002,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     }
 
     const lista = [...equipes.entries()];
+    // ESCOLA X A e ESCOLA X B são as equipes A e B de revezamento, como o próprio app pede
+    const semLetra = (s) => normalizar(s).replace(/\s+[A-Z0-9]$/, "");
     for (let i = 0; i < lista.length; i++) {
       for (let j = i + 1; j < lista.length; j++) {
+        if (semLetra(lista[i][1]) === semLetra(lista[j][1])) continue;
         const motivo = pareceOMesmo(lista[i][1], lista[j][1]);
         if (!motivo) continue;
         achados.push({
@@ -4137,7 +4157,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     // da letra viraria uma marca de 100 minutos, e o atleta cairia na série
     // errada em vez de ir para as primeiras, junto com quem não tem tempo.
     if (/^9{1,2}[:.,]9{2}([:.,]9{1,2})?$/.test(t)) return null;
-    // 1'02"35 é 1:02.35 escrito do jeito antigo
+    // 1'02"35 é 1:02.35 escrito do jeito antigo; duas aspas simples ('') são as aspas
+    // dos segundos, como em 39'' 50 (no teste das 10 equipes, virava 39 minutos)
+    t = t.replace(/[’']{2}/g, "\"");
     t = semUnidades(t.replace(/[’']/g, ":").replace(/[”"]/g, ".").replace(/,/g, "."));
     if (/[^0-9:.\s]/.test(t)) return null;
     const partes = t.split(/[:.]/).map((x) => x.trim()).filter((x) => x !== "");
@@ -4688,7 +4710,11 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       .replace(/^\s*(REVEZAMENTO|REV\.?)\s+/i, "");
     // maiúsculas sem tirar o acento: a categoria sai como foi escrita,
     // PRÉ-MIRIM e não PRE-MIRIM
-    const u = t.toUpperCase().replace(/\s+/g, " ").trim();
+    // "50L", "50 C", "100P": a letra do estilo colada na distância, como muita ficha abrevia
+    // (no teste das 10 equipes, "50L MIR MASC" saía); o M fica de fora, que é de metros
+    const ESTILO_LETRA = { L: "LIVRE", C: "COSTAS", P: "PEITO", B: "BORBOLETA" };
+    const u = t.toUpperCase().replace(/\s+/g, " ").trim()
+      .replace(/^(\d+)\s*([LCPB])(?=\s|$)/, (x, d, e) => d + "M " + ESTILO_LETRA[e]);
     const m = u.match(/^(\d+\s*X\s*\d+|\d+)\s*M?(?:ETROS?)?\s+(?:NADO\s+)?(LIVRE|CRAWL|COSTAS?|DORSO|PEITO|BORBOLETA|GOLFINHO|MEDLEY)\b(.*)$/);
     if (!m) return null;
     // o hífen dentro da palavra fica (PRÉ-MIRIM); o que separa pedaços sai
@@ -5704,20 +5730,25 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
         const k = chaveProva(i.distancia, i.estilo, i.categoriaProva, i.naipe);
         if (noPrograma.has(k)) continue;
         const ki = chaveCategoria(i.categoriaProva);
-        let achada = null, como = "";
+        let achada = null, como = "", outra = false;
         for (const p of (candidatas.get([i.distancia, i.estilo, i.naipe].join("|")) || [])) {
           for (const parte of partesDaCategoria(p.categoria)) {
             const tipo = casaCategoria(ki, parte);
             if (!tipo) continue;
             if (tipo === "exato") { achada = p; como = tipo; break; }
             if (!achada) { achada = p; como = tipo; }
+            else if (chaveCategoria(achada.categoria) !== chaveCategoria(p.categoria)) outra = true;
           }
           if (como === "exato") break;
         }
-        if (!achada) continue;
+        // semelhante a duas categorias do programa é palpite demais: fica como está
+        if (!achada || (como !== "exato" && outra)) continue;
         i.categoriaOriginal = i.categoriaProva;
         i.categoriaProva = achada.rotulo || achada.categoria;
         i.juntadaPeloPrograma = como;
+        // a categoria escrita de outro jeito (MIR., INFANTL) é a mesma do programa: a
+        // conferência não acusa o atleta em duas categorias por causa da escrita
+        if (partesDaCategoria(achada.categoria).length === 1) i.categoriaCorrigida = achada.rotulo || achada.categoria;
       }
     }
 
@@ -5962,6 +5993,9 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     const curto = x.base.length <= y.base.length ? x.base : y.base;
     const longo = x.base.length <= y.base.length ? y.base : x.base;
     if (curto.length >= 4 && longo.indexOf(curto) === 0) return "semelhante";
+    // abreviada com três letras (MIR., INF.) ou com uma letra a menos ou trocada (INFANTL,
+    // INFATIL): no teste das 10 equipes, essas provas saíam do balizamento com os atletas
+    if (B.pareceOMesmo(x.base, y.base)) return "semelhante";
     return "";
   }
 
@@ -6035,7 +6069,7 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
             ? it.atletas : [it.nome];
           for (const nome of nomes) {
             saida.push({
-              nome, equipe: it.equipe, categoria: it.categoria,
+              nome, equipe: it.equipe, categoria: it.categoria, categoriaCorrigida: it.categoriaCorrigida || "",
               classe: it.classe, tituloProva: p.titulo, prova: p.numero,
               serie: s.numero, raia: l.raia, revezamento: p.revezamento,
               naipe: p.naipe, distancia: p.distancia,
@@ -7807,6 +7841,13 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
       /^(PRE ?)?(MIRIM|PETIZ|INFANTIL|JUVENIL|JUNIOR|SENIOR|MASTER|ABSOLUTO|PARAL(IMPICO)?|ESCOLAR)( (I{1,3}|[A-D]|\d))?$/.test(chave);
   }
 
+  // a palavra de categoria com erro de digitação (seis letras ou mais, para MIRIM
+  // não puxar MIRIAM, que é nome)
+  const CATEGORIAS_ESCRITAS = ["INFANTIL", "JUVENIL", "ABSOLUTO", "ESCOLAR", "PARALIMPICO", "JUNIOR", "SENIOR", "MASTER"];
+  function categoriaComErro(w) {
+    return w.length >= 6 && CATEGORIAS_ESCRITAS.some((c) => /^diferen/.test(B.pareceOMesmo(w, c)));
+  }
+
   function pareceClasse(chave) {
     return /^(S|SB|SM)\d{1,2}$/.test(chave.replace(/\s/g, ""));
   }
@@ -7860,6 +7901,10 @@ function(t){t.__bidiEngine__=t.prototype.__bidiEngine__=function(t){var r,n,i,a,
     if (palavras.some((w) => voc.instituicao.has(w))) return p;
     const chave = D.chaveCategoria(t);
     if (voc.valores.has(chave) || pareceCategoria(chave) || pareceClasse(chave)) return p;
+    // categoria com uma letra errada ("INFATIL") não é nome de ninguém: escondida como
+    // PESSOA, o Mars não sabia a categoria, e as quatro provas da atleta saíam
+    // (teste das 10 equipes). Só quando a célula não tem mais nada além dela e do naipe.
+    if (palavras.some(categoriaComErro) && palavras.every((w) => voc.ficam.has(w) || categoriaComErro(w))) return p;
     return mascararPorPalavras(p, m, voc);
   }
 
@@ -8479,7 +8524,7 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
   function provaNoPrograma(i, programa) {
     const kc = D.chaveCategoria(i.categoria);
     const naipe = i.misto ? "MISTO" : i.naipe;
-    let semelhante = 0;
+    let semelhante = 0, outra = false;
     for (let k = 0; k < programa.length; k++) {
       const p = programa[k];
       if (p.distancia !== i.distancia || p.estilo !== i.estilo || p.naipe !== naipe) continue;
@@ -8488,9 +8533,11 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
         const tipo = D.casaCategoria(kc, parte);
         if (tipo === "exato") return k + 1;
         if (tipo && !semelhante) semelhante = k + 1;
+        else if (tipo && D.chaveCategoria(programa[semelhante - 1].categoria) !== D.chaveCategoria(p.categoria)) outra = true;
       }
     }
-    return semelhante;
+    // parecida com duas categorias do programa: não escolhe, a pessoa decide
+    return outra ? 0 : semelhante;
   }
 
   function camposInterpretados(l, programa) {
@@ -8517,6 +8564,20 @@ Não chute. Na dúvida, deixe null e explique em incertezas.`;
   function interpretar(l, programa) {
     programa = programa || [];
     const campos = camposInterpretados(l, programa);
+    /* Revezamento sem o naipe ("4X50 LIVRE" e MIRIM, sem MISTO): com um naipe só
+       para aquele revezamento no programa, é ele. No teste das 10 equipes, a
+       linha saía, e com ela o revezamento da escola. */
+    if (programa.length && !D.normalizarNaipe(campos.naipe)) {
+      const ext = D.lerProvaPorExtenso(campos.prova || "") || {};
+      const dist = D.normalizarDistancia(campos.distancia) || ext.distancia || "";
+      if (/^\d+X/.test(dist) && !ext.naipe) {
+        const est = D.normalizarEstilo(campos.estilo) || ext.estilo || "";
+        const kc = D.chaveCategoria(campos.categoria || ext.categoria || "");
+        const naipes = new Set(programa.filter((p) => p.distancia === dist && (!est || p.estilo === est) &&
+          (!kc || D.partesDaCategoria(p.categoria).some((parte) => D.casaCategoria(kc, parte)))).map((p) => p.naipe));
+        if (naipes.size === 1) campos.naipe = [...naipes][0];
+      }
+    }
     const lida = D.inscricaoCanonica(campos, l.origem);
     // linha que a pessoa conferiu ou corrigiu já não carrega a dúvida da IA;
     // o que o app mesmo aponta (tempo ilegível, prova fora do programa) fica
@@ -15813,10 +15874,25 @@ Para cada linha recebida, devolva:
       "Erro do Mars", ligarAcoes);
   }
 
+  /* As abas que o mapa não leu. No teste das 10 equipes eram quatro, e cada
+     uma pedia um Sim e uns 35 segundos. Agora: a aba pequena, que já foi
+     inteira na amostra, é transcrita sem outro pedido (nada novo sai); as
+     outras vêm num cartão só, com um Sim para todas. */
   function seguirOrganizacao() {
     const o = org;
-    const semConta = o.resumoAbas.find((x) => x.usada && !x.deuConta && !o.planoB[x.aba]);
-    if (semConta) return cartaoAbaInteira(semConta.aba);
+    if (o.filaAbas && o.filaAbas.length) return transcreverAba(o.filaAbas.shift());
+    const semConta = o.resumoAbas.filter((x) => x.usada && !x.deuConta && !o.planoB[x.aba]).map((x) => x.aba);
+    if (semConta.length) {
+      const jaFoi = (aba) => (o.amostra || []).some((a) => a.aba === aba && a.inteira);
+      const direto = semConta.filter(jaFoi), pedir = semConta.filter((aba) => !jaFoi(aba));
+      if (direto.length) {
+        nota(direto.length === 1 ? `A aba ${direto[0]} já tinha ido inteira para o Mars: ele transcreve linha por linha, sem pedir de novo.`
+          : `As abas ${direto.join(", ")} já tinham ido inteiras para o Mars: ele transcreve linha por linha, sem pedir de novo.`);
+        o.filaAbas = direto.slice(1);
+        return transcreverAba(direto[0]);
+      }
+      return cartaoAbaInteira(pedir);
+    }
     if (o.pendentes.length && !o.provasFeitas) return cartaoProvasIA();
     const prog = app().lerConfig().programa || [];
     const conta = { ok: 0, incerto: 0, erro: 0 };
@@ -15827,24 +15903,33 @@ Para cada linha recebida, devolva:
       () => cartaoOrganizada(true));
   }
 
-  function cartaoAbaInteira(aba) {
-    const o = org, g = o.grades.find((x) => x.aba === aba);
-    if (!o.pedidosAba[aba]) o.pedidosAba[aba] = IA.pedidoDaAbaInteira(g, o.mascara, o.voc, app().lerConfig());
-    const p = o.pedidosAba[aba];
-    return cartao("aba-inteira", "Inscritos", `O Mars precisa ver a aba ${AT(aba)} inteira`, `
-      <p>O mapa não deu conta desta aba. Com ela inteira, ${g.linhas.length} linhas com os nomes e as
-        datas trocados por código, eu transcrevo inscrição por inscrição. Tudo volta para a mesma
-        tabela, para você conferir.</p>
+  function cartaoAbaInteira(abas) {
+    const o = org;
+    abas = [].concat(abas);
+    const grades = abas.map((aba) => o.grades.find((x) => x.aba === aba));
+    abas.forEach((aba, k) => {
+      if (!o.pedidosAba[aba]) o.pedidosAba[aba] = IA.pedidoDaAbaInteira(grades[k], o.mascara, o.voc, app().lerConfig());
+    });
+    const linhas = grades.reduce((s, g) => s + g.linhas.length, 0);
+    const uma = abas.length === 1;
+    return cartao("aba-inteira", "Inscritos", uma ? `O Mars precisa ver a aba ${AT(abas[0])} inteira`
+      : `O Mars precisa ver ${abas.length} abas inteiras`, `
+      <p>O mapa não deu conta ${uma ? "desta aba" : "destas abas: " + AT(abas.join(", "))}. Com ${uma ? "ela inteira" : "elas inteiras"},
+        ${linhas} linhas com os nomes e as datas trocados por código, eu transcrevo inscrição por inscrição.
+        Tudo volta para a mesma tabela, para você conferir.</p>
       <details class="mais texto-exato"><summary>ver exatamente o que vai</summary>
-        ${tabelaAmostra(p.amostra[0])}<pre>${AT(textoExato(p))}</pre></details>
-      <div class="acoes-cartao" data-aba="${AT(aba)}">
+        ${abas.map((aba) => tabelaAmostra(o.pedidosAba[aba].amostra[0])).join("")}<pre>${AT(textoExato(o.pedidosAba[abas[0]]))}</pre></details>
+      <div class="acoes-cartao" data-abas="${AT(JSON.stringify(abas))}">
         <button type="button" class="botao" data-acao="aba_sim">Sim, pode mandar</button>
-        <button type="button" class="mini claro" data-acao="aba_nao">Não, deixar esta aba de fora</button>
-      </div>`, "Pedido da aba inteira", ligarAcoes);
+        <button type="button" class="mini claro" data-acao="aba_nao">Não, deixar ${uma ? "esta aba" : "estas abas"} de fora</button>
+      </div>`, uma ? "Pedido da aba inteira" : "Pedido das abas inteiras", ligarAcoes);
   }
 
   async function transcreverAba(aba) {
     const o = org;
+    o.abaAtual = aba;   // o "Tentar de novo" de uma aba que falhou volta para ela
+    // a aba que vai direto (já foi inteira na amostra) ainda não tem o pedido montado
+    if (!o.pedidosAba[aba]) o.pedidosAba[aba] = IA.pedidoDaAbaInteira(o.grades.find((x) => x.aba === aba), o.mascara, o.voc, app().lerConfig());
     const el = cartaoProgresso("progresso-aba", `Transcrevendo a aba ${aba}`,
       ["Aba enviada, sem os nomes", "O app conferiu o que o Mars copiou"]);
     try {
@@ -15931,7 +16016,8 @@ Para cada linha recebida, devolva:
       return { tipo: "erro", pergunta: "Do jeito que veio, esta linha não entra no balizamento. O que fazer?",
         opcoes: [{ id: "tirar", rotulo: "Tirar esta linha", sugerida: true }] };
     }
-    if (r.motivos.some((m) => REPETIDA.test(m))) {
+    // só é repetida quando o app acha outra linha com a mesma pessoa na mesma prova
+    if (r.motivos.some((m) => REPETIDA.test(m)) && !(x.copias != null && x.copias < 2)) {
       return { tipo: "repetida", pergunta: "Esta linha parece repetir outra da ficha. O que fazer?",
         opcoes: [{ id: "tirar", rotulo: "Tirar esta linha", explica: "duas iguais ocupariam duas raias", sugerida: true },
                  { id: "manter", rotulo: "Manter as duas" }] };
@@ -15994,6 +16080,9 @@ Para cada linha recebida, devolva:
       // a prova fora da lista: a mesma resposta vale para todos os inscritos nela
       if (p0.tipo === "fora") return p.prova === p0.prova;
       if (id === "tirar") {
+        // a outra cópia da mesma prova não é gêmea, é o par: ela fica (no teste das 10 equipes,
+        // as duas cópias do 50 PEITO de NICOLAS estavam na mesma linha da ficha, e as duas saíam)
+        if (y.r.numero === atual.r.numero && B.normalizar(quemDaLinha(y)) === quem) return false;
         return p.tipo === "repetida" && y.l.origem.aba === atual.l.origem.aba && y.l.origem.linha === atual.l.origem.linha;
       }
       return B.normalizar(quemDaLinha(y)) === quem && p.pergunta === p0.pergunta &&
@@ -16128,6 +16217,12 @@ Para cada linha recebida, devolva:
   function cartaoOrganizada(primeira, chegou) {
     const o = org, prog = app().lerConfig().programa || [];
     const itens = o.linhas.map((l) => ({ l, r: IA.interpretar(l, prog) }));
+    // quantas linhas trazem a mesma pessoa na mesma prova: é o app quem confirma a repetição,
+    // não a frase do Mars (no teste das 10 equipes, "a mesma atleta aparece em MIRIM e INFANTIL"
+    // virava linha repetida, com a sugestão de tirar)
+    const copias = new Map(), chaveCopia = (x) => B.normalizar(quemDaLinha(x)) + "|" + x.r.numero;
+    for (const x of itens) if (!x.l.excluida && x.r.inscricao && x.r.numero) copias.set(chaveCopia(x), (copias.get(chaveCopia(x)) || 0) + 1);
+    for (const x of itens) x.copias = x.r.inscricao && x.r.numero ? copias.get(chaveCopia(x)) || 0 : null;
     let ordemDeEntrada = 0;
     const conta = { ok: 0, incerto: 0, erro: 0, fora: 0 };
     for (const x of itens) conta[x.l.excluida ? "fora" : x.r.estado]++;
@@ -16226,7 +16321,15 @@ Para cada linha recebida, devolva:
         ${pendentes.length > 1 ? `<div class="lote-org">
           <button type="button" class="mini claro" data-org-sugestoes>Aceitar as ${pendentes.length} sugestões do Mars</button>
           <details class="mais"><summary>ver o que cada uma faz</summary><div class="rola-tabela"><ul class="motivos-conv">${
-            pendentes.map((x) => `<li><b>${AT(quemNaLista(x))}</b>, ${AT(x.l.origem.aba)} linha ${x.l.origem.linha}: ${AT(oQueASugestaoFaz(x))}</li>`).join("")}</ul></div></details>
+            ((vistos) => pendentes.map((x) => {
+              const perg = perguntaDaLinha(x), s = perg.opcoes.find((op) => op.sugerida);
+              let faz = oQueASugestaoFaz(x);
+              if (s && s.id === "tirar" && perg.tipo === "repetida") {
+                const k = B.normalizar(quemDaLinha(x)) + "|" + x.r.numero;
+                if (vistos.has(k)) faz = "a outra cópia fica"; else vistos.add(k);
+              }
+              return `<li><b>${AT(quemNaLista(x))}</b>, ${AT(x.l.origem.aba)} linha ${x.l.origem.linha}: ${AT(faz)}</li>`;
+            }).join(""))(new Set())}</ul></div></details>
         </div>` : ""}`;
 
       // o que o Mars precisa saber do cartão da vez, com os nomes trocados por código
@@ -16368,9 +16471,17 @@ Para cada linha recebida, devolva:
         const fotos = pendentes.map((x) => [x.l, fotoDaLinha(x.l)]);
         registrar(`as ${pendentes.length} sugestões do Mars`, null,
           () => fotos.forEach(([l, f]) => voltarLinha(o, l, f)), "reescrita");
+        // de cada inscrição repetida, sai uma cópia só: a outra fica (antes, as duas saíam)
+        const tiradas = new Set();
         for (const x of pendentes) {
-          const s = perguntaDaLinha(x).opcoes.find((op) => op.sugerida);
-          if (s) aplicarOpcaoDaLinha(x.l, s.id);
+          const perg = perguntaDaLinha(x);
+          const s = perg.opcoes.find((op) => op.sugerida);
+          let id = s && s.id;
+          if (id === "tirar" && perg.tipo === "repetida") {
+            const k = B.normalizar(quemDaLinha(x)) + "|" + x.r.numero;
+            if (tiradas.has(k)) id = "manter"; else tiradas.add(k);
+          }
+          if (id) aplicarOpcaoDaLinha(x.l, id);
           o.respondidas = (o.respondidas || 0) + 1;
         }
         nota(`As ${pendentes.length} sugestões do Mars foram aceitas.`);
@@ -16730,16 +16841,24 @@ Para cada linha recebida, devolva:
         nota("Certo, a planilha fica como está.");
         return cartaoInscritos();
       case "aba_sim": {
-        decidir("o Mars pode ver uma aba inteira");
-        const aba = botao.closest("[data-aba]").dataset.aba;
+        // do cartão das abas inteiras (uma ou várias) ou do "Tentar de novo" de uma que falhou
+        const lugar = (botao && botao.closest && botao.closest("[data-abas]")) ||
+          (!(botao && botao.closest && botao.closest('[data-tipo="erro-ia"]')) && $('.cartao-conversa[data-tipo="aba-inteira"]:not(.antigo) [data-abas]'));
+        const abas = lugar ? JSON.parse(lugar.dataset.abas) : [org.abaAtual].filter(Boolean);
+        decidir(abas.length > 1 ? `o Mars pode ver ${abas.length} abas inteiras` : "o Mars pode ver uma aba inteira");
         fechar("aba-inteira"); fechar("erro-ia");
-        return transcreverAba(aba);
+        org.filaAbas = abas.slice(1);
+        return transcreverAba(abas[0]);
       }
-      case "aba_nao":
-        decidir("uma aba ficou de fora");
-        org.planoB[botao.closest("[data-aba]").dataset.aba] = "fora";
+      case "aba_nao": {
+        const lugar = (botao && botao.closest && botao.closest("[data-abas]")) ||
+          $('.cartao-conversa[data-tipo="aba-inteira"]:not(.antigo) [data-abas]');
+        const abas = lugar ? JSON.parse(lugar.dataset.abas) : [];
+        decidir(abas.length > 1 ? `${abas.length} abas ficaram de fora` : "uma aba ficou de fora");
+        abas.forEach((aba) => (org.planoB[aba] = "fora"));
         fechar("aba-inteira");
         return seguirOrganizacao();
+      }
       case "provas_sim": decidir("o Mars pode ligar as provas"); fechar("provas-ia"); fechar("erro-ia"); return casarProvas();
       case "provas_nao": fechar("provas-ia"); org.provasFeitas = true; return seguirOrganizacao();
       case "org_todas_certas":
@@ -18266,7 +18385,7 @@ Regras:
   // só na prévia privada: o detalhe técnico de uma falha, fechado, para o dono mandar
   const naPrevia = () => /prévia/i.test(document.title);
   // o número da prévia, à vista só nela: o celular às vezes abre uma versão guardada
-  const VERSAO_PREVIA = "34";
+  const VERSAO_PREVIA = "36";
   const detalheDoErro = (t) => `<details class="detalhe-erro"><summary>detalhe</summary><p>${AT(t)}</p></details>`;
 
   const RAIA_PENSANDO = `<div class="raia-ia"><span class="nadador-ia">${NADADOR}</span></div>

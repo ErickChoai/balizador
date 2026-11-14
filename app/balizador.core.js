@@ -474,12 +474,14 @@
       // nadador. Contá-la faria todo mundo que nada o revezamento da escola
       // ser acusado de estar em duas categorias de idade ao mesmo tempo.
       if (i.revezamento) continue;
-      const cat = chaveDeCategoria(i.categoria);
+      // a categoria escrita de outro jeito e já ligada à do programa conta como a do programa
+      const categoria = i.categoriaCorrigida || i.categoria;
+      const cat = chaveDeCategoria(categoria);
       if (!cat) continue;
       const k = normalizar(i.nome) + "|" + normalizar(i.equipe);
       if (!porAtleta.has(k)) porAtleta.set(k, { ref: i, cats: new Map() });
       const v = porAtleta.get(k);
-      if (!v.cats.has(cat)) v.cats.set(cat, { rotulo: i.categoria, provas: [] });
+      if (!v.cats.has(cat)) v.cats.set(cat, { rotulo: categoria, provas: [] });
       v.cats.get(cat).provas.push(i.tituloProva);
     }
     const achados = [];
@@ -698,7 +700,10 @@
      JOÃO DA SILVA e JOÃO DA SILVA JUNIOR, e o erro de digitação de uma ou
      duas letras em nome comprido. */
   function pareceOMesmo(a, b) {
-    const x = normalizar(a), y = normalizar(b);
+    // o ponto da abreviação não separa nada: INST. ESTUÁRIO é INST ESTUÁRIO (no teste
+    // das 10 equipes, com o ponto o app não via que era o INSTITUTO ESTUÁRIO)
+    const limpa = (s) => normalizar(s).replace(/\./g, " ").replace(/\s+/g, " ").trim();
+    const x = limpa(a), y = limpa(b);
     if (!x || !y || x === y) return "";
     const px = x.split(" "), py = y.split(" ");
     const menor = Math.min(px.length, py.length);
@@ -739,8 +744,11 @@
     }
 
     const lista = [...equipes.entries()];
+    // ESCOLA X A e ESCOLA X B são as equipes A e B de revezamento, como o próprio app pede
+    const semLetra = (s) => normalizar(s).replace(/\s+[A-Z0-9]$/, "");
     for (let i = 0; i < lista.length; i++) {
       for (let j = i + 1; j < lista.length; j++) {
+        if (semLetra(lista[i][1]) === semLetra(lista[j][1])) continue;
         const motivo = pareceOMesmo(lista[i][1], lista[j][1]);
         if (!motivo) continue;
         achados.push({
@@ -891,7 +899,9 @@
     // da letra viraria uma marca de 100 minutos, e o atleta cairia na série
     // errada em vez de ir para as primeiras, junto com quem não tem tempo.
     if (/^9{1,2}[:.,]9{2}([:.,]9{1,2})?$/.test(t)) return null;
-    // 1'02"35 é 1:02.35 escrito do jeito antigo
+    // 1'02"35 é 1:02.35 escrito do jeito antigo; duas aspas simples ('') são as aspas
+    // dos segundos, como em 39'' 50 (no teste das 10 equipes, virava 39 minutos)
+    t = t.replace(/[’']{2}/g, "\"");
     t = semUnidades(t.replace(/[’']/g, ":").replace(/[”"]/g, ".").replace(/,/g, "."));
     if (/[^0-9:.\s]/.test(t)) return null;
     const partes = t.split(/[:.]/).map((x) => x.trim()).filter((x) => x !== "");
